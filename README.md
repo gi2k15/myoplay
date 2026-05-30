@@ -152,4 +152,4 @@ All your playlists, stream URLs, Xtream Codes credentials (usernames and passwor
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a **GNU General Public License v3.0** (GPL-3.0-or-later). Consulte o arquivo [LICENSE](file:///d:/GitHub/iptv-player-gemini2/LICENSE) para obter o texto completo da licença e seus termos.
+Este projeto está licenciado sob a **GNU General Public License v3.0** (GPL-3.0-or-later). Consulte o arquivo [LICENSE](https://www.gnu.org/licenses/gpl-3.0.html) para obter o texto completo da licença e seus termos.
