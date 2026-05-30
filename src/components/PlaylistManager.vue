@@ -376,6 +376,10 @@
                     <span>Canais Cadastrados:</span>
                     <strong class="text-primary">{{ pl.channelCount || 0 }}</strong>
                   </div>
+                  <div class="d-flex justify-space-between mb-1" v-if="pl.epgUrl">
+                    <span class="text-truncate mr-2" style="max-width: 140px;">URL EPG:</span>
+                    <span class="text-truncate text-secondary text-right" style="max-width: 160px;" :title="pl.epgUrl">{{ pl.epgUrl }}</span>
+                  </div>
                   <div class="d-flex justify-space-between">
                     <span>Cadastrada em:</span>
                     <span>{{ new Date(pl.createdAt).toLocaleDateString() }}</span>
@@ -385,27 +389,36 @@
 
               <v-divider />
 
-              <v-card-actions class="pa-3">
+              <v-card-actions class="pa-3 d-flex gap-2">
                 <v-btn
                   v-if="pl.id === currentPlaylistId"
                   color="success"
-                  block
                   variant="flat"
+                  class="flex-grow-1"
                   prepend-icon="mdi-check-circle"
                   @click="$emit('select-playlist', pl.id)"
                 >
-                  Playlist Ativa
+                  Ativa
                 </v-btn>
                 <v-btn
                   v-else
                   color="primary"
-                  block
                   variant="outlined"
+                  class="flex-grow-1"
                   prepend-icon="mdi-play-network"
                   @click="activatePlaylist(pl.id!)"
                 >
-                  Ativar Playlist
+                  Ativar
                 </v-btn>
+                
+                <v-btn
+                  v-if="pl.epgUrl"
+                  icon="mdi-sync"
+                  color="secondary"
+                  variant="tonal"
+                  title="Sincronizar EPG"
+                  @click="syncEPG(pl)"
+                />
               </v-card-actions>
             </v-card>
           </v-col>
@@ -556,6 +569,7 @@ const savePlaylistToDb = async (name: string, type: 'file' | 'url' | 'xtream', c
     url,
     username: user,
     password: pass,
+    epgUrl: autoEpgUrl,
     createdAt: Date.now()
   });
 
@@ -578,62 +592,10 @@ const savePlaylistToDb = async (name: string, type: 'file' | 'url' | 'xtream', c
   await db.setSetting('current_playlist_id', plId);
   currentPlaylistId.value = plId;
 
-  // If there was an epgURL auto-discovered in the M3U, offer to download it
+  // If there was an epgURL auto-discovered in the M3U or computed, download it
   if (autoEpgUrl) {
-    loadingStatus.value = 'Epg auto-detectado na lista!';
-    loadingSubstatus.value = 'Baixando programação do guia de TV...';
     try {
-      const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
-      const fetchUrl = proxy ? `${proxy}${encodeURIComponent(autoEpgUrl)}` : autoEpgUrl;
-      const res = await fetch(fetchUrl);
-      if (res.ok) {
-        // Stream download for EPG
-        const contentLength = res.headers.get('content-length');
-        const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
-        let loadedBytes = 0;
-        const reader = res.body?.getReader();
-        const chunks: Uint8Array[] = [];
-
-        if (reader) {
-          progressIndeterminate.value = totalBytes === 0;
-          progressValue.value = 0;
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (value) {
-              chunks.push(value);
-              loadedBytes += value.length;
-              if (totalBytes > 0) {
-                progressValue.value = Math.round((loadedBytes / totalBytes) * 100);
-                loadingStatus.value = `Baixando guia EPG... ${progressValue.value}%`;
-                loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB de ${(totalBytes / 1024 / 1024).toFixed(2)} MB`;
-              } else {
-                loadingStatus.value = 'Baixando guia EPG...';
-                loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB`;
-              }
-            }
-          }
-          const combined = new Uint8Array(loadedBytes);
-          let offset = 0;
-          for (const chunk of chunks) {
-            combined.set(chunk, offset);
-            offset += chunk.length;
-          }
-          const text = new TextDecoder('utf-8').decode(combined);
-          
-          loadingStatus.value = 'Analisando programas do XML (EPG)...';
-          progressIndeterminate.value = true;
-          const programs = parseEPG(text);
-          
-          progressIndeterminate.value = false;
-          progressValue.value = 0;
-          loadingStatus.value = `Salvando ${programs.length.toLocaleString()} programas...`;
-          await db.addEpgBatch(programs, (percent) => {
-            progressValue.value = percent;
-            loadingSubstatus.value = `Gravando programas do guia: ${percent}%`;
-          });
-        }
-      }
+      await downloadAndSaveEPG(autoEpgUrl, true);
     } catch (e) {
       console.warn('Erro ao tentar carregar EPG auto-detectado:', e);
     }
@@ -834,13 +796,23 @@ const importXtream = async () => {
       throw new Error('Autenticado com sucesso, mas nenhum stream (canal, filme ou série) foi retornado.');
     }
 
+    let baseUrl = xtreamHost.value.trim();
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      baseUrl = 'http://' + baseUrl;
+    }
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+    const autoEpg = `${baseUrl}/xmltv.php?username=${xtreamUser.value.trim()}&password=${xtreamPass.value.trim()}`;
+
     const plId = await savePlaylistToDb(
       playlistName.value, 
       'xtream', 
       channels, 
       xtreamHost.value, 
       xtreamUser.value, 
-      xtreamPass.value
+      xtreamPass.value,
+      autoEpg
     );
 
     successMsg.value = `Servidor Xtream conectado! ${channels.length.toLocaleString()} itens importados com sucesso!`;
@@ -902,21 +874,21 @@ const importEPGFile = async () => {
   }
 };
 
-// 5. EPG URL Import
-const importEPGUrl = async () => {
-  if (!epgUrl.value) return;
-
-  loading.value = true;
-  progressIndeterminate.value = true;
-  progressValue.value = 0;
-  errorMsg.value = '';
-  successMsg.value = '';
-  loadingStatus.value = 'Baixando guia EPG XMLTV da nuvem...';
-  loadingSubstatus.value = epgUrl.value;
-
+// Reusable EPG downloader and saver
+const downloadAndSaveEPG = async (urlToFetch: string, showUI: boolean = true) => {
+  if (showUI) {
+    loading.value = true;
+    progressIndeterminate.value = true;
+    progressValue.value = 0;
+    errorMsg.value = '';
+    successMsg.value = '';
+    loadingStatus.value = 'Baixando guia EPG XMLTV da nuvem...';
+    loadingSubstatus.value = urlToFetch;
+  }
+  
   try {
-    let finalEpgUrl = epgUrl.value.trim();
-    const proxy = await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+    const finalEpgUrl = urlToFetch.trim();
+    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalEpgUrl)}` : finalEpgUrl;
 
     const res = await fetch(fetchUrl);
@@ -926,29 +898,31 @@ const importEPGUrl = async () => {
 
     const contentLength = res.headers.get('content-length');
     const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
-    
     let loadedBytes = 0;
     const reader = res.body?.getReader();
     const chunks: Uint8Array[] = [];
 
     if (!reader) {
       const text = await res.text();
-      loadingStatus.value = 'Analisando XML do EPG...';
-      loadingSubstatus.value = 'Estruturando canais e programações...';
+      if (showUI) {
+        loadingStatus.value = 'Analisando XML do EPG...';
+        loadingSubstatus.value = 'Estruturando canais e programações...';
+      }
       const programs = parseEPG(text);
       if (programs.length === 0) {
         throw new Error('Nenhum programa foi mapeado deste link EPG.');
       }
-      loadingStatus.value = `Armazenando ${programs.length.toLocaleString()} programações...`;
+      if (showUI) {
+        loadingStatus.value = `Armazenando ${programs.length.toLocaleString()} programações...`;
+      }
       await db.addEpgBatch(programs);
-      successMsg.value = `Guia EPG baixado com sucesso! ${programs.length.toLocaleString()} programações inseridas no guia.`;
-      epgUrl.value = '';
-      await refreshEpgCount();
-      return;
+      return programs.length;
     }
 
-    progressIndeterminate.value = totalBytes === 0;
-    progressValue.value = 0;
+    if (showUI) {
+      progressIndeterminate.value = totalBytes === 0;
+      progressValue.value = 0;
+    }
 
     while (true) {
       const { done, value } = await reader.read();
@@ -956,13 +930,15 @@ const importEPGUrl = async () => {
       if (value) {
         chunks.push(value);
         loadedBytes += value.length;
-        if (totalBytes > 0) {
-          progressValue.value = Math.round((loadedBytes / totalBytes) * 100);
-          loadingStatus.value = `Baixando guia EPG... ${progressValue.value}%`;
-          loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB de ${(totalBytes / 1024 / 1024).toFixed(2)} MB`;
-        } else {
-          loadingStatus.value = 'Baixando guia EPG...';
-          loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB`;
+        if (showUI) {
+          if (totalBytes > 0) {
+            progressValue.value = Math.round((loadedBytes / totalBytes) * 100);
+            loadingStatus.value = `Baixando guia EPG... ${progressValue.value}%`;
+            loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB de ${(totalBytes / 1024 / 1024).toFixed(2)} MB`;
+          } else {
+            loadingStatus.value = 'Baixando guia EPG...';
+            loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB`;
+          }
         }
       }
     }
@@ -975,31 +951,73 @@ const importEPGUrl = async () => {
     }
     const text = new TextDecoder('utf-8').decode(combined);
 
-    loadingStatus.value = 'Analisando XML do EPG...';
-    progressIndeterminate.value = true;
+    if (showUI) {
+      loadingStatus.value = 'Analisando XML do EPG...';
+      progressIndeterminate.value = true;
+    }
     const programs = parseEPG(text);
-
     if (programs.length === 0) {
       throw new Error('Nenhum programa foi mapeado deste link EPG.');
     }
 
-    loadingStatus.value = `Salvando ${programs.length.toLocaleString()} programas...`;
-    progressIndeterminate.value = false;
-    progressValue.value = 0;
+    if (showUI) {
+      progressIndeterminate.value = false;
+      progressValue.value = 0;
+      loadingStatus.value = `Salvando ${programs.length.toLocaleString()} programas...`;
+    }
 
     await db.addEpgBatch(programs, (percent) => {
-      progressValue.value = percent;
-      loadingSubstatus.value = `Gravando programas do guia: ${percent}%`;
+      if (showUI) {
+        progressValue.value = percent;
+        loadingSubstatus.value = `Gravando programas do guia: ${percent}%`;
+      }
     });
 
-    successMsg.value = `Guia EPG baixado com sucesso! ${programs.length.toLocaleString()} programações inseridas no guia.`;
-    epgUrl.value = '';
+    return programs.length;
+  } catch (err: any) {
+    console.error('Erro no download/processamento do EPG:', err);
+    if (showUI) {
+      errorMsg.value = `Erro no EPG: ${err.message || err}`;
+    }
+    throw err;
+  } finally {
+    if (showUI) {
+      loading.value = false;
+    }
+  }
+};
 
+const syncEPG = async (pl: Playlist) => {
+  if (!pl.epgUrl) {
+    errorMsg.value = `Esta playlist não possui uma URL de EPG configurada.`;
+    return;
+  }
+  
+  loading.value = true;
+  errorMsg.value = '';
+  successMsg.value = '';
+  try {
+    const count = await downloadAndSaveEPG(pl.epgUrl, true);
+    successMsg.value = `Guia EPG sincronizado com sucesso para "${pl.name}"! ${count.toLocaleString()} programações atualizadas.`;
     await refreshEpgCount();
   } catch (err: any) {
-    errorMsg.value = `Erro ao baixar EPG da URL: ${err.message || err}`;
+    // Erro já tratado por downloadAndSaveEPG
   } finally {
     loading.value = false;
+  }
+};
+
+// 5. EPG URL Import
+const importEPGUrl = async () => {
+  if (!epgUrl.value) return;
+
+  try {
+    const count = await downloadAndSaveEPG(epgUrl.value, true);
+    successMsg.value = `Guia EPG baixado com sucesso! ${count.toLocaleString()} programações inseridas no guia.`;
+    epgUrl.value = '';
+    await refreshEpgCount();
+  } catch (err: any) {
+    // Erro já tratado por downloadAndSaveEPG
   }
 };
 

@@ -23,8 +23,8 @@ export function parseM3U(m3uText: string, playlistId: number): ParsedPlaylist {
 
     // Header check
     if (line.startsWith('#EXTM3U')) {
-      // Look for url-tvg or x-tvg-url inside the header
-      const tvgUrlMatch = line.match(/(?:url-tvg|x-tvg-url)="([^"]+)"/i);
+      // Look for url-tvg, x-tvg-url, epg-url, url-epg, or tvg-url inside the header
+      const tvgUrlMatch = line.match(/(?:url-tvg|x-tvg-url|epg-url|url-epg|tvg-url)="([^"]+)"/i);
       if (tvgUrlMatch) {
         epgUrl = tvgUrlMatch[1];
       }

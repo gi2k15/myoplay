@@ -240,10 +240,9 @@ const loadGuideData = async () => {
   try {
     const list = await db.getChannels(props.playlistId);
     
-    // Filter channels that have a valid tvgId mapped
-    const channels = list.filter(ch => !!ch.tvgId);
+    // Filter channels that have a valid tvgId mapped and are live streams
+    const channels = list.filter(ch => !!ch.tvgId && ch.type === 'live');
     
-    // Verify which channels actually have EPG programs in IndexedDB
     const activeChannels: IPTVChannel[] = [];
 
     for (const ch of channels) {
@@ -251,12 +250,18 @@ const loadGuideData = async () => {
       if (current) {
         currentShows.value[ch.tvgId!] = current;
       }
-      // Keep only channels that have EPG programs (current or in schedule)
-      const epgEvents = await db.getEpgForChannel(ch.tvgId!);
-      if (epgEvents.length > 0) {
-        activeChannels.push(ch);
-      }
+      // Show all channels that have tvgId mapped, not only those with cached events
+      activeChannels.push(ch);
     }
+
+    // Sort: channels with live show first, then alphabetically
+    activeChannels.sort((a, b) => {
+      const hasShowA = !!currentShows.value[a.tvgId!];
+      const hasShowB = !!currentShows.value[b.tvgId!];
+      if (hasShowA && !hasShowB) return -1;
+      if (!hasShowA && hasShowB) return 1;
+      return a.name.localeCompare(b.name);
+    });
 
     allChannelsWithEpg.value = activeChannels;
     

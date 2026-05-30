@@ -7,6 +7,7 @@ export interface Playlist {
   url?: string;
   username?: string;
   password?: string;
+  epgUrl?: string;
   createdAt: number;
 }
 

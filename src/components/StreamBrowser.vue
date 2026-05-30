@@ -240,7 +240,7 @@
                       Seguinte: {{ epgData[ch.tvgId || ''].next?.title }} ({{ formatTime(epgData[ch.tvgId || ''].next?.start || 0) }})
                     </div>
                   </div>
-                  <div class="text-caption text-medium-emphasis">
+                  <div v-else class="text-caption text-medium-emphasis">
                     Nenhuma informação de guia disponível.
                   </div>
                 </div>
