@@ -307,6 +307,7 @@ const showStats = ref(false);
 const retryCount = ref(0);
 let retryTimeout: number | null = null;
 const isHealing = ref(false);
+let isHandlingError = false;
 
 onMounted(async () => {
   await loadSettings();
@@ -385,6 +386,7 @@ const destroyPlayer = () => {
 };
 
 const initializePlayer = () => {
+  isHandlingError = false;
   destroyPlayer();
   errorState.value = null;
   isConnecting.value = true;
@@ -601,6 +603,11 @@ const initializePlayer = () => {
 
 // --- RECOVERY AND RETRY ENGINE ---
 const handlePlaybackError = () => {
+  if (isHandlingError) {
+    console.log('[VideoPlayer] Ignorando evento de erro concorrente/duplicado.');
+    return;
+  }
+  isHandlingError = true;
   destroyPlayer();
   
   if (retryCount.value < 5) {
