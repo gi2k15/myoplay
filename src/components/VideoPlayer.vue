@@ -237,6 +237,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import Hls from 'hls.js';
+import mpegts from 'mpegts.js';
 import { db, type IPTVChannel } from '@/services/db';
 
 const props = defineProps<{
@@ -252,6 +253,7 @@ const emit = defineEmits<{
 // Video Element Refs
 const videoRef = ref<HTMLVideoElement | null>(null);
 let hlsInstance: Hls | null = null;
+let mpegtsInstance: mpegts.Player | null = null;
 
 // Media States
 const isPaused = ref(true);
@@ -351,6 +353,10 @@ const destroyPlayer = () => {
     hlsInstance.destroy();
     hlsInstance = null;
   }
+  if (mpegtsInstance) {
+    mpegtsInstance.destroy();
+    mpegtsInstance = null;
+  }
   if (videoRef.value) {
     videoRef.value.src = '';
     videoRef.value.load();
@@ -371,24 +377,6 @@ const initializePlayer = () => {
   const video = videoRef.value;
 
   if (!video) return;
-
-  // 1. Reescrever fluxos .ts de IPTV padrão para HLS (.m3u8)
-  // (Navegadores não suportam .ts bruto de forma confiável, HLS/m3u8 é compatível universalmente)
-  const urlParts = originalUrl.split('?');
-  let path = urlParts[0];
-  const lowerPath = path.toLowerCase();
-  
-  if (lowerPath.endsWith('.ts')) {
-    path = path.slice(0, -3) + '.m3u8';
-    originalUrl = path + (urlParts[1] ? '?' + urlParts[1] : '');
-    console.log(`[VideoPlayer] Reescrevendo canal .ts para HLS (.m3u8): ${originalUrl}`);
-  } else if (originalUrl.includes('output=ts')) {
-    originalUrl = originalUrl.replace('output=ts', 'output=hls');
-    console.log(`[VideoPlayer] Reescrevendo output=ts para output=hls: ${originalUrl}`);
-  } else if (originalUrl.includes('output=mpegts')) {
-    originalUrl = originalUrl.replace('output=mpegts', 'output=hls');
-    console.log(`[VideoPlayer] Reescrevendo output=mpegts para output=hls: ${originalUrl}`);
-  }
 
   // Determine if stream should be proxied
   const shouldProxy = 
@@ -445,9 +433,16 @@ const initializePlayer = () => {
     handlePlaybackError();
   };
 
-  // Check if HLS stream (m3u8)
+  // Check stream formats
   const isHls = originalUrl.toLowerCase().includes('.m3u8') || originalUrl.toLowerCase().includes('m3u8');
+  const isTs = originalUrl.toLowerCase().includes('.ts') || 
+               originalUrl.includes('output=ts') || 
+               originalUrl.includes('output=mpegts') ||
+               originalUrl.includes('output=mpeg-ts');
 
+  // --- PLAYBACK ENGINE SELECTOR ---
+  
+  // Case A: HLS Stream played via Hls.js
   if (isHls && Hls.isSupported()) {
     // Custom Hls.js Loader to proxy fragments, playlists, and keys
     // @ts-ignore
@@ -526,7 +521,50 @@ const initializePlayer = () => {
       }
     });
   } 
-  // Fallback to native HLS support (Safari, iOS, Android, and standard MP4 links)
+  // Case B: Raw MPEG-TS Stream played via mpegts.js (solves .ts support in Chrome/Firefox)
+  else if (isTs && mpegts.isSupported()) {
+    let playUrl = originalUrl;
+    if (shouldProxy && activeProxy.value) {
+      console.log(`[VideoPlayer] Usando Proxy CORS via mpegts.js ("${activeProxy.value}"). Tentativa: ${retryCount.value}`);
+      playUrl = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
+    }
+    
+    activePlayUrl.value = playUrl;
+
+    mpegtsInstance = mpegts.createPlayer({
+      type: 'mpegts',
+      isLive: isLive.value,
+      url: playUrl
+    }, {
+      enableWorker: true,
+      enableStashBuffer: false, // minimize latency
+      liveBufferLatencyChasing: true
+    });
+
+    mpegtsInstance.attachMediaElement(video);
+    mpegtsInstance.load();
+
+    mpegtsInstance.on(mpegts.Events.ERROR, (type, detail, info) => {
+      console.error(`[VideoPlayer] Erro no mpegts.js: Tipo ${type}, Detalhe ${detail}`, info);
+      handlePlaybackError();
+    });
+
+    // Resolve loading overlay when metadata or stream connects
+    video.onloadedmetadata = () => {
+      videoWidth.value = video.videoWidth;
+      videoHeight.value = video.videoHeight;
+      duration.value = video.duration || 0;
+      isConnecting.value = false;
+      isBuffering.value = false;
+      showPoster.value = false;
+      retryCount.value = 0; // reset retry loops
+      
+      video.play().catch(e => {
+        console.warn('Auto-play blocked by browser, requiring user interaction.', e);
+      });
+    };
+  }
+  // Case C: Fallback to native HLS support (Safari, iOS, Android, and standard MP4 links)
   else if (video.canPlayType('application/vnd.apple.mpegurl') || !isHls) {
     let playUrl = originalUrl;
     if (shouldProxy && activeProxy.value) {
@@ -539,7 +577,7 @@ const initializePlayer = () => {
   } else {
     isConnecting.value = false;
     isBuffering.value = false;
-    errorState.value = 'Formato de streaming HLS não suportado neste navegador sem MSE. Use Chrome/Firefox.';
+    errorState.value = 'Formato de streaming HLS ou MPEG-TS não suportado neste navegador. Use Chrome/Firefox.';
   }
 };
 

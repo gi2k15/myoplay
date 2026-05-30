@@ -137,8 +137,8 @@ export class XtreamClient {
           for (let i = 0; i < liveStreams.length; i++) {
             const stream = liveStreams[i];
             const catName = liveCats[stream.category_id] || 'Canais ao Vivo';
-            // Live stream url: http://host:port/live/username/password/stream_id.m3u8
-            const streamUrl = `${this.url}/live/${this.username}/${this.password}/${stream.stream_id}.m3u8`;
+            // Live stream url: http://host:port/live/username/password/stream_id.ts
+            const streamUrl = `${this.url}/live/${this.username}/${this.password}/${stream.stream_id}.ts`;
             channels.push({
               id: `${playlistId}_live_${stream.stream_id}`,
               playlistId,
