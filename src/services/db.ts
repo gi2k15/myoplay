@@ -235,7 +235,7 @@ class IPTVDatabase {
     return new Promise<void>((resolve, reject) => {
       const tx = db.transaction('channels', 'readwrite');
       const store = tx.objectStore('channels');
-      const req = store.put(channel);
+      const req = store.put({ ...channel });
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });

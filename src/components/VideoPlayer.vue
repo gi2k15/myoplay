@@ -306,6 +306,7 @@ const showStats = ref(false);
 // Reconnection Engine
 const retryCount = ref(0);
 let retryTimeout: number | null = null;
+const isHealing = ref(false);
 
 onMounted(async () => {
   await loadSettings();
@@ -326,7 +327,24 @@ onBeforeUnmount(() => {
 
 // Watch for stream URL change
 watch(() => props.channel.streamUrl, async () => {
-  retryCount.value = 0; // Reset retry count when changing channel
+  if (isHealing.value) {
+    isHealing.value = false;
+    // Clear any scheduled retry timeout to avoid double loading
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+    }
+    await loadSettings();
+    initializePlayer();
+    return;
+  }
+
+  // Normal channel change (user selected a new channel)
+  retryCount.value = 0;
+  if (retryTimeout) {
+    clearTimeout(retryTimeout);
+    retryTimeout = null;
+  }
   await loadSettings();
   initializePlayer();
 });
@@ -590,6 +608,7 @@ const handlePlaybackError = () => {
     isConnecting.value = true;
     errorState.value = null;
 
+    let healed = false;
     // Se o stream falhar na reprodução e for uma URL de m3u8 (e sabemos que este provedor não suporta .m3u8),
     // nós curamos o link para .ts dinamicamente em memória e atualizamos no banco IndexedDB!
     const originalUrl = props.channel.streamUrl;
@@ -600,20 +619,27 @@ const handlePlaybackError = () => {
         path = path.slice(0, -5) + '.ts';
       }
       const newUrl = path + (urlParts[1] ? '?' + urlParts[1] : '');
+      
+      // Set isHealing to true before mutating to let the watcher handle immediate loading cleanly
+      isHealing.value = true;
       props.channel.streamUrl = newUrl;
+      healed = true;
       console.log(`[VideoPlayer] Detectada falha no m3u8. Curando URL do canal para .ts: ${newUrl}`);
       
-      // Salva a nova URL curada no banco IndexedDB local
-      db.updateChannel(props.channel).catch(err => {
+      // Salva a nova URL curada no banco IndexedDB local (cópia rasa para evitar DataCloneError)
+      db.updateChannel({ ...props.channel }).catch(err => {
         console.error('Erro ao atualizar URL de canal curado no IndexedDB:', err);
       });
     }
     
-    // Retry in 3 seconds
-    if (retryTimeout) clearTimeout(retryTimeout);
-    retryTimeout = window.setTimeout(() => {
-      initializePlayer();
-    }, 3000);
+    // Only schedule the 3-second retry if we did NOT perform a self-healing rewrite.
+    // If we healed, the watcher already immediately re-initializes the player.
+    if (!healed) {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      retryTimeout = window.setTimeout(() => {
+        initializePlayer();
+      }, 3000);
+    }
   } else {
     isConnecting.value = false;
     isBuffering.value = false;
