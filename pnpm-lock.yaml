@@ -14,6 +14,9 @@ importers:
       '@mdi/font':
         specifier: 7.4.47
         version: 7.4.47
+      hls.js:
+        specifier: ^1.6.16
+        version: 1.6.16
       vue:
         specifier: ^3.5.30
         version: 3.5.35(typescript@5.9.3)
@@ -458,6 +461,9 @@ packages:
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
+
+  hls.js@1.6.16:
+    resolution: {integrity: sha512-VSIRpLfRwlAAdGL4wiTucx2ScRipo0ed1FBatWkyt832jC4CReKstga6yIhYVwGu9LOBjuX9wzmRMeQdBJtzEA==}
 
   immutable@5.1.6:
     resolution: {integrity: sha512-q1swsS8K7L8usSHuOqF2TAoCCkonYz0SG38wLAggaa4Wml70zixIvt2ql4coQ2C2B3hTjltJry4r6bULwgAXLQ==}
@@ -1274,6 +1280,8 @@ snapshots:
       is-glob: 4.0.3
 
   has-flag@4.0.0: {}
+
+  hls.js@1.6.16: {}
 
   immutable@5.1.6: {}
 
