@@ -158,7 +158,7 @@
                     <span class="text-subtitle-2 font-weight-bold text-secondary">
                       {{ formatTime(prog.start) }} - {{ formatTime(prog.stop) }}
                     </span>
-                    <v-chip v-if="prog.category" size="x-small" color="surface-variant" variant="flat" class="text-uppercase">
+                    <v-chip v-if="prog.category" size="x-small" color="primary" variant="tonal" class="text-uppercase font-weight-bold">
                       {{ prog.category }}
                     </v-chip>
                   </div>
@@ -354,26 +354,26 @@ const playSelectedChannel = () => {
 }
 
 .channel-item:hover {
-  background: rgba(156, 39, 176, 0.05) !important;
-  border-color: rgba(156, 39, 176, 0.2);
+  background: rgba(255, 193, 7, 0.05) !important;
+  border-color: rgba(255, 193, 7, 0.2);
 }
 
 .channel-item.v-list-item--active {
-  background: linear-gradient(90deg, rgba(0, 245, 212, 0.1) 0%, rgba(156, 39, 176, 0.05) 100%) !important;
-  border-color: rgba(0, 245, 212, 0.2);
+  background: linear-gradient(90deg, rgba(255, 213, 79, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%) !important;
+  border-color: rgba(255, 213, 79, 0.2);
 }
 
 .glass-card {
-  background: rgba(22, 20, 36, 0.7) !important;
+  background: rgba(18, 18, 18, 0.7) !important;
   backdrop-filter: blur(16px);
 }
 
 .play-btn-glow {
-  box-shadow: 0 0 15px rgba(156, 39, 176, 0.5) !important;
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5) !important;
 }
 
 .text-glow-small {
-  background: linear-gradient(135deg, #a044ff 0%, #00f5d4 100%);
+  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -399,52 +399,52 @@ const playSelectedChannel = () => {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 3px solid #0d0b14;
+  border: 3px solid #080808;
   z-index: 2;
 }
 
 .timeline-item-live {
   border-radius: 16px;
-  box-shadow: 0 0 25px rgba(0, 245, 212, 0.05);
+  box-shadow: 0 0 25px rgba(255, 213, 79, 0.05);
 }
 
 .live-bg {
-  background: rgba(0, 245, 212, 0.03) !important;
-  border-color: rgba(0, 245, 212, 0.2) !important;
+  background: rgba(255, 213, 79, 0.03) !important;
+  border-color: rgba(255, 213, 79, 0.2) !important;
 }
 
 .timeline-content {
-  background: rgba(22, 20, 36, 0.4) !important;
+  background: rgba(18, 18, 18, 0.4) !important;
   border: 1px solid rgba(255, 255, 255, 0.03);
   transition: all 0.2s ease;
 }
 
 .timeline-content:hover {
   border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(22, 20, 36, 0.6) !important;
+  background: rgba(18, 18, 18, 0.6) !important;
 }
 
 /* Pulsing red dot for live timeline items */
 .pulse-dot {
   width: 10px;
   height: 10px;
-  background-color: #00f5d4;
+  background-color: #FFD54F;
   border-radius: 50%;
   position: absolute;
   top: 0px;
   left: 0px;
-  box-shadow: 0 0 0 0 rgba(0, 245, 212, 0.7);
+  box-shadow: 0 0 0 0 rgba(255, 213, 79, 0.7);
   animation: pulse 1.6s infinite cubic-bezier(0.66, 0, 0, 1);
 }
 
 @keyframes pulse {
   to {
-    box-shadow: 0 0 0 10px rgba(0, 245, 212, 0);
+    box-shadow: 0 0 0 10px rgba(255, 213, 79, 0);
   }
 }
 
 .bg-dark-glow {
-  background: radial-gradient(circle at top right, rgba(160, 68, 255, 0.02) 0%, rgba(13, 11, 20, 0) 60%);
+  background: radial-gradient(circle at top right, rgba(255, 193, 7, 0.02) 0%, rgba(8, 8, 8, 0) 60%);
 }
 
 .max-width-280 {

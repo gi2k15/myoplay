@@ -476,14 +476,14 @@ const wipeDatabase = async () => {
 
 <style scoped>
 .glass-card {
-  background: rgba(22, 20, 36, 0.7) !important;
+  background: rgba(18, 18, 18, 0.7) !important;
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
 }
 
 .text-glow-small {
-  background: linear-gradient(135deg, #a044ff 0%, #00f5d4 100%);
+  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

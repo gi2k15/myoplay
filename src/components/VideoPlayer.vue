@@ -852,7 +852,7 @@ const removeHotkeys = () => {
   z-index: 999;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(156, 39, 176, 0.5) !important;
+  border: 1px solid rgba(255, 193, 7, 0.5) !important;
 }
 
 .video-poster-overlay,
@@ -873,11 +873,11 @@ const removeHotkeys = () => {
 }
 
 .video-error-overlay {
-  background: rgba(13, 11, 20, 0.95);
+  background: rgba(8, 8, 8, 0.95);
 }
 
 .poster-logo {
-  filter: drop-shadow(0 0 20px rgba(160, 68, 255, 0.25));
+  filter: drop-shadow(0 0 20px rgba(255, 193, 7, 0.25));
 }
 
 .controls-overlay {
@@ -928,7 +928,7 @@ const removeHotkeys = () => {
   z-index: 6;
   max-width: 280px;
   width: 100%;
-  background: rgba(13, 11, 20, 0.9) !important;
+  background: rgba(8, 8, 8, 0.9) !important;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
@@ -972,11 +972,11 @@ const removeHotkeys = () => {
   gap: 4px;
 }
 .text-glow-small {
-  background: linear-gradient(135deg, #a044ff 0%, #00f5d4 100%);
+  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .play-btn-glow {
-  box-shadow: 0 0 15px rgba(156, 39, 176, 0.5) !important;
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5) !important;
 }
 </style>

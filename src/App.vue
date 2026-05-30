@@ -296,32 +296,32 @@ const getPageTitle = () => {
 <style>
 /* Global App Overrides and Themes */
 .app-background {
-  background-color: #0d0c15 !important;
+  background-color: #080808 !important;
   color: #ffffff !important;
   font-family: 'Outfit', 'Inter', 'Roboto', sans-serif !important;
   overflow-x: hidden;
 }
 
 .main-container {
-  background: radial-gradient(circle at 80% 20%, rgba(160, 68, 255, 0.04) 0%, rgba(13, 12, 21, 0) 50%);
+  background: radial-gradient(circle at 80% 20%, rgba(255, 193, 7, 0.02) 0%, rgba(8, 8, 8, 0) 50%);
 }
 
 .app-bar-glass {
-  background: rgba(13, 11, 20, 0.8) !important;
+  background: rgba(8, 8, 8, 0.8) !important;
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
 .text-glow-small {
-  background: linear-gradient(135deg, #a044ff 0%, #00f5d4 100%);
+  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.2));
+  filter: drop-shadow(0 0 8px rgba(255, 224, 130, 0.2));
 }
 
 /* Glassmorphism Global styles */
 .glass-card {
-  background: rgba(22, 20, 36, 0.7) !important;
+  background: rgba(18, 18, 18, 0.7) !important;
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -332,7 +332,7 @@ const getPageTitle = () => {
 
 /* Embedded Player layout & separation */
 .embedded-player-container {
-  background: rgba(13, 11, 20, 0.4);
+  background: rgba(8, 8, 8, 0.4);
   backdrop-filter: blur(12px);
   z-index: 10;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -346,12 +346,12 @@ const getPageTitle = () => {
 }
 
 .border-left-glow {
-  border-left: 1px solid rgba(160, 68, 255, 0.15) !important;
+  border-left: 1px solid rgba(255, 193, 7, 0.15) !important;
   box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
 }
 
 .border-bottom-glow {
-  border-bottom: 1px solid rgba(160, 68, 255, 0.15) !important;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.15) !important;
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
 }
 
@@ -396,16 +396,16 @@ const getPageTitle = () => {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(13, 11, 20, 0.5);
+  background: rgba(8, 8, 8, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(160, 68, 255, 0.3);
+  background: rgba(255, 193, 7, 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 245, 212, 0.5);
+  background: rgba(255, 224, 130, 0.5);
 }
 
 /* Transitions */

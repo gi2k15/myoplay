@@ -36,7 +36,7 @@
             </template>
             <v-list-item-title class="font-weight-medium">Todas as Categorias</v-list-item-title>
             <template v-slot:append>
-              <v-chip size="x-small" color="surface-variant">{{ totalChannelsCount }}</v-chip>
+              <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">{{ totalChannelsCount }}</v-chip>
             </template>
           </v-list-item>
 
@@ -59,7 +59,7 @@
               {{ cat.name }}
             </v-list-item-title>
             <template v-slot:append>
-              <v-chip size="x-small" color="surface-variant">{{ cat.count }}</v-chip>
+              <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">{{ cat.count }}</v-chip>
             </template>
           </v-list-item>
         </v-list>
@@ -433,7 +433,7 @@
             <div class="d-flex align-center mb-4 gap-2 flex-wrap">
               <v-chip size="small" color="primary" class="font-weight-bold">{{ selectedSeries.category }}</v-chip>
               <v-chip v-if="selectedSeries.rating" size="small" color="secondary" class="font-weight-bold">★ {{ selectedSeries.rating }}</v-chip>
-              <v-chip v-if="selectedSeries.year" size="small" color="surface-variant" class="font-weight-bold">{{ selectedSeries.year }}</v-chip>
+              <v-chip v-if="selectedSeries.year" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedSeries.year }}</v-chip>
             </div>
             
             <p v-if="selectedSeries.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height">
@@ -863,16 +863,16 @@ const playEpisode = (ep: XtreamEpisode) => {
 }
 
 .category-item:hover {
-  background: rgba(156, 39, 176, 0.05) !important;
+  background: rgba(255, 193, 7, 0.05) !important;
 }
 
 .category-item.v-list-item--active {
-  background: linear-gradient(90deg, rgba(0, 245, 212, 0.1) 0%, rgba(156, 39, 176, 0.05) 100%) !important;
-  border-color: rgba(0, 245, 212, 0.2);
+  background: linear-gradient(90deg, rgba(255, 213, 79, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%) !important;
+  border-color: rgba(255, 213, 79, 0.2);
 }
 
 .glass-channel-card {
-  background: rgba(22, 20, 36, 0.6) !important;
+  background: rgba(18, 18, 18, 0.6) !important;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 12px;
@@ -881,14 +881,14 @@ const playEpisode = (ep: XtreamEpisode) => {
 }
 
 .glass-channel-card:hover {
-  background: rgba(156, 39, 176, 0.08) !important;
-  border-color: rgba(156, 39, 176, 0.3);
+  background: rgba(255, 193, 7, 0.08) !important;
+  border-color: rgba(255, 193, 7, 0.3);
   transform: translateX(4px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .movie-card {
-  background: rgba(22, 20, 36, 0.6) !important;
+  background: rgba(18, 18, 18, 0.6) !important;
   backdrop-filter: blur(12px);
   cursor: pointer;
   overflow: hidden;
@@ -898,7 +898,7 @@ const playEpisode = (ep: XtreamEpisode) => {
 .movie-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  border-color: rgba(156, 39, 176, 0.4) !important;
+  border-color: rgba(255, 193, 7, 0.4) !important;
 }
 
 .border-glass {
@@ -959,17 +959,17 @@ const playEpisode = (ep: XtreamEpisode) => {
 }
 
 .play-btn-glow {
-  box-shadow: 0 0 15px rgba(156, 39, 176, 0.6) !important;
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.6) !important;
 }
 
 .text-glow-small {
-  background: linear-gradient(135deg, #a044ff 0%, #00f5d4 100%);
+  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .glass-dialog {
-  background: rgba(13, 11, 20, 0.95) !important;
+  background: rgba(8, 8, 8, 0.95) !important;
   backdrop-filter: blur(25px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -1002,15 +1002,15 @@ const playEpisode = (ep: XtreamEpisode) => {
 }
 
 .live-player-top-section {
-  background: rgba(18, 16, 32, 0.45);
+  background: rgba(18, 18, 18, 0.45);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(160, 68, 255, 0.15) !important;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.15) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   z-index: 5;
 }
 
 .border-bottom-glow {
-  border-bottom: 1px solid rgba(160, 68, 255, 0.15) !important;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.15) !important;
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
 }
 

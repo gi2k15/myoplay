@@ -113,7 +113,7 @@ const navItems = [
 
 <style scoped>
 .sidebar-glass {
-  background: rgba(13, 11, 20, 0.95) !important;
+  background: rgba(8, 8, 8, 0.95) !important;
   backdrop-filter: blur(20px);
   border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
@@ -127,14 +127,14 @@ const navItems = [
 }
 
 .text-glow-small {
-  background: linear-gradient(135deg, #a044ff 0%, #00f5d4 100%);
+  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 10px rgba(160, 68, 255, 0.3));
+  filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.3));
 }
 
 .glow-icon {
-  filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.5));
+  filter: drop-shadow(0 0 8px rgba(255, 213, 79, 0.5));
 }
 
 .letter-spacing-1 {
@@ -147,13 +147,13 @@ const navItems = [
 }
 
 .nav-item:hover {
-  background: rgba(160, 68, 255, 0.05);
+  background: rgba(255, 193, 7, 0.05);
 }
 
 .nav-item.v-list-item--active {
-  background: linear-gradient(90deg, rgba(160, 68, 255, 0.2) 0%, rgba(0, 245, 212, 0.05) 100%) !important;
-  border-left: 3px solid #00f5d4;
-  box-shadow: 0 4px 15px rgba(160, 68, 255, 0.1);
+  background: linear-gradient(90deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 213, 79, 0.05) 100%) !important;
+  border-left: 3px solid #FFD54F;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.1);
 }
 
 .playlist-info-card {

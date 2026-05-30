@@ -1068,21 +1068,21 @@ const deletePlaylist = async (playlistId: number) => {
 
 <style scoped>
 .text-glow {
-  background: linear-gradient(135deg, #a044ff 0%, #00f5d4 100%);
+  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(160, 68, 255, 0.2);
+  text-shadow: 0 0 30px rgba(255, 193, 7, 0.2);
 }
 
 .glass-card {
-  background: rgba(22, 20, 36, 0.7) !important;
+  background: rgba(18, 18, 18, 0.7) !important;
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
 }
 
 .border-primary {
-  border-color: rgba(156, 39, 176, 0.5) !important;
+  border-color: rgba(255, 193, 7, 0.5) !important;
 }
 
 .border-bottom {
@@ -1090,18 +1090,18 @@ const deletePlaylist = async (playlistId: number) => {
 }
 
 .dropzone {
-  border: 2px dashed rgba(156, 39, 176, 0.3);
+  border: 2px dashed rgba(255, 193, 7, 0.3);
   border-radius: 12px;
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
-  background: rgba(156, 39, 176, 0.02);
+  background: rgba(255, 193, 7, 0.02);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .dropzone:hover, .dropzone-active {
-  border-color: #00f5d4;
-  background: rgba(0, 245, 212, 0.04);
+  border-color: #FFD54F;
+  background: rgba(255, 213, 79, 0.04);
 }
 
 .playlist-card {
@@ -1111,12 +1111,12 @@ const deletePlaylist = async (playlistId: number) => {
 .playlist-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  border-color: rgba(0, 245, 212, 0.3) !important;
+  border-color: rgba(255, 213, 79, 0.3) !important;
 }
 
 .playlist-card-active {
-  background: rgba(156, 39, 176, 0.15) !important;
-  border-color: rgba(156, 39, 176, 0.6) !important;
-  box-shadow: 0 0 20px rgba(156, 39, 176, 0.15);
+  background: rgba(255, 193, 7, 0.15) !important;
+  border-color: rgba(255, 193, 7, 0.6) !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
 }
 </style>
