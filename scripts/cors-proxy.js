@@ -43,8 +43,10 @@ const server = http.createServer((req, res) => {
 function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
   if (redirectCount > 5) {
     console.error(`[CORS Proxy] Limite de redirecionamentos excedido para ${targetUrl}`);
-    res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Erro do Proxy CORS local: Limite de redirecionamentos excedido (Max 5)');
+    if (!res.headersSent) {
+      res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Erro do Proxy CORS local: Limite de redirecionamentos excedido (Max 5)');
+    }
     return;
   }
 
@@ -88,23 +90,28 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
       resHeaders['Access-Control-Allow-Headers'] = '*';
       resHeaders['Access-Control-Expose-Headers'] = '*';
 
-      res.writeHead(proxyRes.statusCode, resHeaders);
-      
-      // Stream the response back to client
-      proxyRes.pipe(res);
+      if (!res.headersSent) {
+        res.writeHead(proxyRes.statusCode, resHeaders);
+        // Stream the response back to client
+        proxyRes.pipe(res);
+      }
     });
 
     proxyReq.on('error', (err) => {
       console.error(`[CORS Proxy] Erro na requisição para ${targetUrl}:`, err.message);
-      res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end(`Erro do Proxy CORS local: Não foi possível conectar ao servidor de destino (${err.message})`);
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end(`Erro do Proxy CORS local: Não foi possível conectar ao servidor de destino (${err.message})`);
+      }
     });
 
     proxyReq.on('timeout', () => {
       console.warn(`[CORS Proxy] Timeout na requisição para ${targetUrl}`);
       proxyReq.destroy();
-      res.writeHead(504, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Erro do Proxy CORS local: Tempo de resposta do servidor de destino esgotado (Timeout)');
+      if (!res.headersSent) {
+        res.writeHead(504, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Erro do Proxy CORS local: Tempo de resposta do servidor de destino esgotado (Timeout)');
+      }
     });
 
     // Only pipe request body on the first hop, if applicable
@@ -116,8 +123,10 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
 
   } catch (err) {
     console.error('[CORS Proxy] Erro crítico ao criar proxy para:', targetUrl, err);
-    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end(`Erro interno do Proxy CORS: ${err.message}`);
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(`Erro interno do Proxy CORS: ${err.message}`);
+    }
   }
 }
 
