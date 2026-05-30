@@ -426,10 +426,21 @@ class IPTVDatabase {
   // --- SETTINGS ---
   async setSetting(key: string, value: any): Promise<void> {
     const db = await this.init();
+    
+    // Safely unwrap reactive proxies and remove non-serializable elements to avoid DataCloneError
+    let safeValue = value;
+    if (value !== undefined) {
+      try {
+        safeValue = JSON.parse(JSON.stringify(value));
+      } catch (err) {
+        console.warn(`[IPTVDatabase] Failed to stringify-serialize setting ${key}:`, err);
+      }
+    }
+
     return new Promise((resolve, reject) => {
       const tx = db.transaction('settings', 'readwrite');
       const store = tx.objectStore('settings');
-      const req = store.put({ key, value });
+      const req = store.put({ key, value: safeValue });
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
