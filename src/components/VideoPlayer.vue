@@ -397,6 +397,26 @@ const initializePlayer = () => {
       (playerProxyStreams.value === 'auto' && retryCount.value > 0)
     );
 
+  // Dynamic Proxy Rotation / Failover Engine
+  const activeProxy = ref('');
+  if (shouldProxy) {
+    if (retryCount.value <= 1) {
+      activeProxy.value = proxyUrlSetting.value;
+    } else {
+      // Rotate through fallbacks when primary fails (e.g. 403 rate-limiting)
+      const primary = proxyUrlSetting.value;
+      const fallbacks = [
+        primary,
+        'http://localhost:8088/?url=', // Local proxy is the ultimate unlimited backup
+        'https://api.allorigins.win/raw?url=',
+        'https://thingproxy.freeboard.io/fetch/'
+      ];
+      const unique = Array.from(new Set(fallbacks.filter(Boolean)));
+      const index = (retryCount.value - 1) % unique.length;
+      activeProxy.value = unique[index];
+    }
+  }
+
   isActiveProxied.value = !!shouldProxy;
 
   // Set default volume
@@ -437,10 +457,17 @@ const initializePlayer = () => {
       }
 
       load(context: any, config: any, callbacks: any) {
-        if (shouldProxy) {
+        if (shouldProxy && activeProxy.value) {
           const reqUrl = context.url;
-          if (reqUrl && !reqUrl.startsWith(proxyUrlSetting.value)) {
-            context.url = `${proxyUrlSetting.value}${encodeURIComponent(reqUrl)}`;
+          // Avoid double proxying if already prefixed
+          const isAlreadyProxied = 
+            reqUrl.startsWith(proxyUrlSetting.value) || 
+            reqUrl.startsWith('http://localhost:8088/?url=') || 
+            reqUrl.startsWith('https://api.allorigins.win/raw?url=') || 
+            reqUrl.startsWith('https://thingproxy.freeboard.io/fetch/');
+
+          if (reqUrl && !isAlreadyProxied) {
+            context.url = `${activeProxy.value}${encodeURIComponent(reqUrl)}`;
           }
         }
         super.load(context, config, callbacks);
@@ -456,9 +483,9 @@ const initializePlayer = () => {
       loader: ProxyLoader
     });
 
-    if (shouldProxy) {
-      console.log(`[VideoPlayer] Usando Proxy CORS via Custom Loader. Tentativa: ${retryCount.value}`);
-      activePlayUrl.value = `${proxyUrlSetting.value}${encodeURIComponent(originalUrl)}`;
+    if (shouldProxy && activeProxy.value) {
+      console.log(`[VideoPlayer] Usando Proxy CORS via Custom Loader ("${activeProxy.value}"). Tentativa: ${retryCount.value}`);
+      activePlayUrl.value = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
     } else {
       activePlayUrl.value = originalUrl;
     }
@@ -502,9 +529,9 @@ const initializePlayer = () => {
   // Fallback to native HLS support (Safari, iOS, Android, and standard MP4 links)
   else if (video.canPlayType('application/vnd.apple.mpegurl') || !isHls) {
     let playUrl = originalUrl;
-    if (shouldProxy) {
-      console.log(`[VideoPlayer] Usando Proxy CORS Nativo para reprodução. Tentativa: ${retryCount.value}`);
-      playUrl = `${proxyUrlSetting.value}${encodeURIComponent(originalUrl)}`;
+    if (shouldProxy && activeProxy.value) {
+      console.log(`[VideoPlayer] Usando Proxy CORS Nativo ("${activeProxy.value}") para reprodução. Tentativa: ${retryCount.value}`);
+      playUrl = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
     }
     activePlayUrl.value = playUrl;
     video.src = playUrl;
