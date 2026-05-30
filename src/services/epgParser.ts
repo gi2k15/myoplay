@@ -1,35 +1,43 @@
 // src/services/epgParser.ts
 import type { EPGProgram } from './db';
 
-// Helper to parse XMLTV dates (e.g., "20260530080000 +0000" or "20260530080000")
+// Helper to parse XMLTV dates (e.g., "20260530080000 +0000", "202605300800 +03:00", or "20260530080000")
 export function parseXmltvDate(dateStr: string): number {
   if (!dateStr) return 0;
   
-  // Regex to match: YYYYMMDDHHmmss [+/-HHMM]
-  const match = dateStr.trim().match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?:\s+([+-]\d{4}))?/);
+  const trimmed = dateStr.trim();
+  // Match YYYYMMDDHHMM[SS] and optional offset like +HHMM, +HH:MM, Z, UTC, or GMT
+  const match = trimmed.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?(?:\s+([+-]\d{2}):?(\d{2})|\s+(Z|UTC|GMT))?/i);
   if (!match) return 0;
 
-  const [_, year, month, day, hour, minute, second, offset] = match;
+  const [_, year, month, day, hour, minute, second, offsetSignHours, offsetMinutes, zOffset] = match;
+  
+  const sec = second ? parseInt(second) : 0;
   
   let timestamp: number;
 
-  if (offset) {
-    // Construct date as UTC first, then apply offset
+  const hasOffset = !!(offsetSignHours || zOffset);
+
+  if (hasOffset) {
+    // Construct date as UTC first
     const utcDate = new Date(Date.UTC(
       parseInt(year),
       parseInt(month) - 1, // 0-indexed month
       parseInt(day),
       parseInt(hour),
       parseInt(minute),
-      parseInt(second)
+      sec
     ));
     timestamp = utcDate.getTime();
 
-    const sign = offset[0] === '+' ? -1 : 1; // if ahead (+), subtract offset to reach UTC; if behind (-), add
-    const hours = parseInt(offset.substring(1, 3));
-    const minutes = parseInt(offset.substring(3, 5));
-    const offsetMs = (hours * 60 + minutes) * 60 * 1000;
-    timestamp += sign * offsetMs;
+    if (offsetSignHours) {
+      const sign = offsetSignHours[0] === '+' ? -1 : 1; // if ahead (+), subtract offset to reach UTC; if behind (-), add
+      const hours = parseInt(offsetSignHours.substring(1));
+      const mins = offsetMinutes ? parseInt(offsetMinutes) : 0;
+      const offsetMs = (hours * 60 + mins) * 60 * 1000;
+      timestamp += sign * offsetMs;
+    }
+    // If it is Z, UTC, or GMT, no offset calculation is needed since it's already in UTC.
   } else {
     // If no offset is supplied, parse as local system time
     const localDate = new Date(
@@ -38,7 +46,7 @@ export function parseXmltvDate(dateStr: string): number {
       parseInt(day),
       parseInt(hour),
       parseInt(minute),
-      parseInt(second)
+      sec
     );
     timestamp = localDate.getTime();
   }

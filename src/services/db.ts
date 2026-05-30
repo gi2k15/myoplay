@@ -299,6 +299,9 @@ class IPTVDatabase {
 
   async getEpgForChannel(tvgId: string): Promise<EPGProgram[]> {
     const db = await this.init();
+    const shiftHours = await this.getSetting('epg_time_shift', 0);
+    const shiftMs = shiftHours * 60 * 60 * 1000;
+
     return new Promise((resolve, reject) => {
       const tx = db.transaction('epg', 'readonly');
       const store = tx.objectStore('epg');
@@ -306,9 +309,15 @@ class IPTVDatabase {
       const req = index.getAll(IDBKeyRange.only(tvgId));
       req.onsuccess = () => {
         const results = req.result || [];
+        // Apply EPG shift offset if configured
+        const shifted = results.map(prog => ({
+          ...prog,
+          start: prog.start + shiftMs,
+          stop: prog.stop + shiftMs
+        }));
         // Sort by start time
-        results.sort((a, b) => a.start - b.start);
-        resolve(results);
+        shifted.sort((a, b) => a.start - b.start);
+        resolve(shifted);
       };
       req.onerror = () => reject(req.error);
     });

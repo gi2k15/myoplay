@@ -135,6 +135,30 @@
             </v-card>
           </v-col>
 
+          <!-- EPG Preferences -->
+          <v-col cols="12">
+            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+              <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
+                <v-icon start color="primary" class="mr-2">mdi-television-guide</v-icon> 
+                Guia de Programação (EPG)
+              </h3>
+
+              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
+                Caso a programação exibida no guia EPG esteja desalinhada (adiantada ou atrasada) em relação ao horário do seu sistema, você pode ajustar o deslocamento de horário (Time Shift) abaixo.
+              </p>
+
+              <v-select
+                v-model="epgTimeShift"
+                :items="timeShiftOptions"
+                label="Deslocamento de Horário do EPG (Time Shift)"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+                @update:model-value="saveEpgSettings"
+              />
+            </v-card>
+          </v-col>
+
           <!-- Local Database & Maintenance -->
           <v-col cols="12">
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
@@ -271,6 +295,36 @@ const aspectRatios = [
   { title: '4:3 clássico', value: '4-3' },
 ];
 
+// EPG Fields
+const epgTimeShift = ref(0);
+const timeShiftOptions = [
+  { title: '-12 horas', value: -12 },
+  { title: '-11 horas', value: -11 },
+  { title: '-10 horas', value: -10 },
+  { title: '-9 horas', value: -9 },
+  { title: '-8 horas', value: -8 },
+  { title: '-7 horas', value: -7 },
+  { title: '-6 horas', value: -6 },
+  { title: '-5 horas', value: -5 },
+  { title: '-4 horas', value: -4 },
+  { title: '-3 horas (Brasília se EPG for UTC)', value: -3 },
+  { title: '-2 horas', value: -2 },
+  { title: '-1 hora', value: -1 },
+  { title: 'Sem deslocamento (Padrão)', value: 0 },
+  { title: '+1 hora', value: 1 },
+  { title: '+2 horas', value: 2 },
+  { title: '+3 horas (Se EPG estiver 3h atrasado)', value: 3 },
+  { title: '+4 horas', value: 4 },
+  { title: '+5 horas', value: 5 },
+  { title: '+6 horas', value: 6 },
+  { title: '+7 horas', value: 7 },
+  { title: '+8 horas', value: 8 },
+  { title: '+9 horas', value: 9 },
+  { title: '+10 horas', value: 10 },
+  { title: '+11 horas', value: 11 },
+  { title: '+12 horas', value: 12 },
+];
+
 // DB Statistics
 const stats = ref({
   playlists: 0,
@@ -282,6 +336,7 @@ const stats = ref({
 onMounted(async () => {
   await loadProxySettings();
   await loadPlaybackSettings();
+  await loadEpgSettings();
   await calculateStats();
 });
 
@@ -399,6 +454,25 @@ const savePlaybackSettings = async () => {
     await db.setSetting('player_default_aspect', defaultAspectRatio.value);
   } catch (err) {
     console.error(err);
+  }
+};
+
+const loadEpgSettings = async () => {
+  try {
+    epgTimeShift.value = await db.getSetting('epg_time_shift', 0);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const saveEpgSettings = async () => {
+  try {
+    await db.setSetting('epg_time_shift', epgTimeShift.value);
+    alertType.value = 'success';
+    alertMsg.value = 'Configurações de EPG atualizadas com sucesso!';
+  } catch (err: any) {
+    alertType.value = 'error';
+    alertMsg.value = `Erro ao salvar configurações de EPG: ${err.message}`;
   }
 };
 
