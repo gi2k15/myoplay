@@ -37,13 +37,23 @@ const server = http.createServer((req, res) => {
   }
 
   console.log(`[CORS Proxy] Redirecionando para: ${targetUrl}`);
+  performProxyRequest(targetUrl, req, res);
+});
+
+function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
+  if (redirectCount > 5) {
+    console.error(`[CORS Proxy] Limite de redirecionamentos excedido para ${targetUrl}`);
+    res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Erro do Proxy CORS local: Limite de redirecionamentos excedido (Max 5)');
+    return;
+  }
 
   try {
     const parsedUrl = parse(targetUrl);
     const isHttps = parsedUrl.protocol === 'https:';
     const requestModule = isHttps ? https : http;
 
-    // Filter out request headers that might cause issues with the target server
+    // Filter request headers
     const headers = { ...req.headers };
     delete headers.host;
     delete headers.origin;
@@ -56,6 +66,21 @@ const server = http.createServer((req, res) => {
     };
 
     const proxyReq = requestModule.request(targetUrl, options, (proxyRes) => {
+      // Check for redirects
+      if ([301, 302, 303, 307, 308].includes(proxyRes.statusCode) && proxyRes.headers.location) {
+        let redirectUrl = proxyRes.headers.location;
+        
+        // Handle relative redirect URL
+        if (!redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
+          const base = `${parsedUrl.protocol}//${parsedUrl.host}`;
+          redirectUrl = new URL(redirectUrl, base).href;
+        }
+        
+        console.log(`[CORS Proxy] Seguindo redirecionamento (${proxyRes.statusCode}) de ${targetUrl} para: ${redirectUrl}`);
+        performProxyRequest(redirectUrl, req, res, redirectCount + 1);
+        return;
+      }
+
       // Copy headers from target response, inject CORS
       const resHeaders = { ...proxyRes.headers };
       resHeaders['Access-Control-Allow-Origin'] = '*';
@@ -82,19 +107,23 @@ const server = http.createServer((req, res) => {
       res.end('Erro do Proxy CORS local: Tempo de resposta do servidor de destino esgotado (Timeout)');
     });
 
-    // Pipe client request body to target request (handles POST/PUT)
-    req.pipe(proxyReq);
+    // Only pipe request body on the first hop, if applicable
+    if (redirectCount === 0 && (req.method === 'POST' || req.method === 'PUT')) {
+      req.pipe(proxyReq);
+    } else {
+      proxyReq.end();
+    }
 
   } catch (err) {
     console.error('[CORS Proxy] Erro crítico ao criar proxy para:', targetUrl, err);
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end(`Erro interno do Proxy CORS: ${err.message}`);
   }
-});
+}
 
 server.listen(PORT, () => {
   console.log(`\x1b[36m%s\x1b[0m`, `=====================================================`);
-  console.log(`\x1b[32m%s\x1b[0m`, `  Proxy CORS Local Ativo e Rodando!`);
+  console.log(`\x1b[32m%s\x1b[0m`, `  Proxy CORS Local Ativo e Rodando! (Redirecionamento Habilitado)`);
   console.log(`\x1b[35m%s\x1b[0m`, `  URL: http://localhost:${PORT}/?url=`);
   console.log(`\x1b[36m%s\x1b[0m`, `=====================================================`);
 });
