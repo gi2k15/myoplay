@@ -147,3 +147,9 @@ You can adjust or switch the CORS proxy URL at any time via the **Settings** vie
 ## 🔒 Security & Privacy
 
 All your playlists, stream URLs, Xtream Codes credentials (usernames and passwords), and viewing history are stored **100% locally inside your web browser** using `IndexedDB`. No information is sent to third-party database servers (except, of course, direct streams fetched from your configured IPTV server or routed through the local proxy server running on your own computer).
+
+---
+
+## 📄 Licença
+
+Este projeto está licenciado sob a **GNU General Public License v3.0** (GPL-3.0-or-later). Consulte o arquivo [LICENSE](file:///d:/GitHub/iptv-player-gemini2/LICENSE) para obter o texto completo da licença e seus termos.
