@@ -172,7 +172,7 @@ class IPTVDatabase {
   }
 
   // --- CHANNELS ---
-  async addChannelsBatch(channels: IPTVChannel[]): Promise<void> {
+  async addChannelsBatch(channels: IPTVChannel[], onProgress?: (percent: number) => void): Promise<void> {
     const db = await this.init();
     return new Promise<void>((resolve, reject) => {
       // Use chunks to avoid hitting memory limits or locking the database for too long
@@ -184,6 +184,9 @@ class IPTVDatabase {
           resolve();
           return;
         }
+
+        const percent = Math.min(100, Math.round((index / channels.length) * 100));
+        onProgress?.(percent);
 
         const tx = db.transaction('channels', 'readwrite');
         const store = tx.objectStore('channels');
@@ -250,7 +253,7 @@ class IPTVDatabase {
   }
 
   // --- EPG ---
-  async addEpgBatch(programs: EPGProgram[]): Promise<void> {
+  async addEpgBatch(programs: EPGProgram[], onProgress?: (percent: number) => void): Promise<void> {
     const db = await this.init();
     return new Promise<void>((resolve, reject) => {
       const CHUNK_SIZE = 5000;
@@ -261,6 +264,9 @@ class IPTVDatabase {
           resolve();
           return;
         }
+
+        const percent = Math.min(100, Math.round((index / programs.length) * 100));
+        onProgress?.(percent);
 
         const tx = db.transaction('epg', 'readwrite');
         const store = tx.objectStore('epg');

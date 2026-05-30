@@ -69,266 +69,339 @@
       <v-col 
         cols="12" 
         :md="(!$vuetify.display.mobile || showMobileCategories) ? 9 : 12" 
-        class="pa-4 d-flex flex-column fill-height"
-        style="max-height: calc(100vh - 64px); overflow-y: auto;"
-        @scroll="onScroll"
+        class="pa-0 d-flex flex-column fill-height overflow-hidden"
+        style="max-height: calc(100vh - 64px);"
       >
-        <!-- Top Toolbar -->
-        <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between mb-6 gap-3">
-          <div class="d-flex align-center">
-            <!-- Mobile Category Toggle -->
-            <v-btn
-              v-if="$vuetify.display.mobile"
-              icon="mdi-format-list-bulleted"
-              variant="text"
-              color="primary"
-              class="mr-2"
-              @click="showMobileCategories = !showMobileCategories"
-            />
-            <div>
-              <h2 class="text-h5 font-weight-bold d-flex align-center">
-                {{ getBrowserTitle() }}
-                <v-chip size="small" color="secondary" class="ml-2 font-weight-bold">
-                  {{ filteredChannels.length }}
-                </v-chip>
-              </h2>
-              <div class="text-caption text-medium-emphasis">
-                {{ selectedCategory === 'all' ? 'Exibindo todos os canais' : `Categoria: ${selectedCategory}` }}
+        <!-- Live Player Top Section (Active when a live channel is playing) -->
+        <div 
+          v-if="type === 'live' && activeChannel" 
+          class="live-player-top-section pa-4 border-bottom-glow flex-shrink-0"
+        >
+          <v-row class="ma-0 justify-center">
+            <!-- Player (Aumentado, largura total com limite elegante) -->
+            <v-col cols="12" class="pa-2">
+              <div class="player-wrapper mx-auto" style="max-width: 960px; aspect-ratio: 16/9;">
+                <VideoPlayer
+                  :channel="activeChannel"
+                  :floating="false"
+                  @close-player="emit('close-player')"
+                  @toggle-float="emit('toggle-float')"
+                />
+              </div>
+            </v-col>
+            
+            <!-- Active Channel EPG / Info Card (Abaixo do player em formato de barra) -->
+            <v-col cols="12" class="pa-2">
+              <v-card class="glass-card pa-4 rounded-xl mx-auto" style="max-width: 960px;" variant="flat">
+                <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between gap-3">
+                  <!-- Channel Logo and Name -->
+                  <div class="d-flex align-center gap-3 flex-shrink-0" style="min-width: 220px; max-width: 300px;">
+                    <v-avatar size="44" class="bg-surface-variant flex-shrink-0" v-slot:default v-if="activeChannel.logo">
+                      <v-img :src="activeChannel.logo" />
+                    </v-avatar>
+                    <div class="min-width-0">
+                      <h3 class="text-subtitle-2 font-weight-bold text-truncate text-glow-small mb-0">{{ activeChannel.name }}</h3>
+                      <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag mt-1">{{ activeChannel.category }}</v-chip>
+                    </div>
+                  </div>
+
+                  <!-- EPG Current Programme -->
+                  <div v-if="activeChannelEpg?.current" class="flex-grow-1 min-width-0 px-sm-4 border-left-sm">
+                    <div class="text-caption text-secondary font-weight-bold d-flex align-center mb-1">
+                      <span class="mr-1">🔴</span> NO AR AGORA
+                    </div>
+                    <div class="text-body-2 font-weight-bold text-truncate mb-1">
+                      {{ activeChannelEpg.current.title }}
+                    </div>
+                    <div class="d-flex align-center gap-3">
+                      <v-progress-linear :model-value="getEpgProgress(activeChannelEpg.current)" color="secondary" height="4" rounded class="flex-grow-1" style="max-width: 150px;" />
+                      <span class="text-caption text-medium-emphasis flex-shrink-0">
+                        {{ formatTime(activeChannelEpg.current.start) }} - {{ formatTime(activeChannelEpg.current.stop) }} 
+                        ({{ Math.round(getEpgProgress(activeChannelEpg.current)) }}%)
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- EPG Next Programme -->
+                  <div v-if="activeChannelEpg?.next" class="flex-grow-1 min-width-0 px-sm-4 border-left-sm hidden-xs-only">
+                    <div class="text-caption text-medium-emphasis font-weight-bold mb-1">PRÓXIMO PROGRAMA</div>
+                    <div class="text-body-2 font-weight-bold text-truncate mb-1">{{ activeChannelEpg.next.title }}</div>
+                    <div class="text-caption text-medium-emphasis">
+                      Começa às {{ formatTime(activeChannelEpg.next.start) }}
+                    </div>
+                  </div>
+
+                  <!-- Fallback if no EPG -->
+                  <div v-if="!activeChannelEpg?.current" class="text-caption text-medium-emphasis italic py-2 flex-grow-1 text-center">
+                    Nenhum detalhe de programação disponível para este canal.
+                  </div>
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+        </div>
+
+        <!-- Scrollable Channels Container -->
+        <div 
+          class="flex-grow-1 overflow-y-auto pa-4"
+          @scroll="onScroll"
+        >
+          <!-- Top Toolbar -->
+          <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between mb-6 gap-3">
+            <div class="d-flex align-center">
+              <!-- Mobile Category Toggle -->
+              <v-btn
+                v-if="$vuetify.display.mobile"
+                icon="mdi-format-list-bulleted"
+                variant="text"
+                color="primary"
+                class="mr-2"
+                @click="showMobileCategories = !showMobileCategories"
+              />
+              <div>
+                <h2 class="text-h5 font-weight-bold d-flex align-center">
+                  {{ getBrowserTitle() }}
+                  <v-chip size="small" color="secondary" class="ml-2 font-weight-bold">
+                    {{ filteredChannels.length }}
+                  </v-chip>
+                </h2>
+                <div class="text-caption text-medium-emphasis">
+                  {{ selectedCategory === 'all' ? 'Exibindo todos os canais' : `Categoria: ${selectedCategory}` }}
+                </div>
               </div>
             </div>
+
+            <!-- Search Bar -->
+            <v-text-field
+              v-model="searchQuery"
+              placeholder="Buscar por nome..."
+              variant="outlined"
+              density="compact"
+              prepend-inner-icon="mdi-magnify"
+              hide-details
+              clearable
+              style="max-width: 320px; width: 100%;"
+              @update:model-value="resetPagination"
+            />
           </div>
 
-          <!-- Search Bar -->
-          <v-text-field
-            v-model="searchQuery"
-            placeholder="Buscar por nome..."
-            variant="outlined"
-            density="compact"
-            prepend-inner-icon="mdi-magnify"
-            hide-details
-            clearable
-            style="max-width: 320px; width: 100%;"
-            @update:model-value="resetPagination"
-          />
-        </div>
+          <!-- No Channels Alert -->
+          <div v-if="filteredChannels.length === 0" class="text-center py-12">
+            <v-icon size="60" color="medium-emphasis" class="mb-4">mdi-alert-circle-outline</v-icon>
+            <h3 class="text-h6 font-weight-bold text-medium-emphasis">Nenhum canal encontrado</h3>
+            <p class="text-caption text-medium-emphasis">Tente limpar sua busca ou escolha outra categoria.</p>
+          </div>
 
-        <!-- No Channels Alert -->
-        <div v-if="filteredChannels.length === 0" class="text-center py-12">
-          <v-icon size="60" color="medium-emphasis" class="mb-4">mdi-alert-circle-outline</v-icon>
-          <h3 class="text-h6 font-weight-bold text-medium-emphasis">Nenhum canal encontrado</h3>
-          <p class="text-caption text-medium-emphasis">Tente limpar sua busca ou escolha outra categoria.</p>
-        </div>
-
-        <!-- Live Channels View (List Layout) -->
-        <v-list v-else-if="type === 'live' || type === 'favorites'" bg-color="transparent" class="pa-0">
-          <v-card 
-            v-for="ch in paginatedChannels" 
-            :key="ch.id"
-            class="mb-3 glass-channel-card" 
-            variant="flat"
-            @click="playStream(ch)"
-          >
-            <div class="d-flex align-center pa-3 gap-3">
-              <!-- Channel Logo -->
-              <v-avatar size="50" rounded="lg" class="bg-surface-variant flex-shrink-0">
-                <v-img v-if="ch.logo" :src="ch.logo" cover />
-                <v-icon v-else size="28" color="medium-emphasis">mdi-television-classic</v-icon>
-              </v-avatar>
-
-              <!-- Channel Metadata & EPG -->
-              <div class="flex-grow-1 min-width-0">
-                <div class="d-flex align-center">
-                  <span class="text-subtitle-1 font-weight-bold text-truncate pr-2">{{ ch.name }}</span>
-                  <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">
-                    {{ ch.category }}
-                  </v-chip>
-                </div>
-
-                <!-- Live EPG info -->
-                <div v-if="epgData[ch.tvgId || '']?.current" class="mt-1">
-                  <div class="d-flex align-center justify-space-between text-caption font-weight-medium">
-                    <span class="text-secondary text-truncate pr-2">
-                      🔴 No Ar: {{ epgData[ch.tvgId || ''].current?.title }}
-                    </span>
-                    <span class="text-medium-emphasis text-caption flex-shrink-0">
-                      {{ formatTime(epgData[ch.tvgId || ''].current?.start || 0) }} - 
-                      {{ formatTime(epgData[ch.tvgId || ''].current?.stop || 0) }}
-                    </span>
-                  </div>
-                  <v-progress-linear
-                    :model-value="getEpgProgress(epgData[ch.tvgId || ''].current)"
-                    color="secondary"
-                    height="4"
-                    rounded
-                    class="mt-1"
-                  />
-                  <!-- Next EPG info -->
-                  <div v-if="epgData[ch.tvgId || '']?.next" class="text-caption text-medium-emphasis text-truncate mt-1">
-                    Seguinte: {{ epgData[ch.tvgId || ''].next?.title }} ({{ formatTime(epgData[ch.tvgId || ''].next?.start || 0) }})
-                  </div>
-                </div>
-                <div v-else class="text-caption text-medium-emphasis">
-                  Nenhuma informação de guia disponível.
-                </div>
-              </div>
-
-              <!-- Action buttons -->
-              <div class="d-flex align-center flex-shrink-0" @click.stop>
-                <v-btn
-                  :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
-                  :color="isFavorite(ch.id) ? 'warning' : 'medium-emphasis'"
-                  variant="text"
-                  size="small"
-                  @click="toggleFavorite(ch.id)"
-                />
-                <v-btn
-                  icon="mdi-play"
-                  color="primary"
-                  variant="flat"
-                  size="small"
-                  class="ml-2 play-btn-glow"
-                  @click="playStream(ch)"
-                />
-              </div>
-            </div>
-          </v-card>
-        </v-list>
-
-        <!-- Movies View (Grid Layout) -->
-        <v-row v-else-if="type === 'movie'" class="ma-0 gap-y-4">
-          <v-col 
-            cols="6" 
-            sm="4" 
-            md="3" 
-            lg="2" 
-            v-for="ch in paginatedChannels" 
-            :key="ch.id"
-            class="pa-2"
-          >
+          <!-- Live Channels View (List Layout) -->
+          <v-list v-else-if="type === 'live' || type === 'favorites'" bg-color="transparent" class="pa-0">
             <v-card 
-              class="movie-card fill-height d-flex flex-column rounded-xl border-glass" 
+              v-for="ch in paginatedChannels" 
+              :key="ch.id"
+              class="mb-3 glass-channel-card" 
               variant="flat"
               @click="playStream(ch)"
             >
-              <!-- Poster Image -->
-              <div class="movie-poster-container flex-shrink-0">
-                <v-img 
-                  v-if="ch.logo" 
-                  :src="ch.logo" 
-                  cover 
-                  aspect-ratio="0.67" 
-                  class="bg-surface-variant rounded-t-xl"
-                />
-                <div v-else class="movie-poster-placeholder d-flex flex-column align-center justify-center rounded-t-xl">
-                  <v-icon size="40" color="medium-emphasis">mdi-movie-open</v-icon>
+              <div class="d-flex align-center pa-3 gap-3">
+                <!-- Channel Logo -->
+                <v-avatar size="50" rounded="lg" class="bg-surface-variant flex-shrink-0">
+                  <v-img v-if="ch.logo" :src="ch.logo" cover />
+                  <v-icon v-else size="28" color="medium-emphasis">mdi-television-classic</v-icon>
+                </v-avatar>
+
+                <!-- Channel Metadata & EPG -->
+                <div class="flex-grow-1 min-width-0">
+                  <div class="d-flex align-center">
+                    <span class="text-subtitle-1 font-weight-bold text-truncate pr-2">{{ ch.name }}</span>
+                    <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">
+                      {{ ch.category }}
+                    </v-chip>
+                  </div>
+
+                  <!-- Live EPG info -->
+                  <div v-if="epgData[ch.tvgId || '']?.current" class="mt-1">
+                    <div class="d-flex align-center justify-space-between text-caption font-weight-medium">
+                      <span class="text-secondary text-truncate pr-2">
+                        🔴 No Ar: {{ epgData[ch.tvgId || ''].current?.title }}
+                      </span>
+                      <span class="text-medium-emphasis text-caption flex-shrink-0">
+                        {{ formatTime(epgData[ch.tvgId || ''].current?.start || 0) }} - 
+                        {{ formatTime(epgData[ch.tvgId || ''].current?.stop || 0) }}
+                      </span>
+                    </div>
+                    <v-progress-linear
+                      :model-value="getEpgProgress(epgData[ch.tvgId || ''].current)"
+                      color="secondary"
+                      height="4"
+                      rounded
+                      class="mt-1"
+                    />
+                    <!-- Next EPG info -->
+                    <div v-if="epgData[ch.tvgId || '']?.next" class="text-caption text-medium-emphasis text-truncate mt-1">
+                      Seguinte: {{ epgData[ch.tvgId || ''].next?.title }} ({{ formatTime(epgData[ch.tvgId || ''].next?.start || 0) }})
+                    </div>
+                  </div>
+                  <div class="text-caption text-medium-emphasis">
+                    Nenhuma informação de guia disponível.
+                  </div>
                 </div>
-                
-                <!-- Favorite Overlay Button -->
-                <v-btn
-                  :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
-                  :color="isFavorite(ch.id) ? 'warning' : 'white'"
-                  variant="flat"
-                  size="x-small"
-                  class="favorite-overlay-btn"
-                  @click.stop="toggleFavorite(ch.id)"
-                />
 
-                <!-- Info overlays -->
-                <v-chip v-if="ch.rating" size="x-small" color="secondary" class="rating-overlay font-weight-bold">
-                  ★ {{ ch.rating }}
-                </v-chip>
-                
-                <v-chip v-if="ch.year" size="x-small" color="black" class="year-overlay font-weight-bold">
-                  {{ ch.year }}
-                </v-chip>
-
-                <!-- Play Hover Overlay -->
-                <div class="play-overlay d-flex align-center justify-center">
-                  <v-btn icon="mdi-play" color="primary" size="large" class="play-btn-glow" />
+                <!-- Action buttons -->
+                <div class="d-flex align-center flex-shrink-0" @click.stop>
+                  <v-btn
+                    :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
+                    :color="isFavorite(ch.id) ? 'warning' : 'medium-emphasis'"
+                    variant="text"
+                    size="small"
+                    @click="toggleFavorite(ch.id)"
+                  />
+                  <v-btn
+                    icon="mdi-play"
+                    color="primary"
+                    variant="flat"
+                    size="small"
+                    class="ml-2 play-btn-glow"
+                    @click="playStream(ch)"
+                  />
                 </div>
               </div>
-
-              <!-- Details -->
-              <v-card-text class="pa-3 d-flex flex-column justify-space-between flex-grow-1 min-width-0">
-                <div class="text-subtitle-2 font-weight-bold text-truncate w-100 mb-1" :title="ch.name">
-                  {{ ch.name }}
-                </div>
-                <div class="text-caption text-medium-emphasis text-truncate w-100">
-                  {{ ch.category }}
-                </div>
-              </v-card-text>
             </v-card>
-          </v-col>
-        </v-row>
+          </v-list>
 
-        <!-- Series View (Grid Layout) -->
-        <v-row v-else-if="type === 'series'" class="ma-0 gap-y-4">
-          <v-col 
-            cols="6" 
-            sm="4" 
-            md="3" 
-            lg="2" 
-            v-for="ch in paginatedChannels" 
-            :key="ch.id"
-            class="pa-2"
-          >
-            <v-card 
-              class="movie-card fill-height d-flex flex-column rounded-xl border-glass" 
-              variant="flat"
-              @click="openSeriesDetails(ch)"
+          <!-- Movies View (Grid Layout) -->
+          <v-row v-else-if="type === 'movie'" class="ma-0 gap-y-4">
+            <v-col 
+              cols="6" 
+              sm="4" 
+              md="3" 
+              lg="2" 
+              v-for="ch in paginatedChannels" 
+              :key="ch.id"
+              class="pa-2"
             >
-              <!-- Cover Image -->
-              <div class="movie-poster-container flex-shrink-0">
-                <v-img 
-                  v-if="ch.logo" 
-                  :src="ch.logo" 
-                  cover 
-                  aspect-ratio="0.67" 
-                  class="bg-surface-variant rounded-t-xl"
-                />
-                <div v-else class="movie-poster-placeholder d-flex flex-column align-center justify-center rounded-t-xl">
-                  <v-icon size="40" color="medium-emphasis">mdi-youtube-subscription</v-icon>
-                </div>
-                
-                <v-btn
-                  :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
-                  :color="isFavorite(ch.id) ? 'warning' : 'white'"
-                  variant="flat"
-                  size="x-small"
-                  class="favorite-overlay-btn"
-                  @click.stop="toggleFavorite(ch.id)"
-                />
+              <v-card 
+                class="movie-card fill-height d-flex flex-column rounded-xl border-glass" 
+                variant="flat"
+                @click="playStream(ch)"
+              >
+                <!-- Poster Image -->
+                <div class="movie-poster-container flex-shrink-0">
+                  <v-img 
+                    v-if="ch.logo" 
+                    :src="ch.logo" 
+                    cover 
+                    aspect-ratio="0.67" 
+                    class="bg-surface-variant rounded-t-xl"
+                  />
+                  <div v-else class="movie-poster-placeholder d-flex flex-column align-center justify-center rounded-t-xl">
+                    <v-icon size="40" color="medium-emphasis">mdi-movie-open</v-icon>
+                  </div>
+                  
+                  <!-- Favorite Overlay Button -->
+                  <v-btn
+                    :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
+                    :color="isFavorite(ch.id) ? 'warning' : 'white'"
+                    variant="flat"
+                    size="x-small"
+                    class="favorite-overlay-btn"
+                    @click.stop="toggleFavorite(ch.id)"
+                  />
 
-                <v-chip v-if="ch.rating" size="x-small" color="secondary" class="rating-overlay font-weight-bold">
-                  ★ {{ ch.rating }}
-                </v-chip>
+                  <!-- Info overlays -->
+                  <v-chip v-if="ch.rating" size="x-small" color="secondary" class="rating-overlay font-weight-bold">
+                    ★ {{ ch.rating }}
+                  </v-chip>
+                  
+                  <v-chip v-if="ch.year" size="x-small" color="black" class="year-overlay font-weight-bold">
+                    {{ ch.year }}
+                  </v-chip>
 
-                <!-- Show Hub Overlay -->
-                <div class="play-overlay d-flex align-center justify-center">
-                  <v-btn icon="mdi-open-in-new" color="secondary" size="large" />
+                  <!-- Play Hover Overlay -->
+                  <div class="play-overlay d-flex align-center justify-center">
+                    <v-btn icon="mdi-play" color="primary" size="large" class="play-btn-glow" />
+                  </div>
                 </div>
-              </div>
 
-              <!-- Details -->
-              <v-card-text class="pa-3 d-flex flex-column justify-space-between flex-grow-1 min-width-0">
-                <div class="text-subtitle-2 font-weight-bold text-truncate w-100 mb-1" :title="ch.name">
-                  {{ ch.name }}
-                </div>
-                <div class="text-caption text-medium-emphasis text-truncate w-100">
-                  {{ ch.category }}
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+                <!-- Details -->
+                <v-card-text class="pa-3 d-flex flex-column justify-space-between flex-grow-1 min-width-0">
+                  <div class="text-subtitle-2 font-weight-bold text-truncate w-100 mb-1" :title="ch.name">
+                    {{ ch.name }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis text-truncate w-100">
+                    {{ ch.category }}
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
 
-        <!-- Load More trigger -->
-        <div v-if="hasMore" class="d-flex justify-center my-6">
-          <v-btn color="secondary" variant="outlined" rounded="xl" @click="loadNextPage">
-            Carregar Mais Canais...
-          </v-btn>
+          <!-- Series View (Grid Layout) -->
+          <v-row v-else-if="type === 'series'" class="ma-0 gap-y-4">
+            <v-col 
+              cols="6" 
+              sm="4" 
+              md="3" 
+              lg="2" 
+              v-for="ch in paginatedChannels" 
+              :key="ch.id"
+              class="pa-2"
+            >
+              <v-card 
+                class="movie-card fill-height d-flex flex-column rounded-xl border-glass" 
+                variant="flat"
+                @click="openSeriesDetails(ch)"
+              >
+                <!-- Cover Image -->
+                <div class="movie-poster-container flex-shrink-0">
+                  <v-img 
+                    v-if="ch.logo" 
+                    :src="ch.logo" 
+                    cover 
+                    aspect-ratio="0.67" 
+                    class="bg-surface-variant rounded-t-xl"
+                  />
+                  <div v-else class="movie-poster-placeholder d-flex flex-column align-center justify-center rounded-t-xl">
+                    <v-icon size="40" color="medium-emphasis">mdi-youtube-subscription</v-icon>
+                  </div>
+                  
+                  <v-btn
+                    :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
+                    :color="isFavorite(ch.id) ? 'warning' : 'white'"
+                    variant="flat"
+                    size="x-small"
+                    class="favorite-overlay-btn"
+                    @click.stop="toggleFavorite(ch.id)"
+                  />
+
+                  <v-chip v-if="ch.rating" size="x-small" color="secondary" class="rating-overlay font-weight-bold">
+                    ★ {{ ch.rating }}
+                  </v-chip>
+
+                  <!-- Show Hub Overlay -->
+                  <div class="play-overlay d-flex align-center justify-center">
+                    <v-btn icon="mdi-open-in-new" color="secondary" size="large" />
+                  </div>
+                </div>
+
+                <!-- Details -->
+                <v-card-text class="pa-3 d-flex flex-column justify-space-between flex-grow-1 min-width-0">
+                  <div class="text-subtitle-2 font-weight-bold text-truncate w-100 mb-1" :title="ch.name">
+                    {{ ch.name }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis text-truncate w-100">
+                    {{ ch.category }}
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <!-- Load More trigger -->
+          <div v-if="hasMore" class="d-flex justify-center my-6">
+            <v-btn color="secondary" variant="outlined" rounded="xl" @click="loadNextPage">
+              Carregar Mais Canais...
+            </v-btn>
+          </div>
         </div>
-
       </v-col>
     </v-row>
 
@@ -445,16 +518,21 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { db, type IPTVChannel } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
+import VideoPlayer from '@/components/VideoPlayer.vue';
 
 // Props
 const props = defineProps<{
   playlistId: number;
   type: 'live' | 'movie' | 'series' | 'favorites';
+  activeChannel?: IPTVChannel | null;
+  activeChannelEpg?: { current?: any; next?: any };
 }>();
 
 // Emits
 const emit = defineEmits<{
   (e: 'play-stream', ch: IPTVChannel): void;
+  (e: 'close-player'): void;
+  (e: 'toggle-float'): void;
 }>();
 
 // UI States
@@ -691,7 +769,7 @@ const openSeriesDetails = async (series: IPTVChannel) => {
     const pl = (await db.getPlaylists()).find(p => p.id === props.playlistId);
     
     if (pl && pl.type === 'xtream' && series.xtreamId) {
-      const proxy = await db.getSetting('cors_proxy_url', 'https://cors-anywhere.herokuapp.com/');
+      const proxy = await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
       
       const client = new XtreamClient({
         url: pl.url!,
@@ -899,5 +977,31 @@ const playEpisode = (ep: XtreamEpisode) => {
 }
 .min-width-0 {
   min-width: 0;
+}
+
+.live-player-top-section {
+  background: rgba(18, 16, 32, 0.45);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(160, 68, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+}
+
+.border-bottom-glow {
+  border-bottom: 1px solid rgba(160, 68, 255, 0.15) !important;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+}
+
+.border-left-sm {
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 600px) {
+  .border-left-sm {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 12px;
+    padding-left: 0 !important;
+  }
 }
 </style>

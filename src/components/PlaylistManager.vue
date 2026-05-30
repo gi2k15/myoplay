@@ -13,19 +13,25 @@
         <!-- Progress Overlay -->
         <v-card v-if="loading" class="pa-8 text-center glass-card border-primary mb-8" elevation="10">
           <v-progress-circular
-            :size="70"
-            :width="7"
+            :size="80"
+            :width="8"
             color="primary"
-            indeterminate
+            :indeterminate="progressIndeterminate"
+            :model-value="progressValue"
             class="mb-4"
-          />
+          >
+            <span v-if="!progressIndeterminate" class="text-caption font-weight-bold">
+              {{ progressValue }}%
+            </span>
+          </v-progress-circular>
           <h3 class="text-h6 mb-2">{{ loadingStatus }}</h3>
-          <p class="text-body-2 text-medium-emphasis mb-4">{{ loadingSubstatus }}</p>
+          <p class="text-body-2 text-medium-emphasis mb-4 text-truncate w-100 px-4">{{ loadingSubstatus }}</p>
           <v-progress-linear
             color="secondary"
-            indeterminate
+            :indeterminate="progressIndeterminate"
+            :model-value="progressValue"
             rounded
-            height="6"
+            height="8"
           />
         </v-card>
 
@@ -432,6 +438,8 @@ const tab = ref('m3u-file');
 const loading = ref(false);
 const loadingStatus = ref('');
 const loadingSubstatus = ref('');
+const progressValue = ref(0);
+const progressIndeterminate = ref(true);
 const errorMsg = ref('');
 const successMsg = ref('');
 
@@ -441,7 +449,7 @@ const selectedFile = ref<File | null>(null);
 // Form Fields
 const playlistName = ref('');
 const playlistUrl = ref('');
-const useCorsProxy = ref(false);
+const useCorsProxy = ref(true);
 
 const xtreamHost = ref('');
 const xtreamUser = ref('');
@@ -539,6 +547,8 @@ const onFileDrop = (e: DragEvent) => {
 // Helper to save channels and EPG url
 const savePlaylistToDb = async (name: string, type: 'file' | 'url' | 'xtream', channels: IPTVChannel[], url?: string, user?: string, pass?: string, autoEpgUrl?: string) => {
   loadingStatus.value = 'Salvando metadados no banco local...';
+  progressIndeterminate.value = true;
+  progressValue.value = 0;
   
   const plId = await db.addPlaylist({
     name,
@@ -549,8 +559,8 @@ const savePlaylistToDb = async (name: string, type: 'file' | 'url' | 'xtream', c
     createdAt: Date.now()
   });
 
-  loadingStatus.value = `Salvando ${channels.length.toLocaleString()} canais...`;
-  loadingSubstatus.value = 'Esta etapa escreve os dados no IndexedDB offline de forma ultra rápida.';
+  loadingStatus.value = `Salvando canais no banco local...`;
+  progressIndeterminate.value = false;
 
   // Map playlist ID into channels
   const mappedChannels = channels.map(c => ({
@@ -559,7 +569,10 @@ const savePlaylistToDb = async (name: string, type: 'file' | 'url' | 'xtream', c
     playlistId: plId
   }));
 
-  await db.addChannelsBatch(mappedChannels);
+  await db.addChannelsBatch(mappedChannels, (percent) => {
+    progressValue.value = percent;
+    loadingSubstatus.value = `Salvando canais: ${percent}% (${Math.round((percent / 100) * mappedChannels.length).toLocaleString()} de ${mappedChannels.length.toLocaleString()})`;
+  });
 
   // Auto set active
   await db.setSetting('current_playlist_id', plId);
@@ -570,14 +583,56 @@ const savePlaylistToDb = async (name: string, type: 'file' | 'url' | 'xtream', c
     loadingStatus.value = 'Epg auto-detectado na lista!';
     loadingSubstatus.value = 'Baixando programação do guia de TV...';
     try {
-      const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'https://cors-anywhere.herokuapp.com/') : '';
+      const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
       const fetchUrl = proxy ? `${proxy}${encodeURIComponent(autoEpgUrl)}` : autoEpgUrl;
       const res = await fetch(fetchUrl);
       if (res.ok) {
-        const text = await res.text();
-        const programs = parseEPG(text);
-        loadingStatus.value = `Salvando ${programs.length.toLocaleString()} programas do guia de TV...`;
-        await db.addEpgBatch(programs);
+        // Stream download for EPG
+        const contentLength = res.headers.get('content-length');
+        const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+        let loadedBytes = 0;
+        const reader = res.body?.getReader();
+        const chunks: Uint8Array[] = [];
+
+        if (reader) {
+          progressIndeterminate.value = totalBytes === 0;
+          progressValue.value = 0;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              chunks.push(value);
+              loadedBytes += value.length;
+              if (totalBytes > 0) {
+                progressValue.value = Math.round((loadedBytes / totalBytes) * 100);
+                loadingStatus.value = `Baixando guia EPG... ${progressValue.value}%`;
+                loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB de ${(totalBytes / 1024 / 1024).toFixed(2)} MB`;
+              } else {
+                loadingStatus.value = 'Baixando guia EPG...';
+                loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB`;
+              }
+            }
+          }
+          const combined = new Uint8Array(loadedBytes);
+          let offset = 0;
+          for (const chunk of chunks) {
+            combined.set(chunk, offset);
+            offset += chunk.length;
+          }
+          const text = new TextDecoder('utf-8').decode(combined);
+          
+          loadingStatus.value = 'Analisando programas do XML (EPG)...';
+          progressIndeterminate.value = true;
+          const programs = parseEPG(text);
+          
+          progressIndeterminate.value = false;
+          progressValue.value = 0;
+          loadingStatus.value = `Salvando ${programs.length.toLocaleString()} programas...`;
+          await db.addEpgBatch(programs, (percent) => {
+            progressValue.value = percent;
+            loadingSubstatus.value = `Gravando programas do guia: ${percent}%`;
+          });
+        }
       }
     } catch (e) {
       console.warn('Erro ao tentar carregar EPG auto-detectado:', e);
@@ -592,6 +647,8 @@ const importM3UFile = async () => {
   if (!selectedFile.value) return;
   
   loading.value = true;
+  progressIndeterminate.value = true;
+  progressValue.value = 0;
   errorMsg.value = '';
   successMsg.value = '';
   loadingStatus.value = 'Lendo o arquivo local...';
@@ -632,6 +689,8 @@ const importM3UUrl = async () => {
   if (!playlistUrl.value || !playlistName.value) return;
 
   loading.value = true;
+  progressIndeterminate.value = true;
+  progressValue.value = 0;
   errorMsg.value = '';
   successMsg.value = '';
   loadingStatus.value = 'Baixando arquivo M3U da nuvem...';
@@ -641,7 +700,7 @@ const importM3UUrl = async () => {
     let finalUrl = playlistUrl.value.trim();
     
     // Proxy CORS
-    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'https://cors-anywhere.herokuapp.com/') : '';
+    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalUrl)}` : finalUrl;
 
     const res = await fetch(fetchUrl);
@@ -649,12 +708,61 @@ const importM3UUrl = async () => {
       throw new Error(`Erro de rede HTTP ${res.status}. Certifique-se de que a URL está correta ou experimente habilitar o proxy CORS.`);
     }
 
-    loadingStatus.value = 'Lendo dados da rede...';
-    const text = await res.text();
+    const contentLength = res.headers.get('content-length');
+    const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+    
+    let loadedBytes = 0;
+    const reader = res.body?.getReader();
+    const chunks: Uint8Array[] = [];
+
+    if (!reader) {
+      const text = await res.text();
+      loadingStatus.value = 'Analisando lista M3U...';
+      loadingSubstatus.value = 'Mapeando canais e tags...';
+      const { channels, epgUrl: autoEpg } = parseM3U(text, 0);
+      if (channels.length === 0) {
+        throw new Error('Nenhum canal foi encontrado no link M3U.');
+      }
+      const plId = await savePlaylistToDb(playlistName.value, 'url', channels, finalUrl, undefined, undefined, autoEpg);
+      successMsg.value = `Lista "${playlistName.value}" baixada com sucesso! ${channels.length.toLocaleString()} canais salvos.`;
+      playlistUrl.value = '';
+      playlistName.value = '';
+      await refreshPlaylists();
+      await refreshEpgCount();
+      emit('select-playlist', plId);
+      return;
+    }
+
+    progressIndeterminate.value = totalBytes === 0;
+    progressValue.value = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        loadedBytes += value.length;
+        if (totalBytes > 0) {
+          progressValue.value = Math.round((loadedBytes / totalBytes) * 100);
+          loadingStatus.value = `Baixando arquivo M3U... ${progressValue.value}%`;
+          loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB de ${(totalBytes / 1024 / 1024).toFixed(2)} MB`;
+        } else {
+          loadingStatus.value = 'Baixando arquivo M3U...';
+          loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB`;
+        }
+      }
+    }
+
+    const combined = new Uint8Array(loadedBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    const text = new TextDecoder('utf-8').decode(combined);
 
     loadingStatus.value = 'Analisando lista M3U...';
-    loadingSubstatus.value = 'Mapeando canais e tags...';
-    
+    progressIndeterminate.value = true;
     const { channels, epgUrl: autoEpg } = parseM3U(text, 0);
 
     if (channels.length === 0) {
@@ -684,13 +792,15 @@ const importXtream = async () => {
   if (!playlistName.value || !xtreamHost.value || !xtreamUser.value || !xtreamPass.value) return;
 
   loading.value = true;
+  progressIndeterminate.value = true;
+  progressValue.value = 0;
   errorMsg.value = '';
   successMsg.value = '';
   loadingStatus.value = 'Verificando conexão com o servidor Xtream...';
   loadingSubstatus.value = xtreamHost.value;
 
   try {
-    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'https://cors-anywhere.herokuapp.com/') : '';
+    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
     
     const client = new XtreamClient({
       url: xtreamHost.value,
@@ -706,9 +816,18 @@ const importXtream = async () => {
 
     loadingStatus.value = 'Autenticado com sucesso!';
     loadingSubstatus.value = 'Buscando lista de categorias e streams...';
+    progressIndeterminate.value = false;
+    progressValue.value = 0;
 
-    const channels = await client.fetchAllData(0, (msg) => {
+    const channels = await client.fetchAllData(0, (msg, percent) => {
+      loadingStatus.value = 'Baixando dados do Xtream...';
       loadingSubstatus.value = msg;
+      if (percent !== undefined) {
+        progressValue.value = percent;
+        progressIndeterminate.value = false;
+      } else {
+        progressIndeterminate.value = true;
+      }
     });
 
     if (channels.length === 0) {
@@ -746,6 +865,8 @@ const importEPGFile = async () => {
   if (!epgFile.value) return;
 
   loading.value = true;
+  progressIndeterminate.value = true;
+  progressValue.value = 0;
   errorMsg.value = '';
   successMsg.value = '';
   loadingStatus.value = 'Lendo arquivo XMLTV local...';
@@ -762,10 +883,13 @@ const importEPGFile = async () => {
       throw new Error('Nenhum programa de guia de TV foi encontrado no arquivo XML.');
     }
 
-    loadingStatus.value = `Armazenando ${programs.length.toLocaleString()} programas...`;
-    loadingSubstatus.value = 'Escrevendo dados de EPG na memória IndexedDB...';
+    loadingStatus.value = `Salvando ${programs.length.toLocaleString()} programas...`;
+    progressIndeterminate.value = false;
 
-    await db.addEpgBatch(programs);
+    await db.addEpgBatch(programs, (percent) => {
+      progressValue.value = percent;
+      loadingSubstatus.value = `Gravando programas do guia: ${percent}%`;
+    });
 
     successMsg.value = `Guia EPG importado com sucesso! ${programs.length.toLocaleString()} exibições registradas no guia.`;
     epgFile.value = null;
@@ -783,6 +907,8 @@ const importEPGUrl = async () => {
   if (!epgUrl.value) return;
 
   loading.value = true;
+  progressIndeterminate.value = true;
+  progressValue.value = 0;
   errorMsg.value = '';
   successMsg.value = '';
   loadingStatus.value = 'Baixando guia EPG XMLTV da nuvem...';
@@ -790,8 +916,7 @@ const importEPGUrl = async () => {
 
   try {
     let finalEpgUrl = epgUrl.value.trim();
-    // Default proxy for XMLTV downloads since they commonly trigger CORS
-    const proxy = await db.getSetting('cors_proxy_url', 'https://cors-anywhere.herokuapp.com/');
+    const proxy = await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalEpgUrl)}` : finalEpgUrl;
 
     const res = await fetch(fetchUrl);
@@ -799,22 +924,73 @@ const importEPGUrl = async () => {
       throw new Error(`Erro de rede HTTP ${res.status}. Verifique se a URL está correta.`);
     }
 
-    loadingStatus.value = 'Lendo resposta da rede...';
-    const text = await res.text();
+    const contentLength = res.headers.get('content-length');
+    const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+    
+    let loadedBytes = 0;
+    const reader = res.body?.getReader();
+    const chunks: Uint8Array[] = [];
+
+    if (!reader) {
+      const text = await res.text();
+      loadingStatus.value = 'Analisando XML do EPG...';
+      loadingSubstatus.value = 'Estruturando canais e programações...';
+      const programs = parseEPG(text);
+      if (programs.length === 0) {
+        throw new Error('Nenhum programa foi mapeado deste link EPG.');
+      }
+      loadingStatus.value = `Armazenando ${programs.length.toLocaleString()} programações...`;
+      await db.addEpgBatch(programs);
+      successMsg.value = `Guia EPG baixado com sucesso! ${programs.length.toLocaleString()} programações inseridas no guia.`;
+      epgUrl.value = '';
+      await refreshEpgCount();
+      return;
+    }
+
+    progressIndeterminate.value = totalBytes === 0;
+    progressValue.value = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        loadedBytes += value.length;
+        if (totalBytes > 0) {
+          progressValue.value = Math.round((loadedBytes / totalBytes) * 100);
+          loadingStatus.value = `Baixando guia EPG... ${progressValue.value}%`;
+          loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB de ${(totalBytes / 1024 / 1024).toFixed(2)} MB`;
+        } else {
+          loadingStatus.value = 'Baixando guia EPG...';
+          loadingSubstatus.value = `Baixado ${(loadedBytes / 1024 / 1024).toFixed(2)} MB`;
+        }
+      }
+    }
+
+    const combined = new Uint8Array(loadedBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    const text = new TextDecoder('utf-8').decode(combined);
 
     loadingStatus.value = 'Analisando XML do EPG...';
-    loadingSubstatus.value = 'Estruturando canais e programações...';
-
+    progressIndeterminate.value = true;
     const programs = parseEPG(text);
 
     if (programs.length === 0) {
       throw new Error('Nenhum programa foi mapeado deste link EPG.');
     }
 
-    loadingStatus.value = `Armazenando ${programs.length.toLocaleString()} programações...`;
-    loadingSubstatus.value = 'Escrevendo na memória local IndexedDB...';
+    loadingStatus.value = `Salvando ${programs.length.toLocaleString()} programas...`;
+    progressIndeterminate.value = false;
+    progressValue.value = 0;
 
-    await db.addEpgBatch(programs);
+    await db.addEpgBatch(programs, (percent) => {
+      progressValue.value = percent;
+      loadingSubstatus.value = `Gravando programas do guia: ${percent}%`;
+    });
 
     successMsg.value = `Guia EPG baixado com sucesso! ${programs.length.toLocaleString()} programações inseridas no guia.`;
     epgUrl.value = '';

@@ -18,30 +18,94 @@
 
     <!-- Main Content Area -->
     <v-main class="main-container fill-height">
-      <!-- Full Page View switcher -->
-      <KeepAlive>
-        <component 
-          :is="activeComponent" 
-          :playlist-id="activePlaylistId!" 
-          :type="browserType" 
-          @select-playlist="onPlaylistActivated"
-          @play-stream="onPlayStream"
-        />
-      </KeepAlive>
-
-      <!-- Full-screen Cinematic Video Overlay -->
-      <Transition name="fade">
-        <div v-if="activeChannel && !playerFloatMode" class="cinematic-player-overlay d-flex align-center justify-center">
-          <div class="player-wrapper">
-            <VideoPlayer
-              :channel="activeChannel"
-              :floating="false"
+      <div 
+        class="d-flex fill-height w-100 position-relative overflow-hidden"
+        :class="$vuetify.display.mobile ? 'flex-column-reverse' : 'flex-row'"
+      >
+        <!-- Left Pane: Main App Components -->
+        <div class="flex-grow-1 min-width-0 h-100 position-relative overflow-hidden">
+          <KeepAlive>
+            <component 
+              :is="activeComponent" 
+              :playlist-id="activePlaylistId!" 
+              :type="browserType" 
+              :active-channel="activeChannel"
+              :active-channel-epg="activeChannelEpg"
+              @select-playlist="onPlaylistActivated"
+              @play-stream="onPlayStream"
               @close-player="onClosePlayer"
               @toggle-float="onToggleFloat"
             />
+          </KeepAlive>
+        </div>
+
+        <!-- Right/Top Pane: Embedded Player (Active when a channel is playing and not floating) -->
+        <div 
+          v-if="activeChannel && !playerFloatMode && currentPage !== 'live'" 
+          class="embedded-player-container flex-shrink-0"
+          :class="$vuetify.display.mobile ? 'w-100 h-auto border-bottom-glow' : 'embedded-player-desktop border-left-glow'"
+        >
+          <div class="pa-4 h-100 d-flex flex-column gap-4 overflow-y-auto">
+            <!-- The Player Rectangle -->
+            <div class="player-wrapper w-100">
+              <VideoPlayer
+                :channel="activeChannel"
+                :floating="false"
+                @close-player="onClosePlayer"
+                @toggle-float="onToggleFloat"
+              />
+            </div>
+
+            <!-- Active Channel Metadata & EPG Card -->
+            <v-card class="glass-card pa-4 rounded-xl" variant="flat">
+              <div class="d-flex align-center gap-3 mb-4">
+                <v-avatar size="48" class="bg-surface-variant flex-shrink-0" v-slot:default v-if="activeChannel.logo">
+                  <v-img :src="activeChannel.logo" />
+                </v-avatar>
+                <div class="min-width-0">
+                  <h3 class="text-subtitle-2 font-weight-bold text-truncate text-glow-small mb-1">{{ activeChannel.name }}</h3>
+                  <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag">{{ activeChannel.category }}</v-chip>
+                </div>
+              </div>
+
+              <!-- EPG Programme Info -->
+              <div v-if="activeChannelEpg.current" class="mt-2">
+                <div class="text-caption text-secondary font-weight-bold mb-1">🔴 NO AR AGORA</div>
+                <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.current.title }}</div>
+                <p v-if="activeChannelEpg.current.desc" class="text-caption text-medium-emphasis mb-2 leading-relaxed text-line-clamp">
+                  {{ activeChannelEpg.current.desc }}
+                </p>
+                <div class="d-flex align-center justify-space-between text-caption text-medium-emphasis mb-1">
+                  <span>{{ formatEpgTime(activeChannelEpg.current.start) }} - {{ formatEpgTime(activeChannelEpg.current.stop) }}</span>
+                  <span>{{ getEpgProgressPercent(activeChannelEpg.current) }}%</span>
+                </div>
+                <v-progress-linear :model-value="getEpgProgressPercent(activeChannelEpg.current)" color="secondary" height="4" rounded class="mb-4" />
+              </div>
+
+              <div v-if="activeChannelEpg.next" class="mt-2 pt-2 border-top">
+                <div class="text-caption text-medium-emphasis font-weight-bold mb-1">PRÓXIMO PROGRAMA</div>
+                <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.next.title }}</div>
+                <div class="text-caption text-medium-emphasis">
+                  Começa às {{ formatEpgTime(activeChannelEpg.next.start) }}
+                </div>
+              </div>
+
+              <!-- Description for Movies / Series VOD -->
+              <div v-if="activeChannel.plot" class="mt-2 pt-2 border-top">
+                <div class="text-caption text-secondary font-weight-bold mb-1">SINOPSE</div>
+                <p class="text-caption text-medium-emphasis leading-relaxed mb-0">
+                  {{ activeChannel.plot }}
+                </p>
+              </div>
+
+              <div v-if="!activeChannelEpg.current && !activeChannel.plot" class="text-caption text-medium-emphasis italic text-center py-2">
+                Nenhum detalhe de programação disponível para este canal.
+              </div>
+            </v-card>
           </div>
         </div>
-      </Transition>
+
+      </div>
 
       <!-- Persistent Floating Mini-Player (PiP) -->
       <VideoPlayer
@@ -56,7 +120,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { db, type IPTVChannel } from '@/services/db';
 
 // Import UI components
@@ -76,9 +140,53 @@ const hasPlaylists = ref(false);
 // Global Video Player States
 const activeChannel = ref<IPTVChannel | null>(null);
 const playerFloatMode = ref(false);
+const activeChannelEpg = ref<{ current?: any; next?: any }>({});
+
+const loadActiveChannelEpg = async () => {
+  activeChannelEpg.value = {};
+  if (activeChannel.value && activeChannel.value.tvgId) {
+    try {
+      const epg = await db.getCurrentAndNextProgramme(activeChannel.value.tvgId);
+      activeChannelEpg.value = epg;
+    } catch (e) {
+      console.error('Error loading active channel EPG:', e);
+    }
+  }
+};
+
+watch(activeChannel, () => {
+  loadActiveChannelEpg();
+});
+
+const formatEpgTime = (timestamp: number) => {
+  if (!timestamp) return '';
+  const d = new Date(timestamp);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const getEpgProgressPercent = (prog: any) => {
+  if (!prog) return 0;
+  const now = Date.now();
+  const duration = prog.stop - prog.start;
+  if (duration <= 0) return 0;
+  const elapsed = now - prog.start;
+  return Math.round(Math.min(100, Math.max(0, (elapsed / duration) * 100)));
+};
 
 onMounted(async () => {
   await db.init();
+  
+  // Migrate old AllOrigins proxy setting to local proxy
+  try {
+    const currentProxy = await db.getSetting('cors_proxy_url');
+    if (currentProxy === 'https://api.allorigins.win/raw?url=') {
+      console.log('[Migration] Migrating old AllOrigins setting to local proxy...');
+      await db.setSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+    }
+  } catch (err) {
+    console.error('Migration error:', err);
+  }
+
   await checkActivePlaylist();
 });
 
@@ -222,22 +330,63 @@ const getPageTitle = () => {
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Custom cinematic player overlay style */
-.cinematic-player-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(20px);
-  z-index: 9999;
+/* Embedded Player layout & separation */
+.embedded-player-container {
+  background: rgba(13, 11, 20, 0.4);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.embedded-player-desktop {
+  width: 480px;
+  max-width: 40vw;
+  height: 100%;
+  animation: slideInLeft 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.border-left-glow {
+  border-left: 1px solid rgba(160, 68, 255, 0.15) !important;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
+}
+
+.border-bottom-glow {
+  border-bottom: 1px solid rgba(160, 68, 255, 0.15) !important;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
 }
 
 .player-wrapper {
-  width: 90%;
-  max-width: 1100px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  aspect-ratio: 16/9;
+}
+
+.border-top {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.text-line-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.uppercase-tag {
+  letter-spacing: 1px;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Scrollbar Customization for ultra premium look */

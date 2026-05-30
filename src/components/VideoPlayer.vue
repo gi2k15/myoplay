@@ -57,7 +57,10 @@
       <div>Resolução: <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span></div>
       <div>Motor: <span class="text-secondary">{{ hlsInstance ? 'Hls.js (MSE)' : 'Nativo' }}</span></div>
       <div class="text-truncate" :title="channel.streamUrl">
-        Link: <span class="text-secondary text-caption">{{ channel.streamUrl }}</span>
+        Link original: <span class="text-secondary text-caption">{{ channel.streamUrl }}</span>
+      </div>
+      <div v-if="isActiveProxied" class="text-truncate text-warning font-weight-bold" :title="activePlayUrl">
+        CORS Proxy: <span class="text-warning text-caption">Ativo</span>
       </div>
       <v-alert
         v-if="channel.streamUrl.includes('.ts')"
@@ -234,7 +237,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import Hls from 'hls.js';
-import type { IPTVChannel } from '@/services/db';
+import { db, type IPTVChannel } from '@/services/db';
 
 const props = defineProps<{
   channel: IPTVChannel;
@@ -256,6 +259,21 @@ const isBuffering = ref(true);
 const isConnecting = ref(true);
 const showPoster = ref(true);
 const errorState = ref<string | null>(null);
+
+// Proxy configuration and active playback state
+const proxyUrlSetting = ref('');
+const playerProxyStreams = ref('auto');
+const activePlayUrl = ref('');
+const isActiveProxied = ref(false);
+
+const loadSettings = async () => {
+  try {
+    proxyUrlSetting.value = await db.getSetting('player_proxy_url', 'https://corsproxy.io/?');
+    playerProxyStreams.value = await db.getSetting('player_proxy_streams', 'auto');
+  } catch (e) {
+    console.error('Error loading stream proxy settings:', e);
+  }
+};
 
 const currentTime = ref(0);
 const duration = ref(0);
@@ -287,7 +305,8 @@ const showStats = ref(false);
 const retryCount = ref(0);
 let retryTimeout: number | null = null;
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSettings();
   initializePlayer();
   setupHotkeys();
   
@@ -304,7 +323,9 @@ onBeforeUnmount(() => {
 });
 
 // Watch for stream URL change
-watch(() => props.channel.streamUrl, () => {
+watch(() => props.channel.streamUrl, async () => {
+  retryCount.value = 0; // Reset retry count when changing channel
+  await loadSettings();
   initializePlayer();
 });
 
@@ -345,10 +366,38 @@ const initializePlayer = () => {
   isConnecting.value = true;
   isBuffering.value = true;
 
-  const url = props.channel.streamUrl;
+  let originalUrl = props.channel.streamUrl;
+  console.log(`[VideoPlayer] Inicializando player. URL Original: "${originalUrl}"`);
   const video = videoRef.value;
 
   if (!video) return;
+
+  // 1. Reescrever fluxos .ts de IPTV padrão para HLS (.m3u8)
+  // (Navegadores não suportam .ts bruto de forma confiável, HLS/m3u8 é compatível universalmente)
+  const urlParts = originalUrl.split('?');
+  let path = urlParts[0];
+  const lowerPath = path.toLowerCase();
+  
+  if (lowerPath.endsWith('.ts')) {
+    path = path.slice(0, -3) + '.m3u8';
+    originalUrl = path + (urlParts[1] ? '?' + urlParts[1] : '');
+    console.log(`[VideoPlayer] Reescrevendo canal .ts para HLS (.m3u8): ${originalUrl}`);
+  } else if (originalUrl.includes('output=ts')) {
+    originalUrl = originalUrl.replace('output=ts', 'output=hls');
+    console.log(`[VideoPlayer] Reescrevendo output=ts para output=hls: ${originalUrl}`);
+  } else if (originalUrl.includes('output=mpegts')) {
+    originalUrl = originalUrl.replace('output=mpegts', 'output=hls');
+    console.log(`[VideoPlayer] Reescrevendo output=mpegts para output=hls: ${originalUrl}`);
+  }
+
+  // Determine if stream should be proxied
+  const shouldProxy = 
+    proxyUrlSetting.value && (
+      playerProxyStreams.value === 'always' || 
+      (playerProxyStreams.value === 'auto' && retryCount.value > 0)
+    );
+
+  isActiveProxied.value = !!shouldProxy;
 
   // Set default volume
   video.volume = volume.value;
@@ -377,18 +426,44 @@ const initializePlayer = () => {
   };
 
   // Check if HLS stream (m3u8)
-  const isHls = url.toLowerCase().includes('.m3u8') || url.toLowerCase().includes('m3u8');
+  const isHls = originalUrl.toLowerCase().includes('.m3u8') || originalUrl.toLowerCase().includes('m3u8');
 
   if (isHls && Hls.isSupported()) {
+    // Custom Hls.js Loader to proxy fragments, playlists, and keys
+    // @ts-ignore
+    class ProxyLoader extends Hls.DefaultConfig.loader {
+      constructor(config: any) {
+        super(config);
+      }
+
+      load(context: any, config: any, callbacks: any) {
+        if (shouldProxy) {
+          const reqUrl = context.url;
+          if (reqUrl && !reqUrl.startsWith(proxyUrlSetting.value)) {
+            context.url = `${proxyUrlSetting.value}${encodeURIComponent(reqUrl)}`;
+          }
+        }
+        super.load(context, config, callbacks);
+      }
+    }
+
     hlsInstance = new Hls({
       enableWorker: true,
       maxBufferLength: 10,
       lowLatencyMode: true,
       manifestLoadingMaxRetry: 4,
-      manifestLoadingRetryDelay: 1000
+      manifestLoadingRetryDelay: 1000,
+      loader: ProxyLoader
     });
 
-    hlsInstance.loadSource(url);
+    if (shouldProxy) {
+      console.log(`[VideoPlayer] Usando Proxy CORS via Custom Loader. Tentativa: ${retryCount.value}`);
+      activePlayUrl.value = `${proxyUrlSetting.value}${encodeURIComponent(originalUrl)}`;
+    } else {
+      activePlayUrl.value = originalUrl;
+    }
+
+    hlsInstance.loadSource(originalUrl);
     hlsInstance.attachMedia(video);
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -403,7 +478,14 @@ const initializePlayer = () => {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
             console.error('Fatal network error in HLS, attempting recovery...');
-            hlsInstance?.startLoad();
+            if (data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || 
+                data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT ||
+                data.details === Hls.ErrorDetails.LEVEL_LOAD_ERROR) {
+              console.error('Fatal manifest loading error (CORS/Network). Retrying via proxy...');
+              handlePlaybackError();
+            } else {
+              hlsInstance?.startLoad();
+            }
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
             console.error('Fatal media parsing error, attempting recovery...');
@@ -419,7 +501,13 @@ const initializePlayer = () => {
   } 
   // Fallback to native HLS support (Safari, iOS, Android, and standard MP4 links)
   else if (video.canPlayType('application/vnd.apple.mpegurl') || !isHls) {
-    video.src = url;
+    let playUrl = originalUrl;
+    if (shouldProxy) {
+      console.log(`[VideoPlayer] Usando Proxy CORS Nativo para reprodução. Tentativa: ${retryCount.value}`);
+      playUrl = `${proxyUrlSetting.value}${encodeURIComponent(originalUrl)}`;
+    }
+    activePlayUrl.value = playUrl;
+    video.src = playUrl;
     video.load();
   } else {
     isConnecting.value = false;

@@ -116,11 +116,11 @@ export class XtreamClient {
     }
   }
 
-  async fetchAllData(playlistId: number, onProgress?: (msg: string) => void): Promise<IPTVChannel[]> {
+  async fetchAllData(playlistId: number, onProgress?: (msg: string, percent?: number) => void): Promise<IPTVChannel[]> {
     const channels: IPTVChannel[] = [];
 
     // 1. Fetch categories in parallel
-    onProgress?.('Carregando categorias do servidor...');
+    onProgress?.('Carregando categorias do servidor...', 10);
     const [liveCats, vodCats, seriesCats] = await Promise.all([
       this.fetchCategories('get_live_categories'),
       this.fetchCategories('get_vod_categories'),
@@ -129,7 +129,7 @@ export class XtreamClient {
 
     // 2. Fetch Live Streams
     try {
-      onProgress?.('Buscando canais ao vivo...');
+      onProgress?.('Buscando canais ao vivo...', 30);
       const liveRes = await fetch(this.buildUrl('get_live_streams'));
       if (liveRes.ok) {
         const liveStreams = await liveRes.json();
@@ -137,8 +137,8 @@ export class XtreamClient {
           for (let i = 0; i < liveStreams.length; i++) {
             const stream = liveStreams[i];
             const catName = liveCats[stream.category_id] || 'Canais ao Vivo';
-            // Live stream url: http://host:port/live/username/password/stream_id.ts
-            const streamUrl = `${this.url}/live/${this.username}/${this.password}/${stream.stream_id}.ts`;
+            // Live stream url: http://host:port/live/username/password/stream_id.m3u8
+            const streamUrl = `${this.url}/live/${this.username}/${this.password}/${stream.stream_id}.m3u8`;
             channels.push({
               id: `${playlistId}_live_${stream.stream_id}`,
               playlistId,
@@ -160,7 +160,7 @@ export class XtreamClient {
 
     // 3. Fetch VOD Movies
     try {
-      onProgress?.('Buscando filmes sob demanda (VOD)...');
+      onProgress?.('Buscando filmes sob demanda (VOD)...', 60);
       const vodRes = await fetch(this.buildUrl('get_vod_streams'));
       if (vodRes.ok) {
         const vodStreams = await vodRes.json();
@@ -194,7 +194,7 @@ export class XtreamClient {
 
     // 4. Fetch Series metadata lists
     try {
-      onProgress?.('Buscando séries...');
+      onProgress?.('Buscando séries...', 85);
       const seriesRes = await fetch(this.buildUrl('get_series'));
       if (seriesRes.ok) {
         const seriesList = await seriesRes.json();
@@ -225,6 +225,7 @@ export class XtreamClient {
       console.error('Error fetching series list', err);
     }
 
+    onProgress?.('Concluindo carregamento...', 95);
     return channels;
   }
 

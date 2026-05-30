@@ -33,10 +33,11 @@
                 Navegadores bloqueiam requisições a servidores externos que não permitam compartilhamento CORS (muito comum em links de IPTV M3U e EPG remotos). Usar um Proxy CORS ajuda a contornar essa restrição.
               </p>
 
+              <div class="text-subtitle-2 font-weight-bold mb-2">1. Proxy para M3U e APIs (EPG, Categorias, VOD e Séries)</div>
               <v-select
                 v-model="selectedProxyPreset"
                 :items="proxyPresets"
-                label="Selecione um Servidor de Proxy"
+                label="Selecione o Servidor de Proxy de Dados"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -45,13 +46,46 @@
 
               <v-text-field
                 v-model="customProxyUrl"
-                label="URL do Proxy CORS Personalizado"
+                label="URL do Proxy CORS de Dados Personalizado"
                 placeholder="https://sua-url-de-proxy.com/?url="
                 variant="outlined"
                 density="comfortable"
                 prepend-inner-icon="mdi-link"
-                class="mb-4"
+                class="mb-6"
                 :disabled="selectedProxyPreset !== 'custom'"
+              />
+
+              <v-divider class="mb-6 opacity-10" />
+
+              <div class="text-subtitle-2 font-weight-bold mb-2">2. Proxy para Canais e Streams (Vídeo HLS/TS)</div>
+              <v-select
+                v-model="selectedPlayerProxyPreset"
+                :items="playerProxyPresets"
+                label="Selecione o Servidor de Proxy de Vídeo"
+                variant="outlined"
+                density="comfortable"
+                class="mb-4"
+                @update:model-value="onPlayerProxyPresetChange"
+              />
+
+              <v-text-field
+                v-model="customPlayerProxyUrl"
+                label="URL do Proxy CORS de Vídeo Personalizado"
+                placeholder="https://sua-url-de-proxy.com/?url="
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="mdi-link"
+                class="mb-6"
+                :disabled="selectedPlayerProxyPreset !== 'custom'"
+              />
+
+              <v-select
+                v-model="playerProxyStreams"
+                :items="streamProxyOptions"
+                label="Política de Uso do Proxy para Transmissões"
+                variant="outlined"
+                density="comfortable"
+                class="mb-6"
               />
 
               <v-btn
@@ -196,9 +230,31 @@ const alertType = ref<'success' | 'error' | 'warning' | 'info'>('success');
 // Proxy Fields
 const customProxyUrl = ref('');
 const selectedProxyPreset = ref('allorigins');
+
+const customPlayerProxyUrl = ref('');
+const selectedPlayerProxyPreset = ref('corsproxy');
+
+const playerProxyStreams = ref('auto');
+const streamProxyOptions = [
+  { title: 'Apenas se falhar (Automático - Recomendado)', value: 'auto' },
+  { title: 'Sempre usar proxy para reprodução', value: 'always' },
+  { title: 'Nunca usar proxy para reprodução', value: 'never' },
+];
+
 const proxyPresets = [
   { title: 'Sem Proxy (Conexão Direta)', value: 'none' },
-  { title: 'AllOrigins (Recomendado - Sem Limites)', value: 'allorigins' },
+  { title: 'Proxy Local (Recomendado - Super Rápido e Sem Limites)', value: 'local' },
+  { title: 'AllOrigins (Alternativa - Sem Limites)', value: 'allorigins' },
+  { title: 'Cors-Anywhere (Exige Ativação de Demo)', value: 'cors-anywhere' },
+  { title: 'ThingProxy (Leve)', value: 'thingproxy' },
+  { title: 'CORS Proxy Personalizado', value: 'custom' },
+];
+
+const playerProxyPresets = [
+  { title: 'Sem Proxy (Conexão Direta)', value: 'none' },
+  { title: 'CorsProxy.io (Recomendado - Excelente para Vídeos)', value: 'corsproxy' },
+  { title: 'Proxy Local (Super Rápido e Sem Limites)', value: 'local' },
+  { title: 'AllOrigins (Sem Limites de Texto/APIs)', value: 'allorigins' },
   { title: 'Cors-Anywhere (Exige Ativação de Demo)', value: 'cors-anywhere' },
   { title: 'ThingProxy (Leve)', value: 'thingproxy' },
   { title: 'CORS Proxy Personalizado', value: 'custom' },
@@ -230,14 +286,17 @@ onMounted(async () => {
 });
 
 // --- LOAD PREFERENCES ---
+// --- LOAD PREFERENCES ---
 const loadProxySettings = async () => {
   try {
-    const proxy = await db.getSetting('cors_proxy_url', 'https://api.allorigins.win/raw?url=');
+    // 1. Data Proxy
+    const proxy = await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
     customProxyUrl.value = proxy;
 
-    // Detect preset
     if (proxy === '') {
       selectedProxyPreset.value = 'none';
+    } else if (proxy.includes('localhost:8088') || proxy.includes('127.0.0.1:8088')) {
+      selectedProxyPreset.value = 'local';
     } else if (proxy.includes('allorigins.win')) {
       selectedProxyPreset.value = 'allorigins';
     } else if (proxy.includes('cors-anywhere.herokuapp.com')) {
@@ -247,6 +306,28 @@ const loadProxySettings = async () => {
     } else {
       selectedProxyPreset.value = 'custom';
     }
+
+    // 2. Player Proxy
+    const playerProxy = await db.getSetting('player_proxy_url', 'https://corsproxy.io/?');
+    customPlayerProxyUrl.value = playerProxy;
+
+    if (playerProxy === '') {
+      selectedPlayerProxyPreset.value = 'none';
+    } else if (playerProxy.includes('corsproxy.io')) {
+      selectedPlayerProxyPreset.value = 'corsproxy';
+    } else if (playerProxy.includes('localhost:8088') || playerProxy.includes('127.0.0.1:8088')) {
+      selectedPlayerProxyPreset.value = 'local';
+    } else if (playerProxy.includes('allorigins.win')) {
+      selectedPlayerProxyPreset.value = 'allorigins';
+    } else if (playerProxy.includes('cors-anywhere.herokuapp.com')) {
+      selectedPlayerProxyPreset.value = 'cors-anywhere';
+    } else if (playerProxy.includes('thingproxy.freeboard.io')) {
+      selectedPlayerProxyPreset.value = 'thingproxy';
+    } else {
+      selectedPlayerProxyPreset.value = 'custom';
+    }
+
+    playerProxyStreams.value = await db.getSetting('player_proxy_streams', 'auto');
   } catch (err) {
     console.error(err);
   }
@@ -255,6 +336,8 @@ const loadProxySettings = async () => {
 const onProxyPresetChange = (preset: string) => {
   if (preset === 'none') {
     customProxyUrl.value = '';
+  } else if (preset === 'local') {
+    customProxyUrl.value = 'http://localhost:8088/?url=';
   } else if (preset === 'allorigins') {
     customProxyUrl.value = 'https://api.allorigins.win/raw?url=';
   } else if (preset === 'cors-anywhere') {
@@ -266,10 +349,31 @@ const onProxyPresetChange = (preset: string) => {
   }
 };
 
+const onPlayerProxyPresetChange = (preset: string) => {
+  if (preset === 'none') {
+    customPlayerProxyUrl.value = '';
+  } else if (preset === 'local') {
+    customPlayerProxyUrl.value = 'http://localhost:8088/?url=';
+  } else if (preset === 'corsproxy') {
+    customPlayerProxyUrl.value = 'https://corsproxy.io/?';
+  } else if (preset === 'allorigins') {
+    customPlayerProxyUrl.value = 'https://api.allorigins.win/raw?url=';
+  } else if (preset === 'cors-anywhere') {
+    customPlayerProxyUrl.value = 'https://cors-anywhere.herokuapp.com/';
+  } else if (preset === 'thingproxy') {
+    customPlayerProxyUrl.value = 'https://thingproxy.freeboard.io/fetch/';
+  } else if (preset === 'custom') {
+    customPlayerProxyUrl.value = '';
+  }
+};
+
 const saveCorsProxy = async () => {
   try {
     const proxyVal = customProxyUrl.value.trim();
+    const playerProxyVal = customPlayerProxyUrl.value.trim();
     await db.setSetting('cors_proxy_url', proxyVal);
+    await db.setSetting('player_proxy_url', playerProxyVal);
+    await db.setSetting('player_proxy_streams', playerProxyStreams.value);
     alertType.value = 'success';
     alertMsg.value = 'Configurações de Proxy CORS salvas com sucesso!';
   } catch (err: any) {
@@ -356,7 +460,8 @@ const wipeDatabase = async () => {
 
       tx.oncomplete = async () => {
         // Restore default setting
-        await db.setSetting('cors_proxy_url', 'https://api.allorigins.win/raw?url=');
+        await db.setSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+        await db.setSetting('player_proxy_url', 'https://corsproxy.io/?');
         alertType.value = 'success';
         alertMsg.value = 'Todo o banco de dados local foi esvaziado com sucesso! Recarregue a página.';
         await calculateStats();
