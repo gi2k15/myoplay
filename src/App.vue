@@ -180,7 +180,6 @@ onMounted(async () => {
   try {
     const currentProxy = await db.getSetting('cors_proxy_url');
     if (currentProxy === 'https://api.allorigins.win/raw?url=') {
-      console.log('[Migration] Migrating old AllOrigins setting to local proxy...');
       await db.setSetting('cors_proxy_url', 'http://localhost:8088/?url=');
     }
   } catch (err) {

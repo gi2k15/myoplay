@@ -395,7 +395,6 @@ const initializePlayer = () => {
   isBuffering.value = true;
 
   let originalUrl = props.channel.streamUrl;
-  console.log(`[VideoPlayer] Inicializando player. URL Original: "${originalUrl}"`);
   const video = videoRef.value;
 
   if (!video) return;
@@ -501,7 +500,6 @@ const initializePlayer = () => {
     });
 
     if (shouldProxy && activeProxy.value) {
-      console.log(`[VideoPlayer] Usando Proxy CORS via Custom Loader ("${activeProxy.value}"). Tentativa: ${retryCount.value}`);
       activePlayUrl.value = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
     } else {
       activePlayUrl.value = originalUrl;
@@ -548,7 +546,6 @@ const initializePlayer = () => {
   else if (isTs && mpegts.isSupported()) {
     let playUrl = originalUrl;
     if (shouldProxy && activeProxy.value) {
-      console.log(`[VideoPlayer] Usando Proxy CORS via mpegts.js ("${activeProxy.value}"). Tentativa: ${retryCount.value}`);
       playUrl = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
     }
     
@@ -592,7 +589,6 @@ const initializePlayer = () => {
   else if (video.canPlayType('application/vnd.apple.mpegurl') || !isHls) {
     let playUrl = originalUrl;
     if (shouldProxy && activeProxy.value) {
-      console.log(`[VideoPlayer] Usando Proxy CORS Nativo ("${activeProxy.value}") para reprodução. Tentativa: ${retryCount.value}`);
       playUrl = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
     }
     activePlayUrl.value = playUrl;
@@ -608,7 +604,6 @@ const initializePlayer = () => {
 // --- RECOVERY AND RETRY ENGINE ---
 const handlePlaybackError = (code?: number) => {
   if (isHandlingError) {
-    console.log('[VideoPlayer] Ignorando evento de erro concorrente/duplicado.');
     return;
   }
   isHandlingError = true;
@@ -638,7 +633,6 @@ const handlePlaybackError = (code?: number) => {
       isHealing.value = true;
       props.channel.streamUrl = newUrl;
       healed = true;
-      console.log(`[VideoPlayer] Detectada falha no m3u8. Curando URL do canal para .ts: ${newUrl}`);
       
       // Salva a nova URL curada no banco IndexedDB local (cópia rasa para evitar DataCloneError)
       db.updateChannel({ ...props.channel }).catch(err => {

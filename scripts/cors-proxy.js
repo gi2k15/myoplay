@@ -36,13 +36,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  console.log(`[CORS Proxy] Redirecionando para: ${targetUrl}`);
   performProxyRequest(targetUrl, req, res);
 });
 
 function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
   if (redirectCount > 5) {
-    console.error(`[CORS Proxy] Limite de redirecionamentos excedido para ${targetUrl}`);
     if (!res.headersSent) {
       res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Erro do Proxy CORS local: Limite de redirecionamentos excedido (Max 5)');
@@ -78,7 +76,6 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
           redirectUrl = new URL(redirectUrl, base).href;
         }
         
-        console.log(`[CORS Proxy] Seguindo redirecionamento (${proxyRes.statusCode}) de ${targetUrl} para: ${redirectUrl}`);
         performProxyRequest(redirectUrl, req, res, redirectCount + 1);
         return;
       }
@@ -131,8 +128,4 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
 }
 
 server.listen(PORT, () => {
-  console.log(`\x1b[36m%s\x1b[0m`, `=====================================================`);
-  console.log(`\x1b[32m%s\x1b[0m`, `  Proxy CORS Local Ativo e Rodando! (Redirecionamento Habilitado)`);
-  console.log(`\x1b[35m%s\x1b[0m`, `  URL: http://localhost:${PORT}/?url=`);
-  console.log(`\x1b[36m%s\x1b[0m`, `=====================================================`);
 });
