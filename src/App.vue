@@ -5,6 +5,9 @@
     <Sidebar 
       v-model="currentPage" 
       :active-playlist-name="activePlaylistName" 
+      :recent-streams="recentStreams"
+      @remove-recent="onRemoveRecentStream"
+      @play-stream="onPlayStream"
       v-if="hasPlaylists"
     />
 
@@ -136,6 +139,7 @@ const currentPage = ref('playlists'); // Default view
 const activePlaylistId = ref<number | null>(null);
 const activePlaylistName = ref<string | null>(null);
 const hasPlaylists = ref(false);
+const recentStreams = ref<IPTVChannel[]>([]);
 
 // Global Video Player States
 const activeChannel = ref<IPTVChannel | null>(null);
@@ -173,6 +177,15 @@ const getEpgProgressPercent = (prog: any) => {
   return Math.round(Math.min(100, Math.max(0, (elapsed / duration) * 100)));
 };
 
+const loadRecentStreams = async () => {
+  try {
+    const list = await db.getSetting('recent_streams', []);
+    recentStreams.value = list;
+  } catch (err) {
+    console.error('Error loading recent streams:', err);
+  }
+};
+
 onMounted(async () => {
   await db.init();
   
@@ -187,6 +200,7 @@ onMounted(async () => {
   }
 
   await checkActivePlaylist();
+  await loadRecentStreams();
 });
 
 const checkActivePlaylist = async () => {
@@ -241,6 +255,46 @@ const onPlayStream = async (channel: IPTVChannel) => {
   // Retrieve player float settings
   const defaultFloat = await db.getSetting('player_default_float', false);
   playerFloatMode.value = defaultFloat;
+
+  // Sync playlist if different
+  if (channel.playlistId !== activePlaylistId.value) {
+    try {
+      const playlists = await db.getPlaylists();
+      const pl = playlists.find(p => p.id === channel.playlistId);
+      if (pl && pl.id) {
+        activePlaylistId.value = pl.id;
+        activePlaylistName.value = pl.name;
+        await db.setSetting('current_playlist_id', pl.id);
+      }
+    } catch (e) {
+      console.error('Error syncing playlist for recent stream:', e);
+    }
+  }
+
+  // Add to recent streams list
+  await addRecentStream(channel);
+};
+
+const addRecentStream = async (channel: IPTVChannel) => {
+  try {
+    const filtered = recentStreams.value.filter(c => c.id !== channel.id);
+    filtered.unshift(channel);
+    const updated = filtered.slice(0, 10);
+    recentStreams.value = updated;
+    await db.setSetting('recent_streams', updated);
+  } catch (err) {
+    console.error('Error adding recent stream:', err);
+  }
+};
+
+const onRemoveRecentStream = async (channelId: string) => {
+  try {
+    const updated = recentStreams.value.filter(c => c.id !== channelId);
+    recentStreams.value = updated;
+    await db.setSetting('recent_streams', updated);
+  } catch (err) {
+    console.error('Error removing recent stream:', err);
+  }
 };
 
 const onClosePlayer = () => {

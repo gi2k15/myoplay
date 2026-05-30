@@ -40,6 +40,98 @@
         </v-list-item-title>
       </v-list-item>
     </v-list>
+ 
+    <!-- Recent Streams Section -->
+    <div v-if="recentStreams && recentStreams.length > 0" class="recent-section mt-2 px-2">
+      <!-- Section Header -->
+      <div v-if="!rail" class="d-flex align-center justify-space-between px-3 py-2 text-caption text-uppercase font-weight-bold text-medium-emphasis letter-spacing-1">
+        <div class="d-flex align-center gap-2">
+          <v-icon size="small" color="secondary">mdi-history</v-icon>
+          <span>Recentes</span>
+        </div>
+        <v-chip size="x-small" color="primary" variant="flat" class="text-caption font-weight-bold px-2">{{ recentStreams.length }}</v-chip>
+      </div>
+      <div v-else class="text-center py-2">
+        <v-divider class="opacity-10 mb-2" />
+        <v-icon color="secondary" size="small" class="glow-icon">mdi-history</v-icon>
+      </div>
+
+      <!-- Recent Streams List -->
+      <v-list density="compact" nav class="pa-0">
+        <v-list-item
+          v-for="stream in recentStreams"
+          :key="stream.id"
+          class="recent-item mb-1"
+          :class="{ 'rail-item': rail }"
+          @click="$emit('play-stream', stream)"
+        >
+          <template v-slot:prepend>
+            <div class="position-relative d-flex align-center justify-center">
+              <v-avatar size="28" class="bg-surface-variant flex-shrink-0 border-glass">
+                <v-img v-if="stream.logo" :src="stream.logo">
+                  <template v-slot:placeholder>
+                    <div class="d-flex align-center justify-center fill-height bg-surface-variant">
+                      <v-icon size="small" color="secondary">mdi-play-circle-outline</v-icon>
+                    </div>
+                  </template>
+                </v-img>
+                <v-icon v-else size="small" color="secondary">
+                  {{ stream.type === 'movie' ? 'mdi-movie' : stream.type === 'series' ? 'mdi-television-classic' : 'mdi-play-circle-outline' }}
+                </v-icon>
+              </v-avatar>
+              <!-- Hover delete badge in rail mode -->
+              <div
+                v-if="rail"
+                class="rail-delete-overlay d-flex align-center justify-center"
+                @click.stop="$emit('remove-recent', stream.id)"
+              >
+                <v-icon size="x-small" color="white" style="font-size: 10px;">mdi-close</v-icon>
+              </div>
+            </div>
+          </template>
+
+          <v-list-item-title v-if="!rail" class="text-body-2 font-weight-medium text-truncate" style="max-width: 140px;">
+            {{ stream.name }}
+          </v-list-item-title>
+
+          <v-list-item-subtitle v-if="!rail" class="text-caption text-medium-emphasis">
+            {{ formatStreamType(stream.type) }}
+          </v-list-item-subtitle>
+
+          <template v-slot:append v-if="!rail">
+            <v-btn
+              icon="mdi-close"
+              variant="text"
+              size="x-small"
+              class="delete-btn"
+              color="error"
+              style="width: 20px; height: 20px; min-width: 20px;"
+              @click.stop="$emit('remove-recent', stream.id)"
+            />
+          </template>
+
+          <!-- Rich tooltip for both modes, but especially important in rail mode -->
+          <v-tooltip
+            activator="parent"
+            location="right"
+            class="recent-tooltip"
+            :open-delay="200"
+          >
+            <div class="d-flex align-center gap-2 mb-1">
+              <v-avatar size="20" class="bg-surface-variant flex-shrink-0" v-if="stream.logo">
+                <v-img :src="stream.logo" />
+              </v-avatar>
+              <span class="font-weight-bold">{{ stream.name }}</span>
+            </div>
+            <div class="text-caption mb-1">Tipo: {{ formatStreamType(stream.type) }}</div>
+            <div class="text-caption text-medium-emphasis">Clique para assistir</div>
+            <div class="text-caption text-error font-weight-bold mt-1" v-if="rail">
+              Clique no 'X' para remover
+            </div>
+          </v-tooltip>
+        </v-list-item>
+      </v-list>
+    </div>
 
     <!-- Bottom Footer (Active Playlist Info or Rail Toggle) -->
     <template v-slot:append>
@@ -75,11 +167,21 @@ import { useDisplay } from 'vuetify';
 const props = defineProps<{
   modelValue: string; // Current active page value
   activePlaylistName?: string | null;
+  recentStreams?: any[]; // Array of IPTVChannel
 }>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', val: string): void;
+  (e: 'remove-recent', channelId: string): void;
+  (e: 'play-stream', channel: any): void;
 }>();
+
+const formatStreamType = (type: string) => {
+  if (type === 'live') return 'Ao Vivo';
+  if (type === 'movie') return 'Filme';
+  if (type === 'series') return 'Série';
+  return type;
+};
 
 const { mobile } = useDisplay();
 const drawer = ref(true);
@@ -167,5 +269,78 @@ const navItems = [
 
 .v-navigation-drawer--rail .justify-start-rail {
   padding-left: 8px !important;
+}
+
+/* Recent streams custom styling */
+.recent-section {
+  transition: all 0.3s ease;
+}
+
+.recent-item {
+  border-radius: 8px !important;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: visible !important;
+}
+
+.recent-item:hover {
+  background: rgba(255, 193, 7, 0.03);
+}
+
+.recent-item .delete-btn {
+  opacity: 0 !important;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.recent-item:hover .delete-btn {
+  opacity: 0.6 !important;
+}
+
+.recent-item .delete-btn:hover {
+  opacity: 1 !important;
+}
+
+/* Rail mode specific styles */
+.rail-item {
+  justify-content: center !important;
+  padding: 0 !important;
+  min-height: 40px !important;
+}
+
+.rail-delete-overlay {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: rgba(255, 51, 102, 0.95);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  box-shadow: 0 0 8px rgba(255, 51, 102, 0.5);
+  cursor: pointer;
+}
+
+.recent-item:hover .rail-delete-overlay {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.rail-delete-overlay:hover {
+  background: #ff3366;
+  transform: scale(1.15) !important;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.border-glass {
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 </style>
