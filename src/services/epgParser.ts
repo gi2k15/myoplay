@@ -11,25 +11,36 @@ export function parseXmltvDate(dateStr: string): number {
 
   const [_, year, month, day, hour, minute, second, offset] = match;
   
-  // Construct date as UTC first
-  const utcDate = new Date(Date.UTC(
-    parseInt(year),
-    parseInt(month) - 1, // 0-indexed month
-    parseInt(day),
-    parseInt(hour),
-    parseInt(minute),
-    parseInt(second)
-  ));
+  let timestamp: number;
 
-  let timestamp = utcDate.getTime();
-
-  // Apply timezone offset if present
   if (offset) {
+    // Construct date as UTC first, then apply offset
+    const utcDate = new Date(Date.UTC(
+      parseInt(year),
+      parseInt(month) - 1, // 0-indexed month
+      parseInt(day),
+      parseInt(hour),
+      parseInt(minute),
+      parseInt(second)
+    ));
+    timestamp = utcDate.getTime();
+
     const sign = offset[0] === '+' ? -1 : 1; // if ahead (+), subtract offset to reach UTC; if behind (-), add
     const hours = parseInt(offset.substring(1, 3));
     const minutes = parseInt(offset.substring(3, 5));
     const offsetMs = (hours * 60 + minutes) * 60 * 1000;
     timestamp += sign * offsetMs;
+  } else {
+    // If no offset is supplied, parse as local system time
+    const localDate = new Date(
+      parseInt(year),
+      parseInt(month) - 1, // 0-indexed month
+      parseInt(day),
+      parseInt(hour),
+      parseInt(minute),
+      parseInt(second)
+    );
+    timestamp = localDate.getTime();
   }
 
   return timestamp;

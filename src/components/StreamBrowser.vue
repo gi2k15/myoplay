@@ -545,7 +545,7 @@ const allChannels = ref<IPTVChannel[]>([]);
 const favoritesSet = ref<Set<string>>(new Set());
 
 // EPG data map: key is tvgId
-const epgData = ref<Record<string, { current?: any; next?: any }>>({});
+const epgData = ref<Record<string, { current?: any; next?: any; lastFetched?: number }>>({});
 
 // TV Series States
 const seriesDialog = ref(false);
@@ -700,6 +700,13 @@ const paginatedChannels = computed(() => {
   return filteredChannels.value.slice(0, limit);
 });
 
+// Watch paginated channels changes (e.g., search, category switch, scrolling) to dynamically resolve EPG
+watch(paginatedChannels, () => {
+  if (props.type === 'live' || props.type === 'favorites') {
+    fetchEpgDataForVisibleChannels();
+  }
+}, { deep: true, immediate: true });
+
 const hasMore = computed(() => {
   return paginatedChannels.value.length < filteredChannels.value.length;
 });
@@ -727,16 +734,31 @@ const { mobile } = useDisplay();
 // --- EPG MAPPING & DYNAMIC RESOLUTION ---
 const fetchEpgDataForVisibleChannels = async () => {
   const visible = paginatedChannels.value;
+  const now = Date.now();
   
   // Resolve current/next program for each visible channel asynchronously
   for (const ch of visible) {
-    if (ch.tvgId && !epgData.value[ch.tvgId]) {
-      // Fetch from DB
-      db.getCurrentAndNextProgramme(ch.tvgId).then(({ current, next }) => {
-        if (current || next) {
-          epgData.value[ch.tvgId!] = { current, next };
-        }
-      });
+    if (ch.tvgId) {
+      const cached = epgData.value[ch.tvgId];
+      // A cache is valid if it exists and the current show matches the current time,
+      // or if it doesn't have a show but we checked it very recently (under 60s) to prevent DB spamming.
+      const isCacheValid = cached && (
+        (cached.current && now >= cached.current.start && now <= cached.current.stop) ||
+        (!cached.current && cached.lastFetched && now - cached.lastFetched < 60000)
+      );
+
+      if (!isCacheValid) {
+        // Fetch from DB
+        db.getCurrentAndNextProgramme(ch.tvgId).then(({ current, next }) => {
+          epgData.value[ch.tvgId!] = { 
+            current, 
+            next,
+            lastFetched: now
+          };
+        }).catch(err => {
+          console.error(`Error resolving EPG for channel ${ch.name}:`, err);
+        });
+      }
     }
   }
 };
