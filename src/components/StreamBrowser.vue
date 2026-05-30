@@ -705,7 +705,7 @@ watch(paginatedChannels, () => {
   if (props.type === 'live' || props.type === 'favorites') {
     fetchEpgDataForVisibleChannels();
   }
-}, { deep: true, immediate: true });
+});
 
 const hasMore = computed(() => {
   return paginatedChannels.value.length < filteredChannels.value.length;
