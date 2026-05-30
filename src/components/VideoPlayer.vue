@@ -589,6 +589,25 @@ const handlePlaybackError = () => {
     retryCount.value++;
     isConnecting.value = true;
     errorState.value = null;
+
+    // Se o stream falhar na reprodução e for uma URL de m3u8 (e sabemos que este provedor não suporta .m3u8),
+    // nós curamos o link para .ts dinamicamente em memória e atualizamos no banco IndexedDB!
+    const originalUrl = props.channel.streamUrl;
+    if (originalUrl.toLowerCase().includes('.m3u8')) {
+      const urlParts = originalUrl.split('?');
+      let path = urlParts[0];
+      if (path.toLowerCase().endsWith('.m3u8')) {
+        path = path.slice(0, -5) + '.ts';
+      }
+      const newUrl = path + (urlParts[1] ? '?' + urlParts[1] : '');
+      props.channel.streamUrl = newUrl;
+      console.log(`[VideoPlayer] Detectada falha no m3u8. Curando URL do canal para .ts: ${newUrl}`);
+      
+      // Salva a nova URL curada no banco IndexedDB local
+      db.updateChannel(props.channel).catch(err => {
+        console.error('Erro ao atualizar URL de canal curado no IndexedDB:', err);
+      });
+    }
     
     // Retry in 3 seconds
     if (retryTimeout) clearTimeout(retryTimeout);

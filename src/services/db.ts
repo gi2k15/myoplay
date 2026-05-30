@@ -230,6 +230,17 @@ class IPTVDatabase {
     });
   }
 
+  async updateChannel(channel: IPTVChannel): Promise<void> {
+    const db = await this.init();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('channels', 'readwrite');
+      const store = tx.objectStore('channels');
+      const req = store.put(channel);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   async getChannelCategories(playlistId: number, type: 'live' | 'movie' | 'series'): Promise<string[]> {
     const db = await this.init();
     return new Promise((resolve, reject) => {
