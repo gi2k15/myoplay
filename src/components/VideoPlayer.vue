@@ -308,6 +308,7 @@ const retryCount = ref(0);
 let retryTimeout: number | null = null;
 const isHealing = ref(false);
 let isHandlingError = false;
+let lastErrorCode: number | null = null;
 
 onMounted(async () => {
   await loadSettings();
@@ -387,6 +388,7 @@ const destroyPlayer = () => {
 
 const initializePlayer = () => {
   isHandlingError = false;
+  lastErrorCode = null;
   destroyPlayer();
   errorState.value = null;
   isConnecting.value = true;
@@ -517,6 +519,7 @@ const initializePlayer = () => {
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (data.fatal) {
         console.error('Hls.js fatal error event triggered:', data);
+        const code = data.response?.code;
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
             console.error('Fatal network error in HLS, attempting recovery...');
@@ -524,7 +527,7 @@ const initializePlayer = () => {
                 data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT ||
                 data.details === Hls.ErrorDetails.LEVEL_LOAD_ERROR) {
               console.error('Fatal manifest loading error (CORS/Network). Retrying via proxy...');
-              handlePlaybackError();
+              handlePlaybackError(code);
             } else {
               hlsInstance?.startLoad();
             }
@@ -535,7 +538,7 @@ const initializePlayer = () => {
             break;
           default:
             console.error('Fatal unrecoverable player error.');
-            handlePlaybackError();
+            handlePlaybackError(code);
             break;
         }
       }
@@ -566,7 +569,8 @@ const initializePlayer = () => {
 
     mpegtsInstance.on(mpegts.Events.ERROR, (type, detail, info) => {
       console.error(`[VideoPlayer] Erro no mpegts.js: Tipo ${type}, Detalhe ${detail}`, info);
-      handlePlaybackError();
+      const code = info?.code;
+      handlePlaybackError(code);
     });
 
     // Resolve loading overlay when metadata or stream connects
@@ -602,12 +606,15 @@ const initializePlayer = () => {
 };
 
 // --- RECOVERY AND RETRY ENGINE ---
-const handlePlaybackError = () => {
+const handlePlaybackError = (code?: number) => {
   if (isHandlingError) {
     console.log('[VideoPlayer] Ignorando evento de erro concorrente/duplicado.');
     return;
   }
   isHandlingError = true;
+  if (code) {
+    lastErrorCode = code;
+  }
   destroyPlayer();
   
   if (retryCount.value < 5) {
@@ -650,7 +657,13 @@ const handlePlaybackError = () => {
   } else {
     isConnecting.value = false;
     isBuffering.value = false;
-    errorState.value = 'Não foi possível reproduzir este canal. O stream está offline ou bloqueado por políticas de CORS do provedor. Verifique se o link está correto.';
+    if (lastErrorCode === 404) {
+      errorState.value = 'Este canal não foi encontrado no servidor do provedor (Erro 404). O link está quebrado ou o canal foi removido permanentemente pelo servidor de IPTV.';
+    } else if (lastErrorCode === 403) {
+      errorState.value = 'Acesso negado a este canal (Erro 403 / Proibido). O provedor de IPTV bloqueou a conexão, as credenciais expiraram ou o limite de conexões simultâneas do seu plano foi atingido.';
+    } else {
+      errorState.value = 'Não foi possível reproduzir este canal. O stream está offline ou bloqueado por políticas de CORS do provedor. Verifique se o link está correto.';
+    }
   }
 };
 
