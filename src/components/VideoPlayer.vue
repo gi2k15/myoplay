@@ -473,8 +473,8 @@ const initializePlayer = () => {
     });
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
-      console.warn('Hls.js error event triggered:', data);
       if (data.fatal) {
+        console.error('Hls.js fatal error event triggered:', data);
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
             console.error('Fatal network error in HLS, attempting recovery...');
