@@ -195,7 +195,7 @@
               <v-menu location="top end" transition="slide-y-transition">
                 <template v-slot:activator="{ props }">
                   <v-btn
-                    icon="mdi-buffer"
+                    icon="mdi-tune"
                     variant="text"
                     color="white"
                     size="small"
