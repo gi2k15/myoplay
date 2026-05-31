@@ -49,7 +49,6 @@
           <v-icon size="small" color="secondary">mdi-history</v-icon>
           <span>Recentes</span>
         </div>
-        <v-chip size="x-small" color="primary" variant="flat" class="text-caption font-weight-bold px-2">{{ recentStreams.length }}</v-chip>
       </div>
       <div v-else class="text-center py-2">
         <v-divider class="opacity-10 mb-2" />

@@ -240,9 +240,6 @@
               <p class="text-caption text-medium-emphasis max-width-480 mx-auto">
                 Este aplicativo não envia suas listas de IPTV, credenciais de Xtream Codes ou buscas para nenhum servidor externo. Todos os parsers, conexões de API e reprodutores rodam localmente na sua máquina!
               </p>
-              <div class="text-caption text-medium-emphasis mt-6 font-weight-bold">
-                Antigravity IPTV Player v1.0.0
-              </div>
             </v-card>
           </v-col>
 

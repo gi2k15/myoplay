@@ -48,9 +48,9 @@
           class="embedded-player-container flex-shrink-0"
           :class="$vuetify.display.mobile ? 'w-100 h-auto border-bottom-glow' : 'embedded-player-desktop border-left-glow'"
         >
-          <div class="pa-4 h-100 d-flex flex-column gap-4 overflow-y-auto">
+          <div class="pa-4 h-100 d-flex flex-column gap-4">
             <!-- The Player Rectangle -->
-            <div class="player-wrapper w-100">
+            <div class="player-wrapper w-100 flex-shrink-0">
               <VideoPlayer
                 :channel="activeChannel"
                 :floating="false"
@@ -59,52 +59,54 @@
               />
             </div>
 
-            <!-- Active Channel Metadata & EPG Card -->
-            <v-card class="glass-card pa-4 rounded-xl" variant="flat">
-              <div class="d-flex align-center gap-3 mb-4">
-                <v-avatar size="48" class="bg-surface-variant flex-shrink-0" v-slot:default v-if="activeChannel.logo">
-                  <v-img :src="activeChannel.logo" />
-                </v-avatar>
-                <div class="min-width-0">
-                  <h3 class="text-subtitle-2 font-weight-bold text-truncate text-glow-small mb-1">{{ activeChannel.name }}</h3>
-                  <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag">{{ activeChannel.category }}</v-chip>
+            <!-- Active Channel Metadata & EPG Card (Scrollable Container) -->
+            <div class="flex-grow-1 overflow-y-auto pr-1">
+              <v-card class="glass-card pa-4 rounded-xl" variant="flat">
+                <div class="d-flex align-center gap-3 mb-4">
+                  <v-avatar size="48" class="bg-surface-variant flex-shrink-0" v-slot:default v-if="activeChannel.logo">
+                    <v-img :src="activeChannel.logo" />
+                  </v-avatar>
+                  <div class="min-width-0">
+                    <h3 class="text-subtitle-2 font-weight-bold text-truncate text-glow-small mb-1">{{ activeChannel.name }}</h3>
+                    <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag">{{ activeChannel.category }}</v-chip>
+                  </div>
                 </div>
-              </div>
 
-              <!-- EPG Programme Info -->
-              <div v-if="activeChannelEpg.current" class="mt-2">
-                <div class="text-caption text-secondary font-weight-bold mb-1">🔴 NO AR AGORA</div>
-                <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.current.title }}</div>
-                <p v-if="activeChannelEpg.current.desc" class="text-caption text-medium-emphasis mb-2 leading-relaxed text-line-clamp">
-                  {{ activeChannelEpg.current.desc }}
-                </p>
-                <div class="d-flex align-center justify-space-between text-caption text-medium-emphasis mb-1">
-                  <span>{{ formatEpgTime(activeChannelEpg.current.start) }} - {{ formatEpgTime(activeChannelEpg.current.stop) }}</span>
-                  <span>{{ getEpgProgressPercent(activeChannelEpg.current) }}%</span>
+                <!-- EPG Programme Info -->
+                <div v-if="activeChannelEpg.current" class="mt-2">
+                  <div class="text-caption text-secondary font-weight-bold mb-1">🔴 NO AR AGORA</div>
+                  <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.current.title }}</div>
+                  <p v-if="activeChannelEpg.current.desc" class="text-caption text-medium-emphasis mb-2 leading-relaxed text-line-clamp">
+                    {{ activeChannelEpg.current.desc }}
+                  </p>
+                  <div class="d-flex align-center justify-space-between text-caption text-medium-emphasis mb-1">
+                    <span>{{ formatEpgTime(activeChannelEpg.current.start) }} - {{ formatEpgTime(activeChannelEpg.current.stop) }}</span>
+                    <span>{{ getEpgProgressPercent(activeChannelEpg.current) }}%</span>
+                  </div>
+                  <v-progress-linear :model-value="getEpgProgressPercent(activeChannelEpg.current)" color="secondary" height="4" rounded class="mb-4" />
                 </div>
-                <v-progress-linear :model-value="getEpgProgressPercent(activeChannelEpg.current)" color="secondary" height="4" rounded class="mb-4" />
-              </div>
 
-              <div v-if="activeChannelEpg.next" class="mt-2 pt-2 border-top">
-                <div class="text-caption text-medium-emphasis font-weight-bold mb-1">PRÓXIMO PROGRAMA</div>
-                <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.next.title }}</div>
-                <div class="text-caption text-medium-emphasis">
-                  Começa às {{ formatEpgTime(activeChannelEpg.next.start) }}
+                <div v-if="activeChannelEpg.next" class="mt-2 pt-2 border-top">
+                  <div class="text-caption text-medium-emphasis font-weight-bold mb-1">PRÓXIMO PROGRAMA</div>
+                  <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.next.title }}</div>
+                  <div class="text-caption text-medium-emphasis">
+                    Começa às {{ formatEpgTime(activeChannelEpg.next.start) }}
+                  </div>
                 </div>
-              </div>
 
-              <!-- Description for Movies / Series VOD -->
-              <div v-if="activeChannel.plot" class="mt-2 pt-2 border-top">
-                <div class="text-caption text-secondary font-weight-bold mb-1">SINOPSE</div>
-                <p class="text-caption text-medium-emphasis leading-relaxed mb-0">
-                  {{ activeChannel.plot }}
-                </p>
-              </div>
+                <!-- Description for Movies / Series VOD -->
+                <div v-if="activeChannel.plot" class="mt-2 pt-2 border-top">
+                  <div class="text-caption text-secondary font-weight-bold mb-1">SINOPSE</div>
+                  <p class="text-caption text-medium-emphasis leading-relaxed mb-0">
+                    {{ activeChannel.plot }}
+                  </p>
+                </div>
 
-              <div v-if="!activeChannelEpg.current && !activeChannel.plot" class="text-caption text-medium-emphasis italic text-center py-2">
-                Nenhum detalhe de programação disponível para este canal.
-              </div>
-            </v-card>
+                <div v-if="!activeChannelEpg.current && !activeChannel.plot" class="text-caption text-medium-emphasis italic text-center py-2">
+                  Nenhum detalhe de programação disponível para este canal.
+                </div>
+              </v-card>
+            </div>
           </div>
         </div>
 
