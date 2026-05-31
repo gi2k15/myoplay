@@ -130,6 +130,16 @@
                 label="Proporção de Tela Padrão do Player"
                 variant="outlined"
                 density="comfortable"
+                class="mb-4"
+                @update:model-value="savePlaybackSettings"
+              />
+
+              <v-select
+                v-model="playerBufferMode"
+                :items="bufferModes"
+                label="Modo de Buffer / Estabilidade (Recomendado para streams que travam)"
+                variant="outlined"
+                density="comfortable"
                 @update:model-value="savePlaybackSettings"
               />
             </v-card>
@@ -294,6 +304,12 @@ const aspectRatios = [
   { title: '16:9 widescreen', value: '16-9' },
   { title: '4:3 clássico', value: '4-3' },
 ];
+const playerBufferMode = ref('low-latency');
+const bufferModes = [
+  { title: 'Baixa Latência (Padrão - Menor Delay)', value: 'low-latency' },
+  { title: 'Balanceado (Recomendado - Boa Estabilidade)', value: 'balanced' },
+  { title: 'Alta Estabilidade (Máximo Buffer - Para Streams Lentos)', value: 'stable' },
+];
 
 // EPG Fields
 const epgTimeShift = ref(0);
@@ -442,6 +458,7 @@ const loadPlaybackSettings = async () => {
     autoPlay.value = await db.getSetting('player_autoplay', true);
     defaultFloatMode.value = await db.getSetting('player_default_float', false);
     defaultAspectRatio.value = await db.getSetting('player_default_aspect', 'fit');
+    playerBufferMode.value = await db.getSetting('player_buffer_mode', 'low-latency');
   } catch (err) {
     console.error(err);
   }
@@ -452,6 +469,7 @@ const savePlaybackSettings = async () => {
     await db.setSetting('player_autoplay', autoPlay.value);
     await db.setSetting('player_default_float', defaultFloatMode.value);
     await db.setSetting('player_default_aspect', defaultAspectRatio.value);
+    await db.setSetting('player_buffer_mode', playerBufferMode.value);
   } catch (err) {
     console.error(err);
   }

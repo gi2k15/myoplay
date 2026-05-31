@@ -56,6 +56,7 @@
       <div>Tipo: <span class="text-secondary">{{ channel.type.toUpperCase() }}</span></div>
       <div>Resolução: <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span></div>
       <div>Motor: <span class="text-secondary">{{ hlsInstance ? 'Hls.js (MSE)' : 'Nativo' }}</span></div>
+      <div>Modo de Buffer: <span class="text-secondary">{{ playerBufferMode === 'stable' ? 'Alta Estabilidade' : playerBufferMode === 'balanced' ? 'Balanceado' : 'Baixa Latência' }}</span></div>
       <div class="text-truncate" :title="channel.streamUrl">
         Link original: <span class="text-secondary text-caption">{{ channel.streamUrl }}</span>
       </div>
@@ -267,11 +268,13 @@ const proxyUrlSetting = ref('');
 const playerProxyStreams = ref('auto');
 const activePlayUrl = ref('');
 const isActiveProxied = ref(false);
+const playerBufferMode = ref('low-latency');
 
 const loadSettings = async () => {
   try {
     proxyUrlSetting.value = await db.getSetting('player_proxy_url', 'https://corsproxy.io/?');
     playerProxyStreams.value = await db.getSetting('player_proxy_streams', 'auto');
+    playerBufferMode.value = await db.getSetting('player_buffer_mode', 'low-latency');
   } catch (e) {
     console.error('Error loading stream proxy settings:', e);
   }
@@ -490,14 +493,43 @@ const initializePlayer = () => {
       }
     }
 
-    hlsInstance = new Hls({
+    let hlsConfig: any = {
       enableWorker: true,
-      maxBufferLength: 10,
-      lowLatencyMode: true,
-      manifestLoadingMaxRetry: 4,
-      manifestLoadingRetryDelay: 1000,
       loader: ProxyLoader
-    });
+    };
+
+    if (playerBufferMode.value === 'stable') {
+      hlsConfig = {
+        ...hlsConfig,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        lowLatencyMode: false,
+        liveSyncDurationCount: 6,
+        manifestLoadingMaxRetry: 10,
+        manifestLoadingRetryDelay: 2000
+      };
+    } else if (playerBufferMode.value === 'balanced') {
+      hlsConfig = {
+        ...hlsConfig,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        lowLatencyMode: false,
+        liveSyncDurationCount: 4,
+        manifestLoadingMaxRetry: 6,
+        manifestLoadingRetryDelay: 1500
+      };
+    } else {
+      // Default to low-latency
+      hlsConfig = {
+        ...hlsConfig,
+        maxBufferLength: 10,
+        lowLatencyMode: true,
+        manifestLoadingMaxRetry: 4,
+        manifestLoadingRetryDelay: 1000
+      };
+    }
+
+    hlsInstance = new Hls(hlsConfig);
 
     if (shouldProxy && activeProxy.value) {
       activePlayUrl.value = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
@@ -551,15 +583,27 @@ const initializePlayer = () => {
     
     activePlayUrl.value = playUrl;
 
+    let mpegtsOptionalConfig: any = {
+      enableWorker: true
+    };
+
+    if (playerBufferMode.value === 'stable') {
+      mpegtsOptionalConfig.enableStashBuffer = true;
+      mpegtsOptionalConfig.liveBufferLatencyChasing = false;
+    } else if (playerBufferMode.value === 'balanced') {
+      mpegtsOptionalConfig.enableStashBuffer = true;
+      mpegtsOptionalConfig.liveBufferLatencyChasing = true;
+    } else {
+      // low-latency (default)
+      mpegtsOptionalConfig.enableStashBuffer = false;
+      mpegtsOptionalConfig.liveBufferLatencyChasing = true;
+    }
+
     mpegtsInstance = mpegts.createPlayer({
       type: 'mpegts',
       isLive: isLive.value,
       url: playUrl
-    }, {
-      enableWorker: true,
-      enableStashBuffer: false, // minimize latency
-      liveBufferLatencyChasing: true
-    });
+    }, mpegtsOptionalConfig);
 
     mpegtsInstance.attachMediaElement(video);
     mpegtsInstance.load();

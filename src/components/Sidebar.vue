@@ -13,7 +13,7 @@
         <v-icon color="secondary" size="large" class="glow-icon">mdi-television-play</v-icon>
       </template>
       <v-list-item-title class="text-h6 font-weight-bold text-glow-small ml-2 text-uppercase letter-spacing-1">
-        AG IPTV
+        IPTV Player
       </v-list-item-title>
     </v-list-item>
 
