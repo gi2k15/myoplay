@@ -94,6 +94,22 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
       }
     });
 
+    // Abort backend request immediately if client closes connection to save bandwidth and sockets
+    const onClientClose = () => {
+      if (!proxyReq.destroyed) {
+        console.log(`[CORS Proxy] Conexão cancelada pelo cliente. Abortando requisição para: ${targetUrl}`);
+        proxyReq.destroy();
+      }
+    };
+
+    req.on('close', onClientClose);
+    res.on('close', onClientClose);
+
+    proxyReq.on('close', () => {
+      req.removeListener('close', onClientClose);
+      res.removeListener('close', onClientClose);
+    });
+
     proxyReq.on('error', (err) => {
       console.error(`[CORS Proxy] Erro na requisição para ${targetUrl}:`, err.message);
       if (!res.headersSent) {
