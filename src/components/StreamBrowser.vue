@@ -72,9 +72,9 @@
         class="pa-0 d-flex flex-column fill-height overflow-hidden"
         style="max-height: calc(100vh - 64px);"
       >
-        <!-- Live Player Top Section (Active when a live channel is playing) -->
+        <!-- Live Player Top Section (Active when a live channel is playing and not floating) -->
         <div 
-          v-if="type === 'live' && activeChannel" 
+          v-if="type === 'live' && activeChannel && !playerFloatMode" 
           class="live-player-top-section pa-4 border-bottom-glow flex-shrink-0"
         >
           <v-row class="ma-0 justify-center">
@@ -526,6 +526,7 @@ const props = defineProps<{
   type: 'live' | 'movie' | 'series' | 'favorites';
   activeChannel?: IPTVChannel | null;
   activeChannelEpg?: { current?: any; next?: any };
+  playerFloatMode?: boolean;
 }>();
 
 // Emits

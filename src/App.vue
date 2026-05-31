@@ -34,6 +34,7 @@
               :type="browserType" 
               :active-channel="activeChannel"
               :active-channel-epg="activeChannelEpg"
+              :player-float-mode="playerFloatMode"
               @select-playlist="onPlaylistActivated"
               @play-stream="onPlayStream"
               @close-player="onClosePlayer"
