@@ -191,6 +191,31 @@
 
             <!-- Right Controls -->
             <div class="d-flex align-center gap-1">
+              <!-- Buffer Mode Selector -->
+              <v-menu location="top end" transition="slide-y-transition">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                    icon="mdi-buffer"
+                    variant="text"
+                    color="white"
+                    size="small"
+                    title="Modo de Buffer / Estabilidade"
+                    v-bind="props"
+                  />
+                </template>
+                <v-list bg-color="surface" density="compact">
+                  <v-list-item 
+                    v-for="opt in bufferModes" 
+                    :key="opt.value" 
+                    :active="playerBufferMode === opt.value"
+                    color="secondary"
+                    @click="changeBufferMode(opt.value)"
+                  >
+                    <v-list-item-title class="text-caption">{{ opt.title }}</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+
               <!-- Aspect Ratio Selector -->
               <v-menu location="top end" transition="slide-y-transition">
                 <template v-slot:activator="{ props }">
@@ -296,6 +321,22 @@ const aspectRatios = [
   { label: '16:9 widescreen', value: '16-9' },
   { label: '4:3 clássico', value: '4-3' },
 ];
+
+const bufferModes = [
+  { title: 'Baixa Latência (Rápido)', value: 'low-latency' },
+  { title: 'Balanceado (Normal)', value: 'balanced' },
+  { title: 'Alta Estabilidade (Lento)', value: 'stable' },
+];
+
+const changeBufferMode = async (mode: string) => {
+  playerBufferMode.value = mode;
+  try {
+    await db.setSetting('player_buffer_mode', mode);
+  } catch (err) {
+    console.error('Error saving buffer mode setting from player:', err);
+  }
+  initializePlayer();
+};
 
 const isLive = computed(() => {
   return props.channel.type === 'live';
