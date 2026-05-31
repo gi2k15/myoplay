@@ -66,7 +66,7 @@
           @click="$emit('play-stream', stream)"
         >
           <template v-slot:prepend>
-            <div class="position-relative d-flex align-center justify-center">
+            <div class="position-relative d-flex align-center justify-center" :class="{ 'mr-3': !rail }">
               <v-avatar size="28" class="bg-surface-variant flex-shrink-0 border-glass">
                 <v-img v-if="stream.logo" :src="stream.logo">
                   <template v-slot:placeholder>
@@ -121,9 +121,9 @@
               <v-avatar size="20" class="bg-surface-variant flex-shrink-0" v-if="stream.logo">
                 <v-img :src="stream.logo" />
               </v-avatar>
-              <span class="font-weight-bold">{{ stream.name }}</span>
+              <span class="font-weight-bold text-white">{{ stream.name }}</span>
             </div>
-            <div class="text-caption mb-1">Tipo: {{ formatStreamType(stream.type) }}</div>
+            <div class="text-caption text-white mb-1">Tipo: {{ formatStreamType(stream.type) }}</div>
             <div class="text-caption text-medium-emphasis">Clique para assistir</div>
             <div class="text-caption text-error font-weight-bold mt-1" v-if="rail">
               Clique no 'X' para remover
