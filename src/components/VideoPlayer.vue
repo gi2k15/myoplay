@@ -192,7 +192,7 @@
             <!-- Right Controls -->
             <div class="d-flex align-center gap-1">
               <!-- Buffer Mode Selector -->
-              <v-menu location="top end" transition="slide-y-transition">
+              <v-menu v-model="isBufferMenuOpen" location="top end" transition="slide-y-transition">
                 <template v-slot:activator="{ props }">
                   <v-btn
                     icon="mdi-tune"
@@ -217,7 +217,7 @@
               </v-menu>
 
               <!-- Aspect Ratio Selector -->
-              <v-menu location="top end" transition="slide-y-transition">
+              <v-menu v-model="isAspectRatioMenuOpen" location="top end" transition="slide-y-transition">
                 <template v-slot:activator="{ props }">
                   <v-btn
                     icon="mdi-aspect-ratio"
@@ -346,6 +346,18 @@ const showControls = ref(true);
 let controlsTimeout: number | null = null;
 const isFullscreen = ref(false);
 const showStats = ref(false);
+
+// Menu visibility state trackers to prevent HUD auto-hiding
+const isBufferMenuOpen = ref(false);
+const isAspectRatioMenuOpen = ref(false);
+const isAnyMenuOpen = computed(() => isBufferMenuOpen.value || isAspectRatioMenuOpen.value);
+
+watch(isAnyMenuOpen, (isOpen) => {
+  if (!isOpen) {
+    // Menu closed, trigger normal controls timeout check
+    onMouseMove();
+  }
+});
 
 // Reconnection Engine
 const retryCount = ref(0);
@@ -804,8 +816,8 @@ const onMouseMove = () => {
   showControls.value = true;
   if (controlsTimeout) clearTimeout(controlsTimeout);
   
-  // Hide controls after 3 seconds of mouse inactivity (only if playing and not floating)
-  if (!isPaused.value && !props.floating) {
+  // Hide controls after 3 seconds of mouse inactivity (only if playing, not floating, and no menu is open)
+  if (!isPaused.value && !props.floating && !isAnyMenuOpen.value) {
     controlsTimeout = window.setTimeout(() => {
       showControls.value = false;
     }, 3000);
@@ -813,7 +825,7 @@ const onMouseMove = () => {
 };
 
 const hideControls = () => {
-  if (!isPaused.value && !props.floating) {
+  if (!isPaused.value && !props.floating && !isAnyMenuOpen.value) {
     showControls.value = false;
   }
 };
