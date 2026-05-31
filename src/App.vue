@@ -351,11 +351,19 @@ const getPageTitle = () => {
 
 <style>
 /* Global App Overrides and Themes */
+html, body {
+  height: 100vh !important;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0;
+}
+
 .app-background {
   background-color: #080808 !important;
   color: #ffffff !important;
   font-family: 'Outfit', 'Inter', 'Roboto', sans-serif !important;
-  overflow-x: hidden;
+  height: 100vh !important;
+  overflow: hidden !important;
 }
 
 .main-container {
@@ -397,10 +405,7 @@ const getPageTitle = () => {
 .embedded-player-desktop {
   width: 480px;
   max-width: 40vw;
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  height: 100%;
   animation: slideInLeft 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
