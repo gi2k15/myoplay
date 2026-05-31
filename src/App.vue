@@ -397,7 +397,10 @@ const getPageTitle = () => {
 .embedded-player-desktop {
   width: 480px;
   max-width: 40vw;
-  height: 100%;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   animation: slideInLeft 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
