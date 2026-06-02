@@ -1,262 +1,302 @@
 <!-- src/components/VideoPlayer.vue -->
 <template>
-  <div 
-    class="video-player-container rounded-xl overflow-hidden" 
-    :class="{ 'player-floating elevation-10 border-primary': floating }"
-    @mousemove="onMouseMove"
-    @mouseleave="hideControls"
-  >
-    <!-- HTML5 Video element -->
-    <video
-      ref="videoRef"
-      class="video-element"
-      :class="aspectRatioClass"
-      @play="isPaused = false"
-      @pause="isPaused = true"
-      @timeupdate="onTimeUpdate"
-      @volumechange="onVolumeChange"
-      @waiting="isBuffering = true"
-      @playing="isBuffering = false"
-      @click="togglePlay"
-    />
-
-    <!-- Poster Logo Overlay (When loading or buffering) -->
-    <div v-if="showPoster && channel.logo" class="video-poster-overlay d-flex align-center justify-center">
-      <v-img :src="channel.logo" width="120" max-height="120" contain class="poster-logo animate-pulse" />
-    </div>
-
-    <!-- Buffering/Loading Spinner -->
-    <div v-if="isBuffering || isConnecting" class="video-loading-overlay d-flex flex-column align-center justify-center">
-      <v-progress-circular :size="50" color="secondary" indeterminate class="mb-2" />
-      <span class="text-caption font-weight-bold text-glow-small">
-        {{ isConnecting ? `Conectando (Tentativa ${retryCount}/5)...` : 'Carregando stream...' }}
-      </span>
-    </div>
-
-    <!-- Error Overlay -->
-    <div v-if="errorState" class="video-error-overlay d-flex flex-column align-center justify-center pa-4 text-center">
-      <v-icon size="48" color="error" class="mb-2">mdi-alert-circle</v-icon>
-      <div class="text-subtitle-2 font-weight-bold mb-1">Erro de Reprodução</div>
-      <p class="text-caption text-medium-emphasis mb-3 max-width-280">
-        {{ errorState }}
+  <div ref="wrapperRef" class="video-player-wrapper w-100 h-100 position-relative">
+    <!-- Document PiP Placeholder -->
+    <div 
+      v-if="isDocumentPip" 
+      class="pip-placeholder rounded-xl d-flex flex-column align-center justify-center pa-4 text-center"
+    >
+      <v-icon size="48" color="primary" class="mb-2 animate-pulse">mdi-picture-in-picture-bottom-right</v-icon>
+      <div class="text-subtitle-1 font-weight-bold text-glow-small mb-1">Pop-out Ativo</div>
+      <p class="text-caption text-medium-emphasis mb-4 max-width-280">
+        O canal <strong class="text-secondary">{{ channel.name }}</strong> está sendo exibido em uma janela externa sempre no topo.
       </p>
-      <div class="d-flex gap-2">
-        <v-btn size="x-small" color="primary" @click="initializePlayer">Tentar Novamente</v-btn>
-        <v-btn size="x-small" color="secondary" variant="outlined" @click="showStats = !showStats">Diagnóstico</v-btn>
-      </div>
+      <v-btn 
+        size="small" 
+        color="primary" 
+        prepend-icon="mdi-arrow-collapse"
+        class="text-uppercase font-weight-bold shadow-btn"
+        @click="closePip"
+      >
+        Trazer de Volta
+      </v-btn>
     </div>
 
-    <!-- Stats Panel overlay -->
-    <v-card v-if="showStats" class="stats-panel pa-3 text-caption glass-card" variant="flat">
-      <div class="d-flex align-center justify-space-between mb-2">
-        <strong>Estatísticas do Stream</strong>
-        <v-btn icon="mdi-close" size="x-small" variant="text" @click="showStats = false" />
-      </div>
-      <div>Nome: <span class="text-secondary">{{ channel.name }}</span></div>
-      <div>Tipo: <span class="text-secondary">{{ channel.type.toUpperCase() }}</span></div>
-      <div>Resolução: <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span></div>
-      <div>Motor: <span class="text-secondary">{{ hlsInstance ? 'Hls.js (MSE)' : 'Nativo' }}</span></div>
-      <div>Modo de Buffer: <span class="text-secondary">{{ playerBufferMode === 'stable' ? 'Alta Estabilidade' : playerBufferMode === 'balanced' ? 'Balanceado' : 'Baixa Latência' }}</span></div>
-      <div class="text-truncate" :title="channel.streamUrl">
-        Link original: <span class="text-secondary text-caption">{{ channel.streamUrl }}</span>
-      </div>
-      <div v-if="isActiveProxied" class="text-truncate text-warning font-weight-bold" :title="activePlayUrl">
-        CORS Proxy: <span class="text-warning text-caption">Ativo</span>
-      </div>
-      <v-alert
-        v-if="channel.streamUrl.includes('.ts')"
-        type="warning"
-        variant="tonal"
-        density="compact"
-        class="mt-2 text-caption py-1 px-2"
-        hide-details
-      >
-        Streams .ts podem requerer CORS Proxy ou suporte nativo no navegador.
-      </v-alert>
-    </v-card>
+    <!-- The actual player container -->
+    <div 
+      ref="playerContainerRef"
+      class="video-player-container rounded-xl overflow-hidden" 
+      :class="{ 
+        'player-floating elevation-10 border-primary': floating,
+        'player-pip': isDocumentPip
+      }"
+      @mousemove="onMouseMove"
+      @mouseleave="hideControls"
+    >
+      <!-- HTML5 Video element -->
+      <video
+        ref="videoRef"
+        class="video-element"
+        :class="aspectRatioClass"
+        @play="isPaused = false"
+        @pause="isPaused = true"
+        @timeupdate="onTimeUpdate"
+        @volumechange="onVolumeChange"
+        @waiting="isBuffering = true"
+        @playing="isBuffering = false"
+        @click="togglePlay"
+        @enterpictureinpicture="onEnterPip"
+        @leavepictureinpicture="onLeavePip"
+      />
 
-    <!-- Custom Controls HUD -->
-    <Transition name="fade">
-      <div v-if="showControls || isPaused || floating" class="controls-overlay d-flex flex-column justify-space-between">
-        
-        <!-- Top Toolbar -->
-        <div class="d-flex align-center justify-space-between pa-3 top-gradient">
-          <div class="d-flex align-center gap-2 min-width-0">
-            <v-avatar size="32" class="bg-surface-variant flex-shrink-0" v-if="channel.logo">
-              <v-img :src="channel.logo" />
-            </v-avatar>
-            <div class="text-subtitle-2 font-weight-bold text-truncate text-glow-small" style="max-width: 250px;">
-              {{ channel.name }}
-            </div>
-          </div>
+      <!-- Poster Logo Overlay (When loading or buffering) -->
+      <div v-if="showPoster && channel.logo" class="video-poster-overlay d-flex align-center justify-center">
+        <v-img :src="channel.logo" width="120" max-height="120" contain class="poster-logo animate-pulse" />
+      </div>
+
+      <!-- Buffering/Loading Spinner -->
+      <div v-if="isBuffering || isConnecting" class="video-loading-overlay d-flex flex-column align-center justify-center">
+        <v-progress-circular :size="50" color="secondary" indeterminate class="mb-2" />
+        <span class="text-caption font-weight-bold text-glow-small">
+          {{ isConnecting ? `Conectando (Tentativa ${retryCount}/5)...` : 'Carregando stream...' }}
+        </span>
+      </div>
+
+      <!-- Error Overlay -->
+      <div v-if="errorState" class="video-error-overlay d-flex flex-column align-center justify-center pa-4 text-center">
+        <v-icon size="48" color="error" class="mb-2">mdi-alert-circle</v-icon>
+        <div class="text-subtitle-2 font-weight-bold mb-1">Erro de Reprodução</div>
+        <p class="text-caption text-medium-emphasis mb-3 max-width-280">
+          {{ errorState }}
+        </p>
+        <div class="d-flex gap-2">
+          <v-btn size="x-small" color="primary" @click="initializePlayer">Tentar Novamente</v-btn>
+          <v-btn size="x-small" color="secondary" variant="outlined" @click="showStats = !showStats">Diagnóstico</v-btn>
+        </div>
+      </div>
+
+      <!-- Stats Panel overlay -->
+      <v-card v-if="showStats" class="stats-panel pa-3 text-caption glass-card" variant="flat">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <strong>Estatísticas do Stream</strong>
+          <v-btn icon="mdi-close" size="x-small" variant="text" @click="showStats = false" />
+        </div>
+        <div>Nome: <span class="text-secondary">{{ channel.name }}</span></div>
+        <div>Tipo: <span class="text-secondary">{{ channel.type.toUpperCase() }}</span></div>
+        <div>Resolução: <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span></div>
+        <div>Motor: <span class="text-secondary">{{ hlsInstance ? 'Hls.js (MSE)' : 'Nativo' }}</span></div>
+        <div>Modo de Buffer: <span class="text-secondary">{{ playerBufferMode === 'stable' ? 'Alta Estabilidade' : playerBufferMode === 'balanced' ? 'Balanceado' : 'Baixa Latência' }}</span></div>
+        <div class="text-truncate" :title="channel.streamUrl">
+          Link original: <span class="text-secondary text-caption">{{ channel.streamUrl }}</span>
+        </div>
+        <div v-if="isActiveProxied" class="text-truncate text-warning font-weight-bold" :title="activePlayUrl">
+          CORS Proxy: <span class="text-warning text-caption">Ativo</span>
+        </div>
+        <v-alert
+          v-if="channel.streamUrl.includes('.ts')"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mt-2 text-caption py-1 px-2"
+          hide-details
+        >
+          Streams .ts podem requerer CORS Proxy ou suporte nativo no navegador.
+        </v-alert>
+      </v-card>
+
+      <!-- Custom Controls HUD -->
+      <Transition name="fade">
+        <div v-if="showControls || isPaused || floating" class="controls-overlay d-flex flex-column justify-space-between">
           
-          <div class="d-flex align-center">
-            <!-- Diagnostics -->
-            <v-btn
-              icon="mdi-television-guide"
-              variant="text"
-              color="white"
-              size="small"
-              title="Diagnóstico"
-              @click="showStats = !showStats"
-            />
-            <!-- Float Mode Toggle -->
-            <v-btn
-              :icon="floating ? 'mdi-open-in-new' : 'mdi-dock-window'"
-              variant="text"
-              color="white"
-              size="small"
-              :title="floating ? 'Maximizar Player' : 'Modo Flutuante'"
-              @click="$emit('toggle-float')"
-            />
-            <!-- Close / Stop Button -->
-            <v-btn
-              icon="mdi-close"
-              variant="text"
-              color="error"
-              size="small"
-              title="Fechar Player"
-              @click="$emit('close-player')"
-            />
-          </div>
-        </div>
-
-        <!-- Center Play Overlay Indicator (Only for normal view) -->
-        <div v-if="!floating" class="d-flex align-center justify-center flex-grow-1" @click="togglePlay">
-          <v-btn
-            v-if="isPaused"
-            icon="mdi-play"
-            color="primary"
-            size="x-large"
-            class="play-center-btn play-btn-glow"
-          />
-        </div>
-
-        <!-- Bottom Controls Bar -->
-        <div class="pa-3 bottom-gradient">
-          <!-- Timeline progress bar (For VOD movies or series) -->
-          <div v-if="!isLive" class="px-2 mb-2 d-flex align-center gap-2">
-            <span class="text-caption text-white">{{ formatTimelineTime(currentTime) }}</span>
-            <v-slider
-              v-model="currentTime"
-              :max="duration || 100"
-              color="secondary"
-              track-color="rgba(255, 255, 255, 0.2)"
-              hide-details
-              density="compact"
-              @update:model-value="onTimelineSeek"
-            />
-            <span class="text-caption text-white">{{ formatTimelineTime(duration) }}</span>
-          </div>
-
-          <div class="d-flex align-center justify-space-between">
-            <!-- Left Controls -->
-            <div class="d-flex align-center gap-1">
-              <!-- Play / Pause -->
+          <!-- Top Toolbar -->
+          <div class="d-flex align-center justify-space-between pa-3 top-gradient">
+            <div class="d-flex align-center gap-2 min-width-0">
+              <v-avatar size="32" class="bg-surface-variant flex-shrink-0" v-if="channel.logo">
+                <v-img :src="channel.logo" />
+              </v-avatar>
+              <div class="text-subtitle-2 font-weight-bold text-truncate text-glow-small" style="max-width: 250px;">
+                {{ channel.name }}
+              </div>
+            </div>
+            
+            <div class="d-flex align-center">
+              <!-- Diagnostics -->
               <v-btn
-                :icon="isPaused ? 'mdi-play' : 'mdi-pause'"
+                icon="mdi-television-guide"
                 variant="text"
                 color="white"
                 size="small"
-                @click="togglePlay"
+                title="Diagnóstico"
+                @click="showStats = !showStats"
               />
+              <!-- Pop-out Toggle (Picture-in-Picture) -->
+              <v-btn
+                :icon="isPipActive ? 'mdi-arrow-collapse' : 'mdi-picture-in-picture-bottom-right'"
+                variant="text"
+                color="white"
+                size="small"
+                :title="isPipActive ? 'Trazer de Volta' : 'Pop-out (Sempre no Topo)'"
+                @click="togglePip"
+              />
+              <!-- Float Mode Toggle (Only if not in PiP) -->
+              <v-btn
+                v-if="!isPipActive"
+                :icon="floating ? 'mdi-open-in-new' : 'mdi-dock-window'"
+                variant="text"
+                color="white"
+                size="small"
+                :title="floating ? 'Maximizar Player' : 'Modo Flutuante'"
+                @click="$emit('toggle-float')"
+              />
+              <!-- Close / Stop Button -->
+              <v-btn
+                icon="mdi-close"
+                variant="text"
+                color="error"
+                size="small"
+                title="Fechar Player"
+                @click="onClosePlayer"
+              />
+            </div>
+          </div>
 
-              <!-- Volume Control -->
-              <div class="d-flex align-center volume-slider-container">
+          <!-- Center Play Overlay Indicator (Only for normal view) -->
+          <div v-if="!floating" class="d-flex align-center justify-center flex-grow-1" @click="togglePlay">
+            <v-btn
+              v-if="isPaused"
+              icon="mdi-play"
+              color="primary"
+              size="x-large"
+              class="play-center-btn play-btn-glow"
+            />
+          </div>
+
+          <!-- Bottom Controls Bar -->
+          <div class="pa-3 bottom-gradient">
+            <!-- Timeline progress bar (For VOD movies or series) -->
+            <div v-if="!isLive" class="px-2 mb-2 d-flex align-center gap-2">
+              <span class="text-caption text-white">{{ formatTimelineTime(currentTime) }}</span>
+              <v-slider
+                v-model="currentTime"
+                :max="duration || 100"
+                color="secondary"
+                track-color="rgba(255, 255, 255, 0.2)"
+                hide-details
+                density="compact"
+                @update:model-value="onTimelineSeek"
+              />
+              <span class="text-caption text-white">{{ formatTimelineTime(duration) }}</span>
+            </div>
+
+            <div class="d-flex align-center justify-space-between">
+              <!-- Left Controls -->
+              <div class="d-flex align-center gap-1">
+                <!-- Play / Pause -->
                 <v-btn
-                  :icon="isMuted ? 'mdi-volume-off' : volume > 0.5 ? 'mdi-volume-high' : 'mdi-volume-medium'"
+                  :icon="isPaused ? 'mdi-play' : 'mdi-pause'"
                   variant="text"
                   color="white"
                   size="small"
-                  @click="toggleMute"
+                  @click="togglePlay"
                 />
-                <v-slider
-                  v-model="volume"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  color="secondary"
-                  track-color="rgba(255, 255, 255, 0.2)"
-                  class="volume-slider ml-1"
-                  hide-details
-                  density="compact"
-                />
+
+                <!-- Volume Control -->
+                <div class="d-flex align-center volume-slider-container">
+                  <v-btn
+                    :icon="isMuted ? 'mdi-volume-off' : volume > 0.5 ? 'mdi-volume-high' : 'mdi-volume-medium'"
+                    variant="text"
+                    color="white"
+                    size="small"
+                    @click="toggleMute"
+                  />
+                  <v-slider
+                    v-model="volume"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    color="secondary"
+                    track-color="rgba(255, 255, 255, 0.2)"
+                    class="volume-slider ml-1"
+                    hide-details
+                    density="compact"
+                  />
+                </div>
+
+                <!-- Live Indicator -->
+                <v-chip v-if="isLive" size="x-small" color="error" class="ml-2 px-2 font-weight-bold uppercase-tag animate-pulse">
+                  🔴 AO VIVO
+                </v-chip>
               </div>
 
-              <!-- Live Indicator -->
-              <v-chip v-if="isLive" size="x-small" color="error" class="ml-2 px-2 font-weight-bold uppercase-tag animate-pulse">
-                🔴 AO VIVO
-              </v-chip>
-            </div>
+              <!-- Right Controls -->
+              <div class="d-flex align-center gap-1">
+                <!-- Buffer Mode Selector -->
+                <v-menu v-model="isBufferMenuOpen" location="top end" transition="slide-y-transition">
+                  <template v-slot:activator="{ props }">
+                    <v-btn
+                      icon="mdi-tune"
+                      variant="text"
+                      color="white"
+                      size="small"
+                      title="Modo de Buffer / Estabilidade"
+                      v-bind="props"
+                    />
+                  </template>
+                  <v-list bg-color="surface" density="compact">
+                    <v-list-item 
+                      v-for="opt in bufferModes" 
+                      :key="opt.value" 
+                      :active="playerBufferMode === opt.value"
+                      color="secondary"
+                      @click="changeBufferMode(opt.value)"
+                    >
+                      <v-list-item-title class="text-caption">{{ opt.title }}</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
 
-            <!-- Right Controls -->
-            <div class="d-flex align-center gap-1">
-              <!-- Buffer Mode Selector -->
-              <v-menu v-model="isBufferMenuOpen" location="top end" transition="slide-y-transition">
-                <template v-slot:activator="{ props }">
-                  <v-btn
-                    icon="mdi-tune"
-                    variant="text"
-                    color="white"
-                    size="small"
-                    title="Modo de Buffer / Estabilidade"
-                    v-bind="props"
-                  />
-                </template>
-                <v-list bg-color="surface" density="compact">
-                  <v-list-item 
-                    v-for="opt in bufferModes" 
-                    :key="opt.value" 
-                    :active="playerBufferMode === opt.value"
-                    color="secondary"
-                    @click="changeBufferMode(opt.value)"
-                  >
-                    <v-list-item-title class="text-caption">{{ opt.title }}</v-list-item-title>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
+                <!-- Aspect Ratio Selector -->
+                <v-menu v-model="isAspectRatioMenuOpen" location="top end" transition="slide-y-transition">
+                  <template v-slot:activator="{ props }">
+                    <v-btn
+                      icon="mdi-aspect-ratio"
+                      variant="text"
+                      color="white"
+                      size="small"
+                      title="Proporção da Tela"
+                      v-bind="props"
+                    />
+                  </template>
+                  <v-list bg-color="surface" density="compact">
+                    <v-list-item 
+                      v-for="opt in aspectRatios" 
+                      :key="opt.value" 
+                      :active="aspectRatio === opt.value"
+                      color="secondary"
+                      @click="aspectRatio = opt.value"
+                    >
+                      <v-list-item-title class="text-caption">{{ opt.label }}</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
 
-              <!-- Aspect Ratio Selector -->
-              <v-menu v-model="isAspectRatioMenuOpen" location="top end" transition="slide-y-transition">
-                <template v-slot:activator="{ props }">
-                  <v-btn
-                    icon="mdi-aspect-ratio"
-                    variant="text"
-                    color="white"
-                    size="small"
-                    title="Proporção da Tela"
-                    v-bind="props"
-                  />
-                </template>
-                <v-list bg-color="surface" density="compact">
-                  <v-list-item 
-                    v-for="opt in aspectRatios" 
-                    :key="opt.value" 
-                    :active="aspectRatio === opt.value"
-                    color="secondary"
-                    @click="aspectRatio = opt.value"
-                  >
-                    <v-list-item-title class="text-caption">{{ opt.label }}</v-list-item-title>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
-
-              <!-- Fullscreen -->
-              <v-btn
-                v-if="!floating"
-                :icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
-                variant="text"
-                color="white"
-                size="small"
-                title="Tela Cheia"
-                @click="toggleFullscreen"
-              />
+                <!-- Fullscreen (Only if not in PiP) -->
+                <v-btn
+                  v-if="!floating && !isPipActive"
+                  :icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
+                  variant="text"
+                  color="white"
+                  size="small"
+                  title="Tela Cheia"
+                  @click="toggleFullscreen"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-      </div>
-    </Transition>
+        </div>
+      </Transition>
+    </div>
   </div>
 </template>
 
@@ -276,8 +316,16 @@ const emit = defineEmits<{
   (e: 'toggle-float'): void;
 }>();
 
-// Video Element Refs
+// Video Element and Container Refs
 const videoRef = ref<HTMLVideoElement | null>(null);
+const wrapperRef = ref<HTMLElement | null>(null);
+const playerContainerRef = ref<HTMLElement | null>(null);
+
+// PiP / Pop-out States
+const isPipActive = ref(false);
+const isDocumentPip = ref(false);
+let pipWindowInstance: any = null;
+
 let hlsInstance: Hls | null = null;
 let mpegtsInstance: mpegts.Player | null = null;
 
@@ -376,6 +424,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  closePip();
   destroyPlayer();
   removeHotkeys();
   document.removeEventListener('fullscreenchange', onFullscreenChange);
@@ -889,6 +938,131 @@ const setupHotkeys = () => {
 const removeHotkeys = () => {
   window.removeEventListener('keydown', handleKeyDown);
 };
+
+// --- PICTURE IN PIPELINE / POP-OUT WINDOW ENGINE ---
+const closePip = () => {
+  if (pipWindowInstance) {
+    pipWindowInstance.close();
+    pipWindowInstance = null;
+  }
+};
+
+const togglePip = async () => {
+  if (isPipActive.value) {
+    closePip();
+    return;
+  }
+
+  const video = videoRef.value;
+  if (!video) return;
+
+  // @ts-ignore
+  if (window.documentPictureInPicture && window.documentPictureInPicture.requestWindow) {
+    try {
+      const container = playerContainerRef.value;
+      if (!container) return;
+
+      // Request Picture-in-Picture window with same aspect ratio size
+      // @ts-ignore
+      const pipWindow = await window.documentPictureInPicture.requestWindow({
+        width: Math.max(640, container.clientWidth || 640),
+        height: Math.max(360, container.clientHeight || 360),
+      });
+
+      pipWindowInstance = pipWindow;
+      isPipActive.value = true;
+      isDocumentPip.value = true;
+
+      // Copy all active stylesheets from main window to Pip window
+      [...document.styleSheets].forEach((styleSheet) => {
+        try {
+          if (styleSheet.href) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = styleSheet.href;
+            pipWindow.document.head.appendChild(link);
+          } else {
+            const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pipWindow.document.head.appendChild(style);
+          }
+        } catch (e) {
+          if (styleSheet.ownerNode) {
+            const clonedNode = styleSheet.ownerNode.cloneNode(true);
+            pipWindow.document.head.appendChild(clonedNode);
+          }
+        }
+      });
+
+      // Copy other links (fonts, icons)
+      document.querySelectorAll('link[rel="stylesheet"]').forEach((linkNode) => {
+        const href = linkNode.getAttribute('href');
+        if (href && !pipWindow.document.querySelector(`link[href="${href}"]`)) {
+          const cloned = linkNode.cloneNode(true);
+          pipWindow.document.head.appendChild(cloned);
+        }
+      });
+
+      // Style pip body with full width/height & black background
+      pipWindow.document.body.className = 'v-theme--midnightGlow app-background';
+      pipWindow.document.body.style.margin = '0';
+      pipWindow.document.body.style.padding = '0';
+      pipWindow.document.body.style.backgroundColor = '#080808';
+      pipWindow.document.body.style.overflow = 'hidden';
+      pipWindow.document.body.style.display = 'flex';
+      pipWindow.document.body.style.justifyContent = 'center';
+      pipWindow.document.body.style.alignItems = 'center';
+      pipWindow.document.body.style.width = '100vw';
+      pipWindow.document.body.style.height = '100vh';
+
+      // Move player container element to the Picture-in-Picture document body
+      pipWindow.document.body.appendChild(container);
+
+      // Handle PiP window close event to restore DOM element back to original place
+      pipWindow.addEventListener('pagehide', () => {
+        if (wrapperRef.value && container) {
+          wrapperRef.value.appendChild(container);
+        }
+        pipWindowInstance = null;
+        isPipActive.value = false;
+        isDocumentPip.value = false;
+      });
+
+    } catch (err) {
+      console.error('Document PiP failed, falling back to Video PiP:', err);
+      handleStandardVideoPip(video);
+    }
+  } else {
+    handleStandardVideoPip(video);
+  }
+};
+
+const handleStandardVideoPip = async (video: HTMLVideoElement) => {
+  try {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else {
+      await video.requestPictureInPicture();
+    }
+  } catch (err) {
+    console.error('Error with standard Video Picture-in-Picture:', err);
+  }
+};
+
+const onEnterPip = () => {
+  isPipActive.value = true;
+  isDocumentPip.value = false;
+};
+
+const onLeavePip = () => {
+  isPipActive.value = false;
+};
+
+const onClosePlayer = () => {
+  closePip();
+  emit('close-player');
+};
 </script>
 
 <style scoped>
@@ -1069,5 +1243,41 @@ const removeHotkeys = () => {
 }
 .play-btn-glow {
   box-shadow: 0 0 15px rgba(255, 193, 7, 0.5) !important;
+}
+
+/* Picture in Picture & Pop-out Styles */
+.video-player-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.pip-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 250px;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(16px);
+  border: 2px dashed rgba(255, 193, 7, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16/9;
+  user-select: none;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+}
+
+.player-pip {
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.shadow-btn {
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3) !important;
 }
 </style>
