@@ -150,6 +150,6 @@ All your playlists, stream URLs, Xtream Codes credentials (usernames and passwor
 
 ---
 
-## 📄 Licença
+## 📄 License
 
-Este projeto está licenciado sob a **GNU General Public License v3.0** (GPL-3.0-or-later). Consulte o arquivo [LICENSE](https://www.gnu.org/licenses/gpl-3.0.html) para obter o texto completo da licença e seus termos.
+This project is licensed under the **GNU General Public License v3.0** (GPL-3.0-or-later). See the [LICENSE](https://www.gnu.org/licenses/gpl-3.0.html) file for the full license text and terms.
