@@ -1430,6 +1430,7 @@ const onClosePlayer = () => {
 .text-glow-small {
   background: linear-gradient(135deg, #ffb300 0%, #ffe082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .play-btn-glow {
