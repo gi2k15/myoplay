@@ -141,13 +141,9 @@
           </v-row>
         </div>
 
-        <!-- Scrollable Channels Container -->
-        <div 
-          class="flex-grow-1 overflow-y-auto pa-4"
-          @scroll="onScroll"
-        >
-          <!-- Top Toolbar -->
-          <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between mb-6 gap-3">
+        <!-- Browser Top Toolbar (Fixed/Static) -->
+        <div class="pa-4 pb-2 flex-shrink-0">
+          <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between gap-3">
             <div class="d-flex align-center">
               <!-- Mobile Category Toggle -->
               <v-btn
@@ -184,6 +180,13 @@
               @update:model-value="resetPagination"
             />
           </div>
+        </div>
+
+        <!-- Scrollable Channels Container -->
+        <div 
+          class="flex-grow-1 overflow-y-auto px-4 pb-4 pt-2"
+          @scroll="onScroll"
+        >
 
           <!-- No Channels Alert -->
           <div v-if="filteredChannels.length === 0" class="text-center py-12">
