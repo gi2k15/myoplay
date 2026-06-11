@@ -33,7 +33,7 @@
     <!-- The actual player container -->
     <div
       ref="playerContainerRef"
-      class="video-player-container rounded-xl overflow-hidden"
+      class="video-player-container overflow-hidden"
       :class="{
         'player-floating elevation-10 border-primary': floating,
         'player-pip': isDocumentPip,

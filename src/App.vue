@@ -421,9 +421,7 @@ html, body {
 
 .player-wrapper {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
   aspect-ratio: 16/9;
 }
 
