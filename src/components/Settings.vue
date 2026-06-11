@@ -169,6 +169,53 @@
             </v-card>
           </v-col>
 
+          <!-- Movie Metadata Database Settings -->
+          <v-col cols="12">
+            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+              <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
+                <v-icon start color="primary" class="mr-2">mdi-movie-search-outline</v-icon> 
+                Banco de Dados de Filmes e Metadados (VOD)
+              </h3>
+              
+              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
+                Configure um provedor de metadados para buscar automaticamente sinopses, posters de alta resolução, anos de lançamento e notas de filmes que não possuem essas informações na sua lista.
+              </p>
+
+              <v-select
+                v-model="movieMetadataSource"
+                :items="metadataSources"
+                label="Provedor de Metadados de Filmes"
+                variant="outlined"
+                density="comfortable"
+                class="mb-4"
+                @update:model-value="saveMetadataSettings"
+              />
+
+              <v-text-field
+                v-if="movieMetadataSource !== 'none'"
+                v-model="movieMetadataApiKey"
+                label="Chave de API (API Key)"
+                placeholder="Insira sua chave de API"
+                variant="outlined"
+                density="comfortable"
+                type="password"
+                prepend-inner-icon="mdi-key-variant"
+                class="mb-4"
+                @update:model-value="saveMetadataSettings"
+              />
+
+              <v-select
+                v-if="movieMetadataSource === 'tmdb'"
+                v-model="movieMetadataLanguage"
+                :items="metadataLanguages"
+                label="Idioma de Busca de Sinopses"
+                variant="outlined"
+                density="comfortable"
+                @update:model-value="saveMetadataSettings"
+              />
+            </v-card>
+          </v-col>
+
           <!-- Local Database & Maintenance -->
           <v-col cols="12">
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
@@ -338,6 +385,24 @@ const timeShiftOptions = [
   { title: '+12 horas', value: 12 },
 ];
 
+// Movie Metadata Fields
+const movieMetadataSource = ref('none');
+const movieMetadataApiKey = ref('');
+const movieMetadataLanguage = ref('pt-BR');
+
+const metadataSources = [
+  { title: 'Nenhum (Apenas metadados locais/lista)', value: 'none' },
+  { title: 'TMDB (The Movie Database - Recomendado em PT)', value: 'tmdb' },
+  { title: 'OMDb API (IMDb - Majoritariamente em inglês)', value: 'omdb' }
+];
+
+const metadataLanguages = [
+  { title: 'Português (Brasil)', value: 'pt-BR' },
+  { title: 'Português (Portugal)', value: 'pt-PT' },
+  { title: 'Inglês (Estados Unidos)', value: 'en-US' },
+  { title: 'Espanhol', value: 'es-ES' }
+];
+
 // DB Statistics
 const stats = ref({
   playlists: 0,
@@ -350,8 +415,29 @@ onMounted(async () => {
   await loadProxySettings();
   await loadPlaybackSettings();
   await loadEpgSettings();
+  await loadMetadataSettings();
   await calculateStats();
 });
+
+const loadMetadataSettings = async () => {
+  try {
+    movieMetadataSource.value = await db.getSetting('movie_metadata_source', 'none');
+    movieMetadataApiKey.value = await db.getSetting('movie_metadata_api_key', '');
+    movieMetadataLanguage.value = await db.getSetting('movie_metadata_language', 'pt-BR');
+  } catch (err) {
+    console.error('Erro ao carregar configurações de metadados:', err);
+  }
+};
+
+const saveMetadataSettings = async () => {
+  try {
+    await db.setSetting('movie_metadata_source', movieMetadataSource.value);
+    await db.setSetting('movie_metadata_api_key', movieMetadataApiKey.value);
+    await db.setSetting('movie_metadata_language', movieMetadataLanguage.value);
+  } catch (err) {
+    console.error('Erro ao salvar configurações de metadados:', err);
+  }
+};
 
 // --- LOAD PREFERENCES ---
 // --- LOAD PREFERENCES ---

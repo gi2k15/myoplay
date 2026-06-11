@@ -284,7 +284,7 @@
               <v-card 
                 class="movie-card fill-height d-flex flex-column rounded-xl border-glass" 
                 variant="flat"
-                @click="playStream(ch)"
+                @click="openMovieDetails(ch)"
               >
                 <!-- Poster Image -->
                 <div class="movie-poster-container flex-shrink-0">
@@ -514,6 +514,110 @@
       </v-card>
     </v-dialog>
 
+    <!-- MOVIE DETAILS DIALOG -->
+    <v-dialog v-model="movieDialog" max-width="850" class="movie-dialog rounded-xl">
+      <v-card v-if="selectedMovie" class="glass-dialog pa-4 rounded-xl border-glass">
+        <!-- Botão fechar -->
+        <div class="d-flex align-end justify-end mb-2">
+          <v-btn icon="mdi-close" variant="text" size="small" @click="movieDialog = false" />
+        </div>
+
+        <v-row class="ma-0 mb-4">
+          <!-- Poster do Filme -->
+          <v-col cols="12" sm="4" class="pa-2">
+            <v-img 
+              v-if="selectedMovie.logo" 
+              :src="selectedMovie.logo" 
+              cover 
+              aspect-ratio="0.67" 
+              class="bg-surface-variant rounded-xl elevation-6"
+            />
+            <div v-else class="movie-poster-placeholder d-flex align-center justify-center rounded-xl elevation-6 py-12">
+              <v-icon size="60" color="medium-emphasis">mdi-movie-open</v-icon>
+            </div>
+          </v-col>
+
+          <!-- Informações de Metadados do Filme -->
+          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start">
+            <h2 class="text-h4 font-weight-bold mb-2 text-glow-small">{{ selectedMovie.name }}</h2>
+            
+            <div class="d-flex align-center mb-4 gap-2 flex-wrap">
+              <v-chip size="small" color="primary" class="font-weight-bold">{{ selectedMovie.category }}</v-chip>
+              <v-chip v-if="selectedMovie.rating" size="small" color="secondary" class="font-weight-bold">★ {{ selectedMovie.rating }}</v-chip>
+              <v-chip v-if="selectedMovie.year" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedMovie.year }}</v-chip>
+              <v-chip v-if="selectedMovie.duration" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedMovie.duration }} min</v-chip>
+            </div>
+
+            <!-- Gênero e Diretor (vindo de APIs como OMDb) -->
+            <div v-if="selectedMovie.genre || selectedMovie.director" class="mb-4 text-caption text-medium-emphasis">
+              <span v-if="selectedMovie.genre" class="mr-3"><strong>Gênero:</strong> {{ selectedMovie.genre }}</span>
+              <span v-if="selectedMovie.director"><strong>Diretor:</strong> {{ selectedMovie.director }}</span>
+            </div>
+            
+            <!-- Sinopse -->
+            <div class="flex-grow-1 mb-6">
+              <h4 class="text-subtitle-2 font-weight-bold text-glow-small mb-2">Sinopse</h4>
+              <p v-if="selectedMovie.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height-movie">
+                {{ selectedMovie.plot }}
+              </p>
+              <p v-else-if="loadingMovieInfo" class="text-body-2 text-medium-emphasis mb-0 italic">
+                <v-progress-circular size="16" width="2" color="secondary" indeterminate class="mr-2" />
+                Buscando sinopse e detalhes online...
+              </p>
+              <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
+                Nenhuma sinopse disponível para este filme.
+              </p>
+            </div>
+
+            <!-- Alerta de erro de busca -->
+            <v-alert v-if="movieErrorMsg" type="warning" variant="tonal" density="compact" class="mb-4 text-caption">
+              {{ movieErrorMsg }}
+            </v-alert>
+
+            <!-- Barra de Ações -->
+            <div class="d-flex align-center justify-space-between flex-wrap gap-2 pt-2 border-top">
+              <div class="d-flex align-center gap-2">
+                <!-- Botão Assistir -->
+                <v-btn
+                  prepend-icon="mdi-play"
+                  color="primary"
+                  variant="flat"
+                  size="large"
+                  class="play-btn-glow"
+                  @click="playMovie(selectedMovie)"
+                >
+                  Assistir
+                </v-btn>
+
+                <!-- Botão Favoritar -->
+                <v-btn
+                  :prepend-icon="isFavorite(selectedMovie.id) ? 'mdi-star' : 'mdi-star-outline'"
+                  :color="isFavorite(selectedMovie.id) ? 'warning' : 'medium-emphasis'"
+                  variant="outlined"
+                  size="large"
+                  @click="toggleFavorite(selectedMovie.id)"
+                >
+                  {{ isFavorite(selectedMovie.id) ? 'Favoritado' : 'Favoritar' }}
+                </v-btn>
+              </div>
+
+              <!-- Botão Busca Manual -->
+              <v-btn
+                prepend-icon="mdi-movie-search-outline"
+                variant="text"
+                color="secondary"
+                size="small"
+                :loading="loadingMovieInfo"
+                @click="forceSearchMetadata"
+              >
+                Buscar Metadados
+              </v-btn>
+            </div>
+          </v-col>
+        </v-row>
+      </v-card>
+    </v-dialog>
+
   </v-container>
 </template>
 
@@ -550,6 +654,12 @@ const favoritesSet = ref<Set<string>>(new Set());
 
 // EPG data map: key is tvgId
 const epgData = ref<Record<string, { current?: any; next?: any; lastFetched?: number }>>({});
+
+// TV Movie States
+const movieDialog = ref(false);
+const selectedMovie = ref<IPTVChannel | null>(null);
+const loadingMovieInfo = ref(false);
+const movieErrorMsg = ref('');
 
 // TV Series States
 const seriesDialog = ref(false);
@@ -847,6 +957,164 @@ const playEpisode = (ep: XtreamEpisode) => {
   emit('play-stream', mockChannel);
   seriesDialog.value = false; // close hub on playback start
 };
+
+// --- TV MOVIE DETAILS & ONLINE METADATA RESOLUTION ---
+
+function cleanMovieName(name: string): string {
+  if (!name) return '';
+  let clean = name;
+
+  // 1. Remover colchetes e parênteses e seus conteúdos (ex: [4K], (2022))
+  clean = clean.replace(/\[[^\]]*\]/g, ' ');
+  clean = clean.replace(/\([^)]*\)/g, ' ');
+
+  // 2. Remover tags comuns de qualidade e idioma
+  const tags = [
+    /\b(4k|uhd|fhd|hdtv|h264|x264|hevc|x265|bluray|web-dl|webrip|web|rip|dvd|hd)\b/gi,
+    /\b(dublado|legendado|dual|multi|audio|som|dub|leg|portugues|legendado|eng|spa)\b/gi,
+    /\b(1080p|720p|480p|360p|2160p)\b/gi
+  ];
+  for (const regex of tags) {
+    clean = clean.replace(regex, ' ');
+  }
+
+  // 3. Remover anos de 4 dígitos apenas se não for a única palavra no título
+  const yearMatch = clean.match(/\b(19|20)\d{2}\b/g);
+  if (yearMatch) {
+    const temp = clean.replace(/\b(19|20)\d{2}\b/g, ' ').trim();
+    if (temp.length > 0) {
+      clean = temp;
+    }
+  }
+
+  // 4. Limpar caracteres especiais
+  clean = clean.replace(/[\._\-#]/g, ' ');
+
+  // 5. Remover espaços extras
+  clean = clean.replace(/\s+/g, ' ').trim();
+
+  return clean;
+}
+
+async function fetchTMDB(title: string, apiKey: string, lang: string) {
+  const query = encodeURIComponent(title);
+  const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}&language=${lang}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Erro TMDB: ${response.status}`);
+  const data = await response.json();
+  if (data.results && data.results.length > 0) {
+    const movie = data.results[0];
+    return {
+      plot: movie.overview || '',
+      rating: movie.vote_average ? String(movie.vote_average.toFixed(1)) : undefined,
+      year: movie.release_date ? movie.release_date.substring(0, 4) : undefined,
+      logo: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : undefined,
+    };
+  }
+  return null;
+}
+
+async function fetchOMDb(title: string, apiKey: string) {
+  const query = encodeURIComponent(title);
+  const url = `https://www.omdbapi.com/?apikey=${apiKey}&t=${query}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Erro OMDb: ${response.status}`);
+  const movie = await response.json();
+  if (movie.Response === 'True') {
+    return {
+      plot: movie.Plot !== 'N/A' ? movie.Plot : '',
+      rating: movie.imdbRating !== 'N/A' ? movie.imdbRating : undefined,
+      year: movie.Year !== 'N/A' ? movie.Year.substring(0, 4) : undefined,
+      logo: movie.Poster !== 'N/A' ? movie.Poster : undefined,
+      genre: movie.Genre !== 'N/A' ? movie.Genre : undefined,
+      director: movie.Director !== 'N/A' ? movie.Director : undefined,
+    };
+  }
+  return null;
+}
+
+const openMovieDetails = async (movie: IPTVChannel) => {
+  selectedMovie.value = movie;
+  movieDialog.value = true;
+  loadingMovieInfo.value = false;
+  movieErrorMsg.value = '';
+
+  // Busca metadados automaticamente se não tiver sinopse local
+  const source = await db.getSetting('movie_metadata_source', 'none');
+  const apiKey = await db.getSetting('movie_metadata_api_key', '');
+  const lang = await db.getSetting('movie_metadata_language', 'pt-BR');
+
+  if (source !== 'none' && apiKey && !movie.plot) {
+    await fetchOnlineMetadata(movie, source, apiKey, lang);
+  }
+};
+
+const fetchOnlineMetadata = async (movie: IPTVChannel, source: string, apiKey: string, lang: string) => {
+  loadingMovieInfo.value = true;
+  movieErrorMsg.value = '';
+  try {
+    const cleanedTitle = cleanMovieName(movie.name);
+    let result = null;
+    if (source === 'tmdb') {
+      result = await fetchTMDB(cleanedTitle, apiKey, lang);
+    } else if (source === 'omdb') {
+      result = await fetchOMDb(cleanedTitle, apiKey);
+    }
+
+    if (result && selectedMovie.value && selectedMovie.value.id === movie.id) {
+      // Atualiza o objeto selecionado reativamente
+      selectedMovie.value = {
+        ...selectedMovie.value,
+        plot: result.plot || selectedMovie.value.plot,
+        rating: result.rating || selectedMovie.value.rating,
+        year: result.year || selectedMovie.value.year,
+        logo: result.logo || selectedMovie.value.logo,
+        genre: (result as any).genre || selectedMovie.value.genre,
+        director: (result as any).director || selectedMovie.value.director,
+      };
+
+      // Atualiza a lista atual na tela para refletir no grid
+      const originalChannel = allChannels.value.find(c => c.id === movie.id);
+      if (originalChannel) {
+        originalChannel.plot = selectedMovie.value.plot;
+        originalChannel.rating = selectedMovie.value.rating;
+        originalChannel.year = selectedMovie.value.year;
+        originalChannel.logo = selectedMovie.value.logo;
+        originalChannel.genre = selectedMovie.value.genre;
+        originalChannel.director = selectedMovie.value.director;
+      }
+
+      // Persiste no banco IndexedDB para carregamentos futuros instantâneos
+      await db.updateChannel({ ...selectedMovie.value });
+    } else if (!result) {
+      console.log(`Nenhum metadado encontrado online para o filme: ${cleanedTitle}`);
+    }
+  } catch (err: any) {
+    console.error('Erro ao buscar metadados online:', err);
+    movieErrorMsg.value = 'Não foi possível buscar a sinopse do filme online.';
+  } finally {
+    loadingMovieInfo.value = false;
+  }
+};
+
+const forceSearchMetadata = async () => {
+  if (!selectedMovie.value) return;
+  const source = await db.getSetting('movie_metadata_source', 'none');
+  const apiKey = await db.getSetting('movie_metadata_api_key', '');
+  const lang = await db.getSetting('movie_metadata_language', 'pt-BR');
+
+  if (source === 'none' || !apiKey) {
+    movieErrorMsg.value = 'Por favor, configure o provedor de metadados e a chave de API nas configurações.';
+    return;
+  }
+
+  await fetchOnlineMetadata(selectedMovie.value, source, apiKey, lang);
+};
+
+const playMovie = (movie: IPTVChannel) => {
+  playStream(movie);
+  movieDialog.value = false;
+};
 </script>
 
 <style scoped>
@@ -984,6 +1252,11 @@ const playEpisode = (ep: XtreamEpisode) => {
 
 .max-plot-height {
   max-height: 120px;
+  overflow-y: auto;
+}
+
+.max-plot-height-movie {
+  max-height: 200px;
   overflow-y: auto;
 }
 
