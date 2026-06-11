@@ -1256,7 +1256,7 @@ const onClosePlayer = () => {
   background: black;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   display: flex;
-  align-center: center;
+  align-items: center;
   justify-content: center;
   user-select: none;
   aspect-ratio: 16/9;
