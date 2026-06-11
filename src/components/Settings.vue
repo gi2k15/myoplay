@@ -200,6 +200,8 @@
                 density="comfortable"
                 type="password"
                 prepend-inner-icon="mdi-key-variant"
+                :hint="movieMetadataSource === 'tmdb' ? 'Opcional. Se deixado em branco, uma chave padrão pública será usada.' : 'Obrigatório para OMDb API.'"
+                persistent-hint
                 class="mb-4"
                 @update:model-value="saveMetadataSettings"
               />

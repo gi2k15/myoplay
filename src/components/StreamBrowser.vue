@@ -959,6 +959,7 @@ const playEpisode = (ep: XtreamEpisode) => {
 };
 
 // --- TV MOVIE DETAILS & ONLINE METADATA RESOLUTION ---
+const DEFAULT_TMDB_API_KEY = 'a8e7e305582b2d64bb403e7014072c9a';
 
 function cleanMovieName(name: string): string {
   if (!name) return '';
@@ -1041,8 +1042,12 @@ const openMovieDetails = async (movie: IPTVChannel) => {
 
   // Busca metadados automaticamente se não tiver sinopse local
   const source = await db.getSetting('movie_metadata_source', 'tmdb');
-  const apiKey = await db.getSetting('movie_metadata_api_key', '');
+  let apiKey = await db.getSetting('movie_metadata_api_key', '');
   const lang = await db.getSetting('movie_metadata_language', 'pt-BR');
+
+  if (!apiKey && source === 'tmdb') {
+    apiKey = DEFAULT_TMDB_API_KEY;
+  }
 
   if (source !== 'none' && apiKey && !movie.plot) {
     await fetchOnlineMetadata(movie, source, apiKey, lang);
@@ -1100,10 +1105,14 @@ const fetchOnlineMetadata = async (movie: IPTVChannel, source: string, apiKey: s
 const forceSearchMetadata = async () => {
   if (!selectedMovie.value) return;
   const source = await db.getSetting('movie_metadata_source', 'tmdb');
-  const apiKey = await db.getSetting('movie_metadata_api_key', '');
+  let apiKey = await db.getSetting('movie_metadata_api_key', '');
   const lang = await db.getSetting('movie_metadata_language', 'pt-BR');
 
-  if (source === 'none' || !apiKey) {
+  if (!apiKey && source === 'tmdb') {
+    apiKey = DEFAULT_TMDB_API_KEY;
+  }
+
+  if (source === 'none' || (source === 'omdb' && !apiKey)) {
     movieErrorMsg.value = 'Por favor, configure o provedor de metadados e a chave de API nas configurações.';
     return;
   }
