@@ -1129,18 +1129,17 @@ const togglePip = async () => {
   const video = videoRef.value;
   if (!video) return;
 
-  // @ts-ignore
+  const w = window as any;
   if (
-    window.documentPictureInPicture &&
-    window.documentPictureInPicture.requestWindow
+    w.documentPictureInPicture &&
+    w.documentPictureInPicture.requestWindow
   ) {
     try {
       const container = playerContainerRef.value;
       if (!container) return;
 
       // Request Picture-in-Picture window with same aspect ratio size
-      // @ts-ignore
-      const pipWindow = await window.documentPictureInPicture.requestWindow({
+      const pipWindow = await w.documentPictureInPicture.requestWindow({
         width: Math.max(640, container.clientWidth || 640),
         height: Math.max(360, container.clientHeight || 360),
       });
