@@ -959,7 +959,7 @@ const playEpisode = (ep: XtreamEpisode) => {
 };
 
 // --- TV MOVIE DETAILS & ONLINE METADATA RESOLUTION ---
-const DEFAULT_TMDB_API_KEY = 'a8e7e305582b2d64bb403e7014072c9a';
+const DEFAULT_TMDB_API_KEY = 'bd6af17904b638d482df1a924f1eabb4';
 
 function cleanMovieName(name: string): string {
   if (!name) return '';
