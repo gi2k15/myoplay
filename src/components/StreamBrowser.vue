@@ -1040,7 +1040,7 @@ const openMovieDetails = async (movie: IPTVChannel) => {
   movieErrorMsg.value = '';
 
   // Busca metadados automaticamente se não tiver sinopse local
-  const source = await db.getSetting('movie_metadata_source', 'none');
+  const source = await db.getSetting('movie_metadata_source', 'tmdb');
   const apiKey = await db.getSetting('movie_metadata_api_key', '');
   const lang = await db.getSetting('movie_metadata_language', 'pt-BR');
 
@@ -1099,7 +1099,7 @@ const fetchOnlineMetadata = async (movie: IPTVChannel, source: string, apiKey: s
 
 const forceSearchMetadata = async () => {
   if (!selectedMovie.value) return;
-  const source = await db.getSetting('movie_metadata_source', 'none');
+  const source = await db.getSetting('movie_metadata_source', 'tmdb');
   const apiKey = await db.getSetting('movie_metadata_api_key', '');
   const lang = await db.getSetting('movie_metadata_language', 'pt-BR');
 

@@ -386,7 +386,7 @@ const timeShiftOptions = [
 ];
 
 // Movie Metadata Fields
-const movieMetadataSource = ref('none');
+const movieMetadataSource = ref('tmdb');
 const movieMetadataApiKey = ref('');
 const movieMetadataLanguage = ref('pt-BR');
 
@@ -421,7 +421,7 @@ onMounted(async () => {
 
 const loadMetadataSettings = async () => {
   try {
-    movieMetadataSource.value = await db.getSetting('movie_metadata_source', 'none');
+    movieMetadataSource.value = await db.getSetting('movie_metadata_source', 'tmdb');
     movieMetadataApiKey.value = await db.getSetting('movie_metadata_api_key', '');
     movieMetadataLanguage.value = await db.getSetting('movie_metadata_language', 'pt-BR');
   } catch (err) {
