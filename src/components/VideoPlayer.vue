@@ -1,19 +1,27 @@
 <!-- src/components/VideoPlayer.vue -->
 <template>
-  <div ref="wrapperRef" class="video-player-wrapper w-100 h-100 position-relative">
+  <div
+    ref="wrapperRef"
+    class="video-player-wrapper w-100 h-100 position-relative"
+  >
     <!-- Document PiP Placeholder -->
-    <div 
-      v-if="isDocumentPip" 
+    <div
+      v-if="isDocumentPip"
       class="pip-placeholder rounded-xl d-flex flex-column align-center justify-center pa-4 text-center"
     >
-      <v-icon size="48" color="primary" class="mb-2 animate-pulse">mdi-picture-in-picture-bottom-right</v-icon>
-      <div class="text-subtitle-1 font-weight-bold text-glow-small mb-1">Pop-out Ativo</div>
+      <v-icon size="48" color="primary" class="mb-2 animate-pulse"
+        >mdi-picture-in-picture-bottom-right</v-icon
+      >
+      <div class="text-subtitle-1 font-weight-bold text-glow-small mb-1">
+        Pop-out Ativo
+      </div>
       <p class="text-caption text-medium-emphasis mb-4 max-width-280">
-        O canal <strong class="text-secondary">{{ channel.name }}</strong> está sendo exibido em uma janela externa sempre no topo.
+        O canal <strong class="text-secondary">{{ channel.name }}</strong> está
+        sendo exibido em uma janela externa sempre no topo.
       </p>
-      <v-btn 
-        size="small" 
-        color="primary" 
+      <v-btn
+        size="small"
+        color="primary"
         prepend-icon="mdi-arrow-collapse"
         class="text-uppercase font-weight-bold shadow-btn"
         @click="closePip"
@@ -23,12 +31,12 @@
     </div>
 
     <!-- The actual player container -->
-    <div 
+    <div
       ref="playerContainerRef"
-      class="video-player-container rounded-xl overflow-hidden" 
-      :class="{ 
+      class="video-player-container rounded-xl overflow-hidden"
+      :class="{
         'player-floating elevation-10 border-primary': floating,
-        'player-pip': isDocumentPip
+        'player-pip': isDocumentPip,
       }"
       @mousemove="onMouseMove"
       @mouseleave="hideControls"
@@ -50,46 +58,118 @@
       />
 
       <!-- Poster Logo Overlay (When loading or buffering) -->
-      <div v-if="showPoster && channel.logo" class="video-poster-overlay d-flex align-center justify-center">
-        <v-img :src="channel.logo" width="120" max-height="120" contain class="poster-logo animate-pulse" />
+      <div
+        v-if="showPoster && channel.logo"
+        class="video-poster-overlay d-flex align-center justify-center"
+      >
+        <v-img
+          :src="channel.logo"
+          width="120"
+          max-height="120"
+          contain
+          class="poster-logo animate-pulse"
+        />
       </div>
 
       <!-- Buffering/Loading Spinner -->
-      <div v-if="isBuffering || isConnecting" class="video-loading-overlay d-flex flex-column align-center justify-center">
-        <v-progress-circular :size="50" color="secondary" indeterminate class="mb-2" />
+      <div
+        v-if="isBuffering || isConnecting"
+        class="video-loading-overlay d-flex flex-column align-center justify-center"
+      >
+        <v-progress-circular
+          :size="50"
+          color="secondary"
+          indeterminate
+          class="mb-2"
+        />
         <span class="text-caption font-weight-bold text-glow-small">
-          {{ isConnecting ? `Conectando (Tentativa ${retryCount}/5)...` : 'Carregando stream...' }}
+          {{
+            isConnecting
+              ? `Conectando (Tentativa ${retryCount}/5)...`
+              : "Carregando stream..."
+          }}
         </span>
       </div>
 
       <!-- Error Overlay -->
-      <div v-if="errorState" class="video-error-overlay d-flex flex-column align-center justify-center pa-4 text-center">
+      <div
+        v-if="errorState"
+        class="video-error-overlay d-flex flex-column align-center justify-center pa-4 text-center"
+      >
         <v-icon size="48" color="error" class="mb-2">mdi-alert-circle</v-icon>
-        <div class="text-subtitle-2 font-weight-bold mb-1">Erro de Reprodução</div>
+        <div class="text-subtitle-2 font-weight-bold mb-1">
+          Erro de Reprodução
+        </div>
         <p class="text-caption text-medium-emphasis mb-3 max-width-280">
           {{ errorState }}
         </p>
         <div class="d-flex gap-2">
-          <v-btn size="x-small" color="primary" @click="initializePlayer">Tentar Novamente</v-btn>
-          <v-btn size="x-small" color="secondary" variant="outlined" @click="showStats = !showStats">Diagnóstico</v-btn>
+          <v-btn size="x-small" color="primary" @click="initializePlayer"
+            >Tentar Novamente</v-btn
+          >
+          <v-btn
+            size="x-small"
+            color="secondary"
+            variant="outlined"
+            @click="showStats = !showStats"
+            >Diagnóstico</v-btn
+          >
         </div>
       </div>
 
       <!-- Stats Panel overlay -->
-      <v-card v-if="showStats" class="stats-panel pa-3 text-caption glass-card" variant="flat">
+      <v-card
+        v-if="showStats"
+        class="stats-panel pa-3 text-caption glass-card"
+        variant="flat"
+      >
         <div class="d-flex align-center justify-space-between mb-2">
           <strong>Estatísticas do Stream</strong>
-          <v-btn icon="mdi-close" size="x-small" variant="text" @click="showStats = false" />
+          <v-btn
+            icon="mdi-close"
+            size="x-small"
+            variant="text"
+            @click="showStats = false"
+          />
         </div>
-        <div>Nome: <span class="text-secondary">{{ channel.name }}</span></div>
-        <div>Tipo: <span class="text-secondary">{{ channel.type.toUpperCase() }}</span></div>
-        <div>Resolução: <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span></div>
-        <div>Motor: <span class="text-secondary">{{ hlsInstance ? 'Hls.js (MSE)' : 'Nativo' }}</span></div>
-        <div>Modo de Buffer: <span class="text-secondary">{{ playerBufferMode === 'stable' ? 'Alta Estabilidade' : playerBufferMode === 'balanced' ? 'Balanceado' : 'Baixa Latência' }}</span></div>
+        <div>
+          Nome: <span class="text-secondary">{{ channel.name }}</span>
+        </div>
+        <div>
+          Tipo:
+          <span class="text-secondary">{{ channel.type.toUpperCase() }}</span>
+        </div>
+        <div>
+          Resolução:
+          <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span>
+        </div>
+        <div>
+          Motor:
+          <span class="text-secondary">{{
+            hlsInstance ? "Hls.js (MSE)" : "Nativo"
+          }}</span>
+        </div>
+        <div>
+          Modo de Buffer:
+          <span class="text-secondary">{{
+            playerBufferMode === "stable"
+              ? "Alta Estabilidade"
+              : playerBufferMode === "balanced"
+                ? "Balanceado"
+                : "Baixa Latência"
+          }}</span>
+        </div>
         <div class="text-truncate" :title="channel.streamUrl">
-          Link original: <span class="text-secondary text-caption">{{ channel.streamUrl }}</span>
+          Link original:
+          <span class="text-secondary text-caption">{{
+            channel.streamUrl
+          }}</span>
         </div>
-        <div v-if="isActiveProxied" class="text-truncate text-warning font-weight-bold" :title="activePlayUrl">
+        <div
+          v-if="isActiveProxied"
+          class="text-truncate text-warning font-weight-bold"
+          :title="activePlayUrl"
+        >
           CORS Proxy: <span class="text-warning text-caption">Ativo</span>
         </div>
         <v-alert
@@ -106,19 +186,30 @@
 
       <!-- Custom Controls HUD -->
       <Transition name="fade">
-        <div v-if="showControls || isPaused || floating" class="controls-overlay d-flex flex-column justify-space-between">
-          
+        <div
+          v-if="showControls || isPaused || floating"
+          class="controls-overlay d-flex flex-column justify-space-between"
+        >
           <!-- Top Toolbar -->
-          <div class="d-flex align-center justify-space-between pa-3 top-gradient">
+          <div
+            class="d-flex align-center justify-space-between pa-3 top-gradient"
+          >
             <div class="d-flex align-center gap-2 min-width-0">
-              <v-avatar size="32" class="bg-surface-variant flex-shrink-0" v-if="channel.logo">
+              <v-avatar
+                size="32"
+                class="bg-surface-variant flex-shrink-0"
+                v-if="channel.logo"
+              >
                 <v-img :src="channel.logo" />
               </v-avatar>
-              <div class="text-subtitle-2 font-weight-bold text-truncate text-glow-small" style="max-width: 250px;">
+              <div
+                class="text-subtitle-2 font-weight-bold text-truncate text-glow-small"
+                style="max-width: 250px"
+              >
                 {{ channel.name }}
               </div>
             </div>
-            
+
             <div class="d-flex align-center">
               <!-- Diagnostics -->
               <v-btn
@@ -131,11 +222,17 @@
               />
               <!-- Pop-out Toggle (Picture-in-Picture) -->
               <v-btn
-                :icon="isPipActive ? 'mdi-arrow-collapse' : 'mdi-picture-in-picture-bottom-right'"
+                :icon="
+                  isPipActive
+                    ? 'mdi-arrow-collapse'
+                    : 'mdi-picture-in-picture-bottom-right'
+                "
                 variant="text"
                 color="white"
                 size="small"
-                :title="isPipActive ? 'Trazer de Volta' : 'Pop-out (Sempre no Topo)'"
+                :title="
+                  isPipActive ? 'Trazer de Volta' : 'Pop-out (Sempre no Topo)'
+                "
                 @click="togglePip"
               />
               <!-- Float Mode Toggle (Only if not in PiP) -->
@@ -161,7 +258,11 @@
           </div>
 
           <!-- Center Play Overlay Indicator (Only for normal view) -->
-          <div v-if="!floating" class="d-flex align-center justify-center flex-grow-1" @click="togglePlay">
+          <div
+            v-if="!floating"
+            class="d-flex align-center justify-center flex-grow-1"
+            @click="togglePlay"
+          >
             <v-btn
               v-if="isPaused"
               icon="mdi-play"
@@ -175,7 +276,9 @@
           <div class="pa-3 bottom-gradient">
             <!-- Timeline progress bar (For VOD movies or series) -->
             <div v-if="!isLive" class="px-2 mb-2 d-flex align-center gap-2">
-              <span class="text-caption text-white">{{ formatTimelineTime(currentTime) }}</span>
+              <span class="text-caption text-white">{{
+                formatTimelineTime(currentTime)
+              }}</span>
               <v-slider
                 v-model="currentTime"
                 :max="duration || 100"
@@ -185,7 +288,9 @@
                 density="compact"
                 @update:model-value="onTimelineSeek"
               />
-              <span class="text-caption text-white">{{ formatTimelineTime(duration) }}</span>
+              <span class="text-caption text-white">{{
+                formatTimelineTime(duration)
+              }}</span>
             </div>
 
             <div class="d-flex align-center justify-space-between">
@@ -203,7 +308,13 @@
                 <!-- Volume Control -->
                 <div class="d-flex align-center volume-slider-container">
                   <v-btn
-                    :icon="isMuted ? 'mdi-volume-off' : volume > 0.5 ? 'mdi-volume-high' : 'mdi-volume-medium'"
+                    :icon="
+                      isMuted
+                        ? 'mdi-volume-off'
+                        : volume > 0.5
+                          ? 'mdi-volume-high'
+                          : 'mdi-volume-medium'
+                    "
                     variant="text"
                     color="white"
                     size="small"
@@ -223,7 +334,12 @@
                 </div>
 
                 <!-- Live Indicator -->
-                <v-chip v-if="isLive" size="x-small" color="error" class="ml-2 px-2 font-weight-bold uppercase-tag animate-pulse">
+                <v-chip
+                  v-if="isLive"
+                  size="x-small"
+                  color="error"
+                  class="ml-2 px-2 font-weight-bold uppercase-tag animate-pulse"
+                >
                   🔴 AO VIVO
                 </v-chip>
               </div>
@@ -231,7 +347,11 @@
               <!-- Right Controls -->
               <div class="d-flex align-center gap-1">
                 <!-- Buffer Mode Selector -->
-                <v-menu v-model="isBufferMenuOpen" location="top end" transition="slide-y-transition">
+                <v-menu
+                  v-model="isBufferMenuOpen"
+                  location="top end"
+                  transition="slide-y-transition"
+                >
                   <template v-slot:activator="{ props }">
                     <v-btn
                       icon="mdi-tune"
@@ -243,20 +363,26 @@
                     />
                   </template>
                   <v-list bg-color="surface" density="compact">
-                    <v-list-item 
-                      v-for="opt in bufferModes" 
-                      :key="opt.value" 
+                    <v-list-item
+                      v-for="opt in bufferModes"
+                      :key="opt.value"
                       :active="playerBufferMode === opt.value"
                       color="secondary"
                       @click="changeBufferMode(opt.value)"
                     >
-                      <v-list-item-title class="text-caption">{{ opt.title }}</v-list-item-title>
+                      <v-list-item-title class="text-caption">{{
+                        opt.title
+                      }}</v-list-item-title>
                     </v-list-item>
                   </v-list>
                 </v-menu>
 
                 <!-- Aspect Ratio Selector -->
-                <v-menu v-model="isAspectRatioMenuOpen" location="top end" transition="slide-y-transition">
+                <v-menu
+                  v-model="isAspectRatioMenuOpen"
+                  location="top end"
+                  transition="slide-y-transition"
+                >
                   <template v-slot:activator="{ props }">
                     <v-btn
                       icon="mdi-aspect-ratio"
@@ -268,14 +394,16 @@
                     />
                   </template>
                   <v-list bg-color="surface" density="compact">
-                    <v-list-item 
-                      v-for="opt in aspectRatios" 
-                      :key="opt.value" 
+                    <v-list-item
+                      v-for="opt in aspectRatios"
+                      :key="opt.value"
                       :active="aspectRatio === opt.value"
                       color="secondary"
                       @click="aspectRatio = opt.value"
                     >
-                      <v-list-item-title class="text-caption">{{ opt.label }}</v-list-item-title>
+                      <v-list-item-title class="text-caption">{{
+                        opt.label
+                      }}</v-list-item-title>
                     </v-list-item>
                   </v-list>
                 </v-menu>
@@ -283,7 +411,9 @@
                 <!-- Fullscreen (Only if not in PiP) -->
                 <v-btn
                   v-if="!floating && !isPipActive"
-                  :icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
+                  :icon="
+                    isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'
+                  "
                   variant="text"
                   color="white"
                   size="small"
@@ -293,7 +423,6 @@
               </div>
             </div>
           </div>
-
         </div>
       </Transition>
     </div>
@@ -301,10 +430,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
-import Hls from 'hls.js';
-import mpegts from 'mpegts.js';
-import { db, type IPTVChannel } from '@/services/db';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import Hls from "hls.js";
+import mpegts from "mpegts.js";
+import { db, type IPTVChannel } from "@/services/db";
 
 const props = defineProps<{
   channel: IPTVChannel;
@@ -312,8 +441,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'close-player'): void;
-  (e: 'toggle-float'): void;
+  (e: "close-player"): void;
+  (e: "toggle-float"): void;
 }>();
 
 // Video Element and Container Refs
@@ -337,19 +466,28 @@ const showPoster = ref(true);
 const errorState = ref<string | null>(null);
 
 // Proxy configuration and active playback state
-const proxyUrlSetting = ref('');
-const playerProxyStreams = ref('auto');
-const activePlayUrl = ref('');
+const proxyUrlSetting = ref("");
+const playerProxyStreams = ref("auto");
+const activePlayUrl = ref("");
 const isActiveProxied = ref(false);
-const playerBufferMode = ref('low-latency');
+const playerBufferMode = ref("low-latency");
 
 const loadSettings = async () => {
   try {
-    proxyUrlSetting.value = await db.getSetting('player_proxy_url', 'https://corsproxy.io/?');
-    playerProxyStreams.value = await db.getSetting('player_proxy_streams', 'auto');
-    playerBufferMode.value = await db.getSetting('player_buffer_mode', 'low-latency');
+    proxyUrlSetting.value = await db.getSetting(
+      "player_proxy_url",
+      "https://corsproxy.io/?",
+    );
+    playerProxyStreams.value = await db.getSetting(
+      "player_proxy_streams",
+      "auto",
+    );
+    playerBufferMode.value = await db.getSetting(
+      "player_buffer_mode",
+      "low-latency",
+    );
   } catch (e) {
-    console.error('Error loading stream proxy settings:', e);
+    console.error("Error loading stream proxy settings:", e);
   }
 };
 
@@ -362,32 +500,32 @@ const videoWidth = ref(0);
 const videoHeight = ref(0);
 
 // Playback Options
-const aspectRatio = ref('fit'); // fit, fill, 16-9, 4-3
+const aspectRatio = ref("fit"); // fit, fill, 16-9, 4-3
 const aspectRatios = [
-  { label: 'Ajustar Tela (Padrão)', value: 'fit' },
-  { label: 'Esticar (Stretch)', value: 'fill' },
-  { label: '16:9 widescreen', value: '16-9' },
-  { label: '4:3 clássico', value: '4-3' },
+  { label: "Ajustar Tela (Padrão)", value: "fit" },
+  { label: "Esticar (Stretch)", value: "fill" },
+  { label: "16:9 widescreen", value: "16-9" },
+  { label: "4:3 clássico", value: "4-3" },
 ];
 
 const bufferModes = [
-  { title: 'Baixa Latência (Rápido)', value: 'low-latency' },
-  { title: 'Balanceado (Normal)', value: 'balanced' },
-  { title: 'Alta Estabilidade (Lento)', value: 'stable' },
+  { title: "Baixa Latência (Rápido)", value: "low-latency" },
+  { title: "Balanceado (Normal)", value: "balanced" },
+  { title: "Alta Estabilidade (Lento)", value: "stable" },
 ];
 
 const changeBufferMode = async (mode: string) => {
   playerBufferMode.value = mode;
   try {
-    await db.setSetting('player_buffer_mode', mode);
+    await db.setSetting("player_buffer_mode", mode);
   } catch (err) {
-    console.error('Error saving buffer mode setting from player:', err);
+    console.error("Error saving buffer mode setting from player:", err);
   }
   initializePlayer();
 };
 
 const isLive = computed(() => {
-  return props.channel.type === 'live';
+  return props.channel.type === "live";
 });
 
 const showControls = ref(true);
@@ -398,7 +536,9 @@ const showStats = ref(false);
 // Menu visibility state trackers to prevent HUD auto-hiding
 const isBufferMenuOpen = ref(false);
 const isAspectRatioMenuOpen = ref(false);
-const isAnyMenuOpen = computed(() => isBufferMenuOpen.value || isAspectRatioMenuOpen.value);
+const isAnyMenuOpen = computed(
+  () => isBufferMenuOpen.value || isAspectRatioMenuOpen.value,
+);
 
 watch(isAnyMenuOpen, (isOpen) => {
   if (!isOpen) {
@@ -418,43 +558,46 @@ onMounted(async () => {
   await loadSettings();
   initializePlayer();
   setupHotkeys();
-  
+
   // Listen for Fullscreen changes
-  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener("fullscreenchange", onFullscreenChange);
 });
 
 onBeforeUnmount(() => {
   closePip();
   destroyPlayer();
   removeHotkeys();
-  document.removeEventListener('fullscreenchange', onFullscreenChange);
+  document.removeEventListener("fullscreenchange", onFullscreenChange);
   if (retryTimeout) clearTimeout(retryTimeout);
   if (controlsTimeout) clearTimeout(controlsTimeout);
 });
 
 // Watch for stream URL change
-watch(() => props.channel.streamUrl, async () => {
-  if (isHealing.value) {
-    isHealing.value = false;
-    // Clear any scheduled retry timeout to avoid double loading
+watch(
+  () => props.channel.streamUrl,
+  async () => {
+    if (isHealing.value) {
+      isHealing.value = false;
+      // Clear any scheduled retry timeout to avoid double loading
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+        retryTimeout = null;
+      }
+      await loadSettings();
+      initializePlayer();
+      return;
+    }
+
+    // Normal channel change (user selected a new channel)
+    retryCount.value = 0;
     if (retryTimeout) {
       clearTimeout(retryTimeout);
       retryTimeout = null;
     }
     await loadSettings();
     initializePlayer();
-    return;
-  }
-
-  // Normal channel change (user selected a new channel)
-  retryCount.value = 0;
-  if (retryTimeout) {
-    clearTimeout(retryTimeout);
-    retryTimeout = null;
-  }
-  await loadSettings();
-  initializePlayer();
-});
+  },
+);
 
 // Watch volume slider
 watch(volume, (newVol) => {
@@ -466,10 +609,10 @@ watch(volume, (newVol) => {
 
 // --- ASPECT RATIO CALCULATOR ---
 const aspectRatioClass = computed(() => {
-  if (aspectRatio.value === 'fill') return 'aspect-fill';
-  if (aspectRatio.value === '16-9') return 'aspect-16-9';
-  if (aspectRatio.value === '4-3') return 'aspect-4-3';
-  return 'aspect-fit'; // default
+  if (aspectRatio.value === "fill") return "aspect-fill";
+  if (aspectRatio.value === "16-9") return "aspect-16-9";
+  if (aspectRatio.value === "4-3") return "aspect-4-3";
+  return "aspect-fit"; // default
 });
 
 // --- PLAYER INITIALIZATION ENGINE ---
@@ -483,7 +626,7 @@ const destroyPlayer = () => {
     mpegtsInstance = null;
   }
   if (videoRef.value) {
-    videoRef.value.src = '';
+    videoRef.value.src = "";
     videoRef.value.load();
   }
   isBuffering.value = false;
@@ -505,14 +648,13 @@ const initializePlayer = () => {
   if (!video) return;
 
   // Determine if stream should be proxied
-  const shouldProxy = 
-    proxyUrlSetting.value && (
-      playerProxyStreams.value === 'always' || 
-      (playerProxyStreams.value === 'auto' && retryCount.value > 0)
-    );
+  const shouldProxy =
+    proxyUrlSetting.value &&
+    (playerProxyStreams.value === "always" ||
+      (playerProxyStreams.value === "auto" && retryCount.value > 0));
 
   // Dynamic Proxy Rotation / Failover Engine
-  const activeProxy = ref('');
+  const activeProxy = ref("");
   if (shouldProxy) {
     if (retryCount.value <= 1) {
       activeProxy.value = proxyUrlSetting.value;
@@ -521,9 +663,9 @@ const initializePlayer = () => {
       const primary = proxyUrlSetting.value;
       const fallbacks = [
         primary,
-        'http://localhost:8088/?url=', // Local proxy is the ultimate unlimited backup
-        'https://api.allorigins.win/raw?url=',
-        'https://thingproxy.freeboard.io/fetch/'
+        "http://localhost:8088/?url=", // Local proxy is the ultimate unlimited backup
+        "https://api.allorigins.win/raw?url=",
+        "https://thingproxy.freeboard.io/fetch/",
       ];
       const unique = Array.from(new Set(fallbacks.filter(Boolean)));
       const index = (retryCount.value - 1) % unique.length;
@@ -546,28 +688,34 @@ const initializePlayer = () => {
     isBuffering.value = false;
     showPoster.value = false;
     retryCount.value = 0; // reset retry loops
-    
+
     // Auto Play
-    video.play().catch(e => {
-      console.warn('Auto-play blocked by browser, requiring user interaction.', e);
+    video.play().catch((e) => {
+      console.warn(
+        "Auto-play blocked by browser, requiring user interaction.",
+        e,
+      );
     });
   };
 
   video.onloadedmetadata = onMetadataLoaded;
-  
+
   video.onerror = (e) => {
     handlePlaybackError();
   };
 
   // Check stream formats
-  const isHls = originalUrl.toLowerCase().includes('.m3u8') || originalUrl.toLowerCase().includes('m3u8');
-  const isTs = originalUrl.toLowerCase().includes('.ts') || 
-               originalUrl.includes('output=ts') || 
-               originalUrl.includes('output=mpegts') ||
-               originalUrl.includes('output=mpeg-ts');
+  const isHls =
+    originalUrl.toLowerCase().includes(".m3u8") ||
+    originalUrl.toLowerCase().includes("m3u8");
+  const isTs =
+    originalUrl.toLowerCase().includes(".ts") ||
+    originalUrl.includes("output=ts") ||
+    originalUrl.includes("output=mpegts") ||
+    originalUrl.includes("output=mpeg-ts");
 
   // --- PLAYBACK ENGINE SELECTOR ---
-  
+
   // Case A: HLS Stream played via Hls.js
   if (isHls && Hls.isSupported()) {
     // Custom Hls.js Loader to proxy fragments, playlists, and keys
@@ -581,11 +729,11 @@ const initializePlayer = () => {
         if (shouldProxy && activeProxy.value) {
           const reqUrl = context.url;
           // Avoid double proxying if already prefixed
-          const isAlreadyProxied = 
-            reqUrl.startsWith(proxyUrlSetting.value) || 
-            reqUrl.startsWith('http://localhost:8088/?url=') || 
-            reqUrl.startsWith('https://api.allorigins.win/raw?url=') || 
-            reqUrl.startsWith('https://thingproxy.freeboard.io/fetch/');
+          const isAlreadyProxied =
+            reqUrl.startsWith(proxyUrlSetting.value) ||
+            reqUrl.startsWith("http://localhost:8088/?url=") ||
+            reqUrl.startsWith("https://api.allorigins.win/raw?url=") ||
+            reqUrl.startsWith("https://thingproxy.freeboard.io/fetch/");
 
           if (reqUrl && !isAlreadyProxied) {
             context.url = `${activeProxy.value}${encodeURIComponent(reqUrl)}`;
@@ -597,10 +745,10 @@ const initializePlayer = () => {
 
     let hlsConfig: any = {
       enableWorker: true,
-      loader: ProxyLoader
+      loader: ProxyLoader,
     };
 
-    if (playerBufferMode.value === 'stable') {
+    if (playerBufferMode.value === "stable") {
       hlsConfig = {
         ...hlsConfig,
         maxBufferLength: 60,
@@ -608,9 +756,9 @@ const initializePlayer = () => {
         lowLatencyMode: false,
         liveSyncDurationCount: 6,
         manifestLoadingMaxRetry: 10,
-        manifestLoadingRetryDelay: 2000
+        manifestLoadingRetryDelay: 2000,
       };
-    } else if (playerBufferMode.value === 'balanced') {
+    } else if (playerBufferMode.value === "balanced") {
       hlsConfig = {
         ...hlsConfig,
         maxBufferLength: 30,
@@ -618,7 +766,7 @@ const initializePlayer = () => {
         lowLatencyMode: false,
         liveSyncDurationCount: 4,
         manifestLoadingMaxRetry: 6,
-        manifestLoadingRetryDelay: 1500
+        manifestLoadingRetryDelay: 1500,
       };
     } else {
       // Default to low-latency
@@ -627,7 +775,7 @@ const initializePlayer = () => {
         maxBufferLength: 10,
         lowLatencyMode: true,
         manifestLoadingMaxRetry: 4,
-        manifestLoadingRetryDelay: 1000
+        manifestLoadingRetryDelay: 1000,
       };
     }
 
@@ -650,49 +798,53 @@ const initializePlayer = () => {
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (data.fatal) {
-        console.error('Hls.js fatal error event triggered:', data);
+        console.error("Hls.js fatal error event triggered:", data);
         const code = data.response?.code;
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
-            console.error('Fatal network error in HLS, attempting recovery...');
-            if (data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || 
-                data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT ||
-                data.details === Hls.ErrorDetails.LEVEL_LOAD_ERROR) {
-              console.error('Fatal manifest loading error (CORS/Network). Retrying via proxy...');
+            console.error("Fatal network error in HLS, attempting recovery...");
+            if (
+              data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR ||
+              data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT ||
+              data.details === Hls.ErrorDetails.LEVEL_LOAD_ERROR
+            ) {
+              console.error(
+                "Fatal manifest loading error (CORS/Network). Retrying via proxy...",
+              );
               handlePlaybackError(code);
             } else {
               hlsInstance?.startLoad();
             }
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
-            console.error('Fatal media parsing error, attempting recovery...');
+            console.error("Fatal media parsing error, attempting recovery...");
             hlsInstance?.recoverMediaError();
             break;
           default:
-            console.error('Fatal unrecoverable player error.');
+            console.error("Fatal unrecoverable player error.");
             handlePlaybackError(code);
             break;
         }
       }
     });
-  } 
+  }
   // Case B: Raw MPEG-TS Stream played via mpegts.js (solves .ts support in Chrome/Firefox)
   else if (isTs && mpegts.isSupported()) {
     let playUrl = originalUrl;
     if (shouldProxy && activeProxy.value) {
       playUrl = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
     }
-    
+
     activePlayUrl.value = playUrl;
 
     let mpegtsOptionalConfig: any = {
-      enableWorker: true
+      enableWorker: true,
     };
 
-    if (playerBufferMode.value === 'stable') {
+    if (playerBufferMode.value === "stable") {
       mpegtsOptionalConfig.enableStashBuffer = true;
       mpegtsOptionalConfig.liveBufferLatencyChasing = false;
-    } else if (playerBufferMode.value === 'balanced') {
+    } else if (playerBufferMode.value === "balanced") {
       mpegtsOptionalConfig.enableStashBuffer = true;
       mpegtsOptionalConfig.liveBufferLatencyChasing = true;
     } else {
@@ -701,17 +853,23 @@ const initializePlayer = () => {
       mpegtsOptionalConfig.liveBufferLatencyChasing = true;
     }
 
-    mpegtsInstance = mpegts.createPlayer({
-      type: 'mpegts',
-      isLive: isLive.value,
-      url: playUrl
-    }, mpegtsOptionalConfig);
+    mpegtsInstance = mpegts.createPlayer(
+      {
+        type: "mpegts",
+        isLive: isLive.value,
+        url: playUrl,
+      },
+      mpegtsOptionalConfig,
+    );
 
     mpegtsInstance.attachMediaElement(video);
     mpegtsInstance.load();
 
     mpegtsInstance.on(mpegts.Events.ERROR, (type, detail, info) => {
-      console.error(`[VideoPlayer] Erro no mpegts.js: Tipo ${type}, Detalhe ${detail}`, info);
+      console.error(
+        `[VideoPlayer] Erro no mpegts.js: Tipo ${type}, Detalhe ${detail}`,
+        info,
+      );
       const code = info?.code;
       handlePlaybackError(code);
     });
@@ -725,14 +883,17 @@ const initializePlayer = () => {
       isBuffering.value = false;
       showPoster.value = false;
       retryCount.value = 0; // reset retry loops
-      
-      video.play().catch(e => {
-        console.warn('Auto-play blocked by browser, requiring user interaction.', e);
+
+      video.play().catch((e) => {
+        console.warn(
+          "Auto-play blocked by browser, requiring user interaction.",
+          e,
+        );
       });
     };
   }
   // Case C: Fallback to native HLS support (Safari, iOS, Android, and standard MP4 links)
-  else if (video.canPlayType('application/vnd.apple.mpegurl') || !isHls) {
+  else if (video.canPlayType("application/vnd.apple.mpegurl") || !isHls) {
     let playUrl = originalUrl;
     if (shouldProxy && activeProxy.value) {
       playUrl = `${activeProxy.value}${encodeURIComponent(originalUrl)}`;
@@ -743,7 +904,8 @@ const initializePlayer = () => {
   } else {
     isConnecting.value = false;
     isBuffering.value = false;
-    errorState.value = 'Formato de streaming HLS ou MPEG-TS não suportado neste navegador. Use Chrome/Firefox.';
+    errorState.value =
+      "Formato de streaming HLS ou MPEG-TS não suportado neste navegador. Use Chrome/Firefox.";
   }
 };
 
@@ -757,7 +919,7 @@ const handlePlaybackError = (code?: number) => {
     lastErrorCode = code;
   }
   destroyPlayer();
-  
+
   if (retryCount.value < 5) {
     retryCount.value++;
     isConnecting.value = true;
@@ -767,25 +929,28 @@ const handlePlaybackError = (code?: number) => {
     // Se o stream falhar na reprodução e for uma URL de m3u8 (e sabemos que este provedor não suporta .m3u8),
     // nós curamos o link para .ts dinamicamente em memória e atualizamos no banco IndexedDB!
     const originalUrl = props.channel.streamUrl;
-    if (originalUrl.toLowerCase().includes('.m3u8')) {
-      const urlParts = originalUrl.split('?');
+    if (originalUrl.toLowerCase().includes(".m3u8")) {
+      const urlParts = originalUrl.split("?");
       let path = urlParts[0];
-      if (path.toLowerCase().endsWith('.m3u8')) {
-        path = path.slice(0, -5) + '.ts';
+      if (path.toLowerCase().endsWith(".m3u8")) {
+        path = path.slice(0, -5) + ".ts";
       }
-      const newUrl = path + (urlParts[1] ? '?' + urlParts[1] : '');
-      
+      const newUrl = path + (urlParts[1] ? "?" + urlParts[1] : "");
+
       // Set isHealing to true before mutating to let the watcher handle immediate loading cleanly
       isHealing.value = true;
       props.channel.streamUrl = newUrl;
       healed = true;
-      
+
       // Salva a nova URL curada no banco IndexedDB local (cópia rasa para evitar DataCloneError)
-      db.updateChannel({ ...props.channel }).catch(err => {
-        console.error('Erro ao atualizar URL de canal curado no IndexedDB:', err);
+      db.updateChannel({ ...props.channel }).catch((err) => {
+        console.error(
+          "Erro ao atualizar URL de canal curado no IndexedDB:",
+          err,
+        );
       });
     }
-    
+
     // Only schedule the 3-second retry if we did NOT perform a self-healing rewrite.
     // If we healed, the watcher already immediately re-initializes the player.
     if (!healed) {
@@ -798,11 +963,14 @@ const handlePlaybackError = (code?: number) => {
     isConnecting.value = false;
     isBuffering.value = false;
     if (lastErrorCode === 404) {
-      errorState.value = 'Este canal não foi encontrado no servidor do provedor (Erro 404). O link está quebrado ou o canal foi removido permanentemente pelo servidor de IPTV.';
+      errorState.value =
+        "Este canal não foi encontrado no servidor do provedor (Erro 404). O link está quebrado ou o canal foi removido permanentemente pelo servidor de IPTV.";
     } else if (lastErrorCode === 403) {
-      errorState.value = 'Acesso negado a este canal (Erro 403 / Proibido). O provedor de IPTV bloqueou a conexão, as credenciais expiraram ou o limite de conexões simultâneas do seu plano foi atingido.';
+      errorState.value =
+        "Acesso negado a este canal (Erro 403 / Proibido). O provedor de IPTV bloqueou a conexão, as credenciais expiraram ou o limite de conexões simultâneas do seu plano foi atingido.";
     } else {
-      errorState.value = 'Não foi possível reproduzir este canal. O stream está offline ou bloqueado por políticas de CORS do provedor. Verifique se o link está correto.';
+      errorState.value =
+        "Não foi possível reproduzir este canal. O stream está offline ou bloqueado por políticas de CORS do provedor. Verifique se o link está correto.";
     }
   }
 };
@@ -827,12 +995,12 @@ const onVolumeChange = () => {
 };
 
 const formatTimelineTime = (secs: number) => {
-  if (!secs || isNaN(secs)) return '00:00';
+  if (!secs || isNaN(secs)) return "00:00";
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = Math.floor(secs % 60);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  
+  const pad = (n: number) => String(n).padStart(2, "0");
+
   if (h > 0) {
     return `${h}:${pad(m)}:${pad(s)}`;
   }
@@ -843,7 +1011,7 @@ const formatTimelineTime = (secs: number) => {
 const togglePlay = () => {
   if (videoRef.value) {
     if (videoRef.value.paused) {
-      videoRef.value.play().catch(err => console.error(err));
+      videoRef.value.play().catch((err) => console.error(err));
     } else {
       videoRef.value.pause();
     }
@@ -864,7 +1032,7 @@ const toggleMute = () => {
 const onMouseMove = () => {
   showControls.value = true;
   if (controlsTimeout) clearTimeout(controlsTimeout);
-  
+
   // Hide controls after 3 seconds of mouse inactivity (only if playing, not floating, and no menu is open)
   if (!isPaused.value && !props.floating && !isAnyMenuOpen.value) {
     controlsTimeout = window.setTimeout(() => {
@@ -885,13 +1053,15 @@ const toggleFullscreen = () => {
   if (!container) return;
 
   if (!document.fullscreenElement) {
-    container.requestFullscreen()
-      .then(() => isFullscreen.value = true)
-      .catch(err => console.error(err));
+    container
+      .requestFullscreen()
+      .then(() => (isFullscreen.value = true))
+      .catch((err) => console.error(err));
   } else {
-    document.exitFullscreen()
-      .then(() => isFullscreen.value = false)
-      .catch(err => console.error(err));
+    document
+      .exitFullscreen()
+      .then(() => (isFullscreen.value = false))
+      .catch((err) => console.error(err));
   }
 };
 
@@ -902,29 +1072,32 @@ const onFullscreenChange = () => {
 // --- SHORTCUT HOTKEYS ENGINE ---
 const handleKeyDown = (e: KeyboardEvent) => {
   // Ignore input keystrokes
-  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+  if (
+    e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLTextAreaElement
+  ) {
     return;
   }
 
   switch (e.key.toLowerCase()) {
-    case ' ':
-    case 'k':
+    case " ":
+    case "k":
       e.preventDefault();
       togglePlay();
       break;
-    case 'f':
+    case "f":
       e.preventDefault();
       toggleFullscreen();
       break;
-    case 'm':
+    case "m":
       e.preventDefault();
       toggleMute();
       break;
-    case 'arrowup':
+    case "arrowup":
       e.preventDefault();
       volume.value = Math.min(1, volume.value + 0.1);
       break;
-    case 'arrowdown':
+    case "arrowdown":
       e.preventDefault();
       volume.value = Math.max(0, volume.value - 0.1);
       break;
@@ -932,11 +1105,11 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 const setupHotkeys = () => {
-  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener("keydown", handleKeyDown);
 };
 
 const removeHotkeys = () => {
-  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener("keydown", handleKeyDown);
 };
 
 // --- PICTURE IN PIPELINE / POP-OUT WINDOW ENGINE ---
@@ -957,7 +1130,10 @@ const togglePip = async () => {
   if (!video) return;
 
   // @ts-ignore
-  if (window.documentPictureInPicture && window.documentPictureInPicture.requestWindow) {
+  if (
+    window.documentPictureInPicture &&
+    window.documentPictureInPicture.requestWindow
+  ) {
     try {
       const container = playerContainerRef.value;
       if (!container) return;
@@ -977,13 +1153,15 @@ const togglePip = async () => {
       [...document.styleSheets].forEach((styleSheet) => {
         try {
           if (styleSheet.href) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
             link.href = styleSheet.href;
             pipWindow.document.head.appendChild(link);
           } else {
-            const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-            const style = document.createElement('style');
+            const cssRules = [...styleSheet.cssRules]
+              .map((rule) => rule.cssText)
+              .join("");
+            const style = document.createElement("style");
             style.textContent = cssRules;
             pipWindow.document.head.appendChild(style);
           }
@@ -996,31 +1174,37 @@ const togglePip = async () => {
       });
 
       // Copy other links (fonts, icons)
-      document.querySelectorAll('link[rel="stylesheet"]').forEach((linkNode) => {
-        const href = linkNode.getAttribute('href');
-        if (href && !pipWindow.document.querySelector(`link[href="${href}"]`)) {
-          const cloned = linkNode.cloneNode(true);
-          pipWindow.document.head.appendChild(cloned);
-        }
-      });
+      document
+        .querySelectorAll('link[rel="stylesheet"]')
+        .forEach((linkNode) => {
+          const href = linkNode.getAttribute("href");
+          if (
+            href &&
+            !pipWindow.document.querySelector(`link[href="${href}"]`)
+          ) {
+            const cloned = linkNode.cloneNode(true);
+            pipWindow.document.head.appendChild(cloned);
+          }
+        });
 
       // Style pip body with full width/height & black background
-      pipWindow.document.body.className = 'v-theme--midnightGlow app-background';
-      pipWindow.document.body.style.margin = '0';
-      pipWindow.document.body.style.padding = '0';
-      pipWindow.document.body.style.backgroundColor = '#080808';
-      pipWindow.document.body.style.overflow = 'hidden';
-      pipWindow.document.body.style.display = 'flex';
-      pipWindow.document.body.style.justifyContent = 'center';
-      pipWindow.document.body.style.alignItems = 'center';
-      pipWindow.document.body.style.width = '100vw';
-      pipWindow.document.body.style.height = '100vh';
+      pipWindow.document.body.className =
+        "v-theme--midnightGlow app-background";
+      pipWindow.document.body.style.margin = "0";
+      pipWindow.document.body.style.padding = "0";
+      pipWindow.document.body.style.backgroundColor = "#080808";
+      pipWindow.document.body.style.overflow = "hidden";
+      pipWindow.document.body.style.display = "flex";
+      pipWindow.document.body.style.justifyContent = "center";
+      pipWindow.document.body.style.alignItems = "center";
+      pipWindow.document.body.style.width = "100vw";
+      pipWindow.document.body.style.height = "100vh";
 
       // Move player container element to the Picture-in-Picture document body
       pipWindow.document.body.appendChild(container);
 
       // Handle PiP window close event to restore DOM element back to original place
-      pipWindow.addEventListener('pagehide', () => {
+      pipWindow.addEventListener("pagehide", () => {
         if (wrapperRef.value && container) {
           wrapperRef.value.appendChild(container);
         }
@@ -1028,9 +1212,8 @@ const togglePip = async () => {
         isPipActive.value = false;
         isDocumentPip.value = false;
       });
-
     } catch (err) {
-      console.error('Document PiP failed, falling back to Video PiP:', err);
+      console.error("Document PiP failed, falling back to Video PiP:", err);
       handleStandardVideoPip(video);
     }
   } else {
@@ -1046,7 +1229,7 @@ const handleStandardVideoPip = async (video: HTMLVideoElement) => {
       await video.requestPictureInPicture();
     }
   } catch (err) {
-    console.error('Error with standard Video Picture-in-Picture:', err);
+    console.error("Error with standard Video Picture-in-Picture:", err);
   }
 };
 
@@ -1061,7 +1244,7 @@ const onLeavePip = () => {
 
 const onClosePlayer = () => {
   closePip();
-  emit('close-player');
+  emit("close-player");
 };
 </script>
 
@@ -1156,11 +1339,19 @@ const onClosePlayer = () => {
 }
 
 .top-gradient {
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
 .bottom-gradient {
-  background: linear-gradient(360deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(
+    360deg,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
 .play-center-btn {
@@ -1205,7 +1396,8 @@ const onClosePlayer = () => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -1237,7 +1429,7 @@ const onClosePlayer = () => {
   gap: 4px;
 }
 .text-glow-small {
-  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
+  background: linear-gradient(135deg, #ffb300 0%, #ffe082 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
