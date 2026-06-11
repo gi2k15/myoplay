@@ -1,6 +1,6 @@
-# 📺 IPTV Player Gemini 2
+# 📺 MyoPlay
 
-**IPTV Player Gemini 2** is a modern, elegant, and high-performance web-based IPTV player built with the latest **Vue 3**, **Vite**, and **Vuetify 4** ecosystem. It delivers a complete and seamless entertainment experience directly in your browser, combining robust media playback with a premium, highly responsive user interface.
+**MyoPlay** is a modern, elegant, and high-performance web-based IPTV player built with the latest **Vue 3**, **Vite**, and **Vuetify 4** ecosystem. It delivers a complete and seamless entertainment experience directly in your browser, combining robust media playback with a premium, highly responsive user interface.
 
 ---
 
