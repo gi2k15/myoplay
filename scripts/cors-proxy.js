@@ -1,7 +1,6 @@
 // scripts/cors-proxy.js
 import http from 'http';
 import https from 'https';
-import { parse } from 'url';
 
 const PORT = process.env.PORT || 8088;
 
@@ -18,15 +17,16 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Parse the target URL
-  const query = parse(req.url, true).query;
-  let targetUrl = query.url;
+  // Parse the target URL using standard WHATWG URL API
+  const host = req.headers.host || `localhost:${PORT}`;
+  const parsedUrl = new URL(req.url, `http://${host}`);
+  let targetUrl = parsedUrl.searchParams.get('url');
 
   // Fallback: parse from path (e.g. /http://example.com)
   if (!targetUrl) {
-    const rawPath = req.url.substring(1);
+    const rawPath = parsedUrl.pathname.substring(1);
     if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
-      targetUrl = rawPath;
+      targetUrl = rawPath + parsedUrl.search;
     }
   }
 
@@ -49,7 +49,7 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
   }
 
   try {
-    const parsedUrl = parse(targetUrl);
+    const parsedUrl = new URL(targetUrl);
     const isHttps = parsedUrl.protocol === 'https:';
     const requestModule = isHttps ? https : http;
 
