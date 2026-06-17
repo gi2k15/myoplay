@@ -128,6 +128,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { db, type IPTVChannel } from '@/services/db';
+import { PlaylistUpdater } from '@/services/playlistUpdater';
 
 // Import UI components
 import Sidebar from '@/components/Sidebar.vue';
@@ -204,6 +205,9 @@ onMounted(async () => {
 
   await checkActivePlaylist();
   await loadRecentStreams();
+
+  // Check and run automatic playlist updates in the background
+  PlaylistUpdater.checkAndRunAutoUpdates();
 });
 
 const checkActivePlaylist = async () => {

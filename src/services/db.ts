@@ -9,7 +9,9 @@ export interface Playlist {
   password?: string;
   epgUrl?: string;
   createdAt: number;
+  lastUpdatedAt?: number;
 }
+
 
 export interface IPTVChannel {
   id: string; // generated as `playlistId_index`
@@ -167,6 +169,36 @@ class IPTVDatabase {
         }
       };
 
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async updatePlaylist(playlist: Playlist): Promise<void> {
+    const db = await this.init();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('playlists', 'readwrite');
+      const store = tx.objectStore('playlists');
+      const req = store.put(playlist);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async clearPlaylistChannels(playlistId: number): Promise<void> {
+    const db = await this.init();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('channels', 'readwrite');
+      const store = tx.objectStore('channels');
+      const playlistIndex = store.index('playlistId');
+      const req = playlistIndex.openCursor(IDBKeyRange.only(playlistId));
+      req.onsuccess = (e) => {
+        const cursor = (e.target as IDBRequest<IDBCursorWithValue | null>).result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        }
+      };
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });

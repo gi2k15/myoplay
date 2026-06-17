@@ -166,8 +166,48 @@
                 hide-details
                 @update:model-value="saveEpgSettings"
               />
-            </v-card>
-          </v-col>
+             </v-card>
+           </v-col>
+
+           <!-- Playlist Synchronization Settings -->
+           <v-col cols="12">
+             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
+                 <v-icon start color="primary" class="mr-2">mdi-sync</v-icon>
+                 Sincronização de Listas
+               </h3>
+               
+               <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
+                 Escolha a frequência com que o aplicativo verifica e atualiza automaticamente as listas (M3U ou Xtream) configuradas por URL.
+               </p>
+
+               <v-select
+                 v-model="playlistUpdateInterval"
+                 :items="updateIntervalOptions"
+                 label="Intervalo de Atualização Automática"
+                 variant="outlined"
+                 density="comfortable"
+                 class="mb-6"
+                 @update:model-value="saveUpdateSettings"
+               />
+
+               <v-divider class="mb-6 opacity-10" />
+
+               <div class="d-flex flex-wrap align-center gap-3">
+                 <v-btn
+                   color="primary"
+                   prepend-icon="mdi-refresh"
+                   :loading="syncingAll"
+                   @click="syncAllPlaylists"
+                 >
+                   Sincronizar Todas as Listas Agora
+                 </v-btn>
+                 <span v-if="syncProgressMsg" class="text-caption text-medium-emphasis ml-2">
+                   {{ syncProgressMsg }}
+                 </span>
+               </div>
+             </v-card>
+           </v-col>
 
           <!-- Movie Metadata Database Settings -->
           <v-col cols="12">
@@ -302,6 +342,7 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { db } from '@/services/db';
+import { PlaylistUpdater } from '@/services/playlistUpdater';
 
 // Alert States
 const alertMsg = ref('');
@@ -405,6 +446,18 @@ const metadataLanguages = [
   { title: 'Espanhol', value: 'es-ES' }
 ];
 
+// Playlist Synchronization Fields
+const playlistUpdateInterval = ref(24);
+const syncingAll = ref(false);
+const syncProgressMsg = ref('');
+const updateIntervalOptions = [
+  { title: 'Não atualizar automaticamente', value: 'never' },
+  { title: 'A cada 12 horas', value: 12 },
+  { title: 'A cada 24 horas (Padrão)', value: 24 },
+  { title: 'A cada 48 horas', value: 48 },
+  { title: 'Semanalmente (a cada 7 dias)', value: 168 },
+];
+
 // DB Statistics
 const stats = ref({
   playlists: 0,
@@ -418,6 +471,7 @@ onMounted(async () => {
   await loadPlaybackSettings();
   await loadEpgSettings();
   await loadMetadataSettings();
+  await loadUpdateSettings();
   await calculateStats();
 });
 
@@ -438,6 +492,61 @@ const saveMetadataSettings = async () => {
     await db.setSetting('movie_metadata_language', movieMetadataLanguage.value);
   } catch (err) {
     console.error('Erro ao salvar configurações de metadados:', err);
+  }
+};
+
+const loadUpdateSettings = async () => {
+  try {
+    playlistUpdateInterval.value = await db.getSetting('playlist_update_interval', 24);
+  } catch (err) {
+    console.error('Erro ao carregar configurações de sincronização:', err);
+  }
+};
+
+const saveUpdateSettings = async () => {
+  try {
+    await db.setSetting('playlist_update_interval', playlistUpdateInterval.value);
+    alertType.value = 'success';
+    alertMsg.value = 'Configuração de atualização automática salva com sucesso!';
+  } catch (err: any) {
+    alertType.value = 'error';
+    alertMsg.value = `Erro ao salvar configuração de sincronização: ${err.message}`;
+  }
+};
+
+const syncAllPlaylists = async () => {
+  syncingAll.value = true;
+  syncProgressMsg.value = 'Buscando playlists...';
+  alertMsg.value = '';
+  try {
+    const playlistsList = await db.getPlaylists();
+    const toUpdate = playlistsList.filter(p => p.type !== 'file');
+    if (toUpdate.length === 0) {
+      alertType.value = 'info';
+      alertMsg.value = 'Nenhuma lista cadastrada por URL para sincronizar.';
+      syncProgressMsg.value = '';
+      return;
+    }
+    let successCount = 0;
+    for (let i = 0; i < toUpdate.length; i++) {
+      const pl = toUpdate[i];
+      syncProgressMsg.value = `Sincronizando (${i + 1}/${toUpdate.length}): ${pl.name}...`;
+      try {
+        await PlaylistUpdater.updatePlaylist(pl);
+        successCount++;
+      } catch (e: any) {
+        console.error(`Erro ao sincronizar playlist "${pl.name}":`, e);
+      }
+    }
+    alertType.value = 'success';
+    alertMsg.value = `Sincronização concluída! ${successCount} de ${toUpdate.length} listas atualizadas com sucesso.`;
+    await calculateStats();
+  } catch (err: any) {
+    alertType.value = 'error';
+    alertMsg.value = `Erro geral na sincronização: ${err.message || err}`;
+  } finally {
+    syncingAll.value = false;
+    syncProgressMsg.value = '';
   }
 };
 

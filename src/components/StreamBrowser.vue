@@ -622,7 +622,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { db, type IPTVChannel } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
 import VideoPlayer from '@/components/VideoPlayer.vue';
@@ -672,9 +672,23 @@ const activeSeason = ref<number>(1);
 const itemsPerPage = 40;
 const pageLimit = ref(1);
 
+const onPlaylistUpdatedEvent = async (e: Event) => {
+  const customEv = e as CustomEvent<{ playlistId: number }>;
+  if (customEv.detail && customEv.detail.playlistId === props.playlistId) {
+    console.log(`[StreamBrowser] Active playlist ${props.playlistId} was updated, reloading...`);
+    await loadFavorites();
+    await loadBrowserData();
+  }
+};
+
 onMounted(async () => {
   await loadFavorites();
   await loadBrowserData();
+  window.addEventListener('playlist-updated', onPlaylistUpdatedEvent);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('playlist-updated', onPlaylistUpdatedEvent);
 });
 
 // Watch parameters changes (e.g. switching between Live TV and Movies)

@@ -6,7 +6,7 @@
         
         <!-- Header -->
         <div class="text-center mb-8">
-          <h1 class="text-h3 font-weight-bold mb-2 text-glow">Antigravity IPTV</h1>
+          <h1 class="text-h3 font-weight-bold mb-2 text-glow">MyoPlay</h1>
           <p class="text-subtitle-1 text-medium-emphasis">Seu player de IPTV local, rápido e privado.</p>
         </div>
 
@@ -380,9 +380,13 @@
                     <span class="text-truncate mr-2" style="max-width: 140px;">URL EPG:</span>
                     <span class="text-truncate text-secondary text-right" style="max-width: 160px;" :title="pl.epgUrl">{{ pl.epgUrl }}</span>
                   </div>
-                  <div class="d-flex justify-space-between">
+                  <div class="d-flex justify-space-between mb-1">
                     <span>Cadastrada em:</span>
                     <span>{{ new Date(pl.createdAt).toLocaleDateString() }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between" v-if="pl.type !== 'file'">
+                    <span>Atualizada em:</span>
+                    <span>{{ pl.lastUpdatedAt ? new Date(pl.lastUpdatedAt).toLocaleString() : 'Nunca' }}</span>
                   </div>
                 </div>
               </v-card-text>
@@ -412,11 +416,23 @@
                 </v-btn>
                 
                 <v-btn
+                  v-if="pl.type !== 'file'"
+                  icon="mdi-refresh"
+                  color="primary"
+                  variant="tonal"
+                  title="Sincronizar Playlist"
+                  :loading="loading && syncingPlaylistId === pl.id"
+                  :disabled="loading"
+                  @click="syncPlaylist(pl)"
+                />
+
+                <v-btn
                   v-if="pl.epgUrl"
-                  icon="mdi-sync"
+                  icon="mdi-television-guide"
                   color="secondary"
                   variant="tonal"
                   title="Sincronizar EPG"
+                  :disabled="loading"
                   @click="syncEPG(pl)"
                 />
               </v-card-actions>
@@ -430,7 +446,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { PlaylistUpdater } from '@/services/playlistUpdater';
 import { db, type Playlist, type IPTVChannel } from '@/services/db';
 import { parseM3U } from '@/services/m3uParser';
 import { parseEPG } from '@/services/epgParser';
@@ -476,10 +493,22 @@ const playlists = ref<(Playlist & { channelCount?: number })[]>([]);
 const currentPlaylistId = ref<number | null>(null);
 const epgCount = ref(0);
 
+const syncingPlaylistId = ref<number | null>(null);
+
+const onPlaylistUpdated = async () => {
+  await refreshPlaylists();
+  await refreshEpgCount();
+};
+
 // Fetch Initial Data
 onMounted(async () => {
   await refreshPlaylists();
   await refreshEpgCount();
+  window.addEventListener('playlist-updated', onPlaylistUpdated);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('playlist-updated', onPlaylistUpdated);
 });
 
 const refreshPlaylists = async () => {
@@ -984,6 +1013,39 @@ const downloadAndSaveEPG = async (urlToFetch: string, showUI: boolean = true) =>
     if (showUI) {
       loading.value = false;
     }
+  }
+};
+
+const syncPlaylist = async (pl: Playlist) => {
+  if (!pl.id) return;
+  loading.value = true;
+  syncingPlaylistId.value = pl.id;
+  progressIndeterminate.value = true;
+  progressValue.value = 0;
+  errorMsg.value = '';
+  successMsg.value = '';
+  loadingStatus.value = `Sincronizando lista "${pl.name}"...`;
+  loadingSubstatus.value = 'Conectando ao servidor...';
+
+  try {
+    await PlaylistUpdater.updatePlaylist(pl, (msg, percent) => {
+      loadingStatus.value = `Sincronizando "${pl.name}"...`;
+      loadingSubstatus.value = msg;
+      if (percent !== undefined) {
+        progressValue.value = percent;
+        progressIndeterminate.value = false;
+      } else {
+        progressIndeterminate.value = true;
+      }
+    });
+    successMsg.value = `Lista "${pl.name}" sincronizada com sucesso!`;
+    await refreshPlaylists();
+    await refreshEpgCount();
+  } catch (err: any) {
+    errorMsg.value = `Erro ao sincronizar lista: ${err.message || err}`;
+  } finally {
+    loading.value = false;
+    syncingPlaylistId.value = null;
   }
 };
 
