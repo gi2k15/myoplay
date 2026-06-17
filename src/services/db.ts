@@ -116,10 +116,16 @@ class IPTVDatabase {
   // --- PLAYLISTS ---
   async addPlaylist(playlist: Omit<Playlist, 'id'>): Promise<number> {
     const db = await this.init();
+    let cleanPlaylist = playlist;
+    try {
+      cleanPlaylist = JSON.parse(JSON.stringify(playlist));
+    } catch (err) {
+      console.warn('[IPTVDatabase] Failed to serialize playlist for add:', err);
+    }
     return new Promise((resolve, reject) => {
       const tx = db.transaction('playlists', 'readwrite');
       const store = tx.objectStore('playlists');
-      const req = store.add(playlist);
+      const req = store.add(cleanPlaylist);
       req.onsuccess = () => resolve(req.result as number);
       req.onerror = () => reject(req.error);
     });
@@ -176,10 +182,16 @@ class IPTVDatabase {
 
   async updatePlaylist(playlist: Playlist): Promise<void> {
     const db = await this.init();
+    let cleanPlaylist = playlist;
+    try {
+      cleanPlaylist = JSON.parse(JSON.stringify(playlist));
+    } catch (err) {
+      console.warn('[IPTVDatabase] Failed to serialize playlist for update:', err);
+    }
     return new Promise<void>((resolve, reject) => {
       const tx = db.transaction('playlists', 'readwrite');
       const store = tx.objectStore('playlists');
-      const req = store.put(playlist);
+      const req = store.put(cleanPlaylist);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
