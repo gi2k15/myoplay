@@ -1,169 +1,169 @@
 # 📺 MyoPlay
 
-**MyoPlay** é um player de IPTV web moderno, elegante e de alto desempenho, desenvolvido com o ecossistema mais recente de **Vue 3**, **Vite** e **Vuetify 4**. Ele oferece uma experiência completa e integrada de entretenimento diretamente no seu navegador, combinando reprodução robusta de vídeo com uma interface de usuário premium, fluida e altamente responsiva.
+**MyoPlay** is a modern, elegant, and high-performance web-based IPTV player built with the latest **Vue 3**, **Vite**, and **Vuetify 4** ecosystem. It delivers a complete and seamless entertainment experience directly in your browser, combining robust media playback with a premium, highly responsive user interface.
 
 ---
 
-## 🎨 Design Premium & Experiência Visual
+## 🎨 Premium Design & Visual Experience
 
-O aplicativo foi projetado com excelência visual e estética refinada, apresentando:
-- **Tema Escuro Otimizado (Dark Yellow)**: Uma paleta de cores sofisticada que combina pretos profundos (`#080808`) com detalhes em amarelo dourado (`#FFB300`), criando uma atmosfera cinematográfica premium.
-- **Glassmorphism**: Efeitos translúcidos e de desfoque de fundo (`backdrop-filter: blur`) com bordas suaves que trazem profundidade e camadas tridimensionais à interface.
-- **Micro-Animações Fluidas**: Transições suaves e elegantes ao navegar entre as telas, além de efeitos interativos de hover em botões, cartões de canais e itens de listas.
-- **Tipografia Moderna**: Integração direta com Google Fonts (`Outfit`, `Inter` e `Roboto`) para máxima legibilidade e visual limpo.
-- **Barras de Rolagem Customizadas**: Scrollbars personalizadas e estilizadas para combinar perfeitamente com a identidade visual preta e dourada do app.
-
----
-
-## ✨ Funcionalidades Principais
-
-### 📺 Engine de Vídeo Híbrida Inteligente
-- **Suporte a HLS (.m3u8)**: Integração com a biblioteca `hls.js` para garantir transmissões ao vivo com baixa latência e alta estabilidade.
-- **Suporte a MPEG-TS (.ts)**: Integração com `mpegts.js` para processar fluxos de vídeo MPEG-TS em alta fidelidade.
-- **Player Flutuante (Picture-in-Picture - PiP)**: Player flutuante persistente no canto inferior que permite continuar assistindo ao canal ativo enquanto você navega pelas categorias, edita listas, consulta a grade de EPG ou altera configurações.
-- **Modos de Buffer & Estabilidade**: Três modos de buffering ajustáveis (Baixa Latência, Balanceado ou Alta Estabilidade) para se adaptar a streams instáveis ou conexões lentas.
-- **Ajustes de Proporção de Tela (Aspect Ratio)**: Opções para Ajustar à Tela (Fit), Esticar (Stretch), 16:9 widescreen e 4:3 clássico.
-- **Reprodução Automática**: Opção configurável para reproduzir os canais imediatamente após o clique.
-
-### 🗂️ Gerenciador de Playlists Multi-Cliente
-- **Integração com API Xtream Codes**: Suporte nativo para conexão com servidores Xtream Codes através de Host (URL), Usuário e Senha.
-- **Importação de M3U / M3U8**: Suporta carregamento de arquivos locais (`.m3u` / `.m3u8` / `.txt`) arrastando e soltando (Drag & Drop), ou importação direta via URL remota.
-- **Parser de Alta Performance**: Processador de listas otimizado com exibição visual da porcentagem e status de importação em tempo real.
-
-### 📅 Guia de Programação EPG Integrado (XMLTV)
-- Suporte completo para arquivos de guia eletrônico de programação (XMLTV) importados localmente ou por URL.
-- Detecção automática de EPG embutida em listas M3U ou servidores Xtream.
-- Painel **"🔴 NO AR AGORA"** que exibe o programa atual, horário de início/fim, descrição e uma barra de progresso em tempo real.
-- Visualização do **"PRÓXIMO PROGRAMA"** com horário e detalhes de início.
-- **Deslocamento de Fuso Horário (Time Shift)**: Ajuste fino do horário do guia de -12h a +12h diretamente nas configurações para sincronizar perfeitamente a programação com o seu relógio local.
-- Aba de **Grade EPG** dedicada para visualizar a programação consolidada do canal.
-
-### 🎬 Metadados de Filmes e Séries (VOD)
-- Busca automática de capas em alta resolução, sinopses, diretores, notas, gêneros e ano de lançamento para enriquecer o catálogo de Filmes e Séries (VOD).
-- Integração nativa com a API do **TMDB (The Movie Database)** em múltiplos idiomas (Português-BR, Português-PT, Inglês e Espanhol) e suporte opcional para **OMDb API**.
-- Permite o uso de chave de API própria ou pública.
-
-### 🗄️ Banco de Dados Local (IndexedDB)
-- Persistência de dados 100% cliente-side utilizando um wrapper personalizado do banco de dados `IndexedDB` nativo do navegador.
-- Gravação de canais e programas em lotes inteligentes (de 5.000 itens) para evitar travamentos ou congelamento da interface visual (UI) durante a sincronização.
-- Limpeza automática de registros de programação EPG expirados há mais de 24 horas para economizar espaço de armazenamento.
-- Salvamento local seguro de preferências do usuário (volume do player, autoplay, modo flutuante, proporção de tela, última playlist ativa, canais favoritos e histórico).
-
-### 🔄 Proxy CORS Local Inteligente
-- Servidor proxy local em Node.js (`scripts/cors-proxy.js`) para contornar restrições rígidas de CORS de provedores de IPTV.
-- Execução concorrente com o servidor de desenvolvimento na porta `8088`.
-- Suporte a múltiplos redirecionamentos HTTP (até 5 redirecionamentos) e transmissão otimizada para evitar alto consumo de memória RAM.
-- Detecção de fechamento de conexão para encerrar requisições abortadas pelo cliente, poupando largura de banda.
-- Presets configuráveis de Proxy para Dados e Proxy para Transmissões de Vídeo (HLS/TS).
-
-### 🕒 Histórico e Canais Favoritos
-- **Favoritos**: Adicione canais à sua lista de favoritos para acesso instantâneo.
-- **Histórico**: Acesso rápido aos últimos 10 canais sintonizados exibidos no menu lateral, com opção de remoção individual.
+The application is crafted with visual excellence at its core, featuring:
+- **Optimized Dark Mode (Dark Yellow Theme)**: A sophisticated color palette combining deep blacks (`#080808`) and vibrant golden yellow accents (`#FFB300`) to create a premium, cinematic feel.
+- **Glassmorphism**: Elegant background blur effects (`backdrop-filter: blur`) and translucent borders that add modern depth and layers to the UI.
+- **Fluid Micro-Animations**: Smooth transitions when navigating between pages and elegant hover effects on buttons, channel cards, and list items.
+- **Modern Typography**: Integrated Google Fonts including `Outfit`, `Inter`, and `Roboto` for maximum readability and a clean layout.
+- **Tailored Scrollbars**: Sleek, custom-designed scrollbars that match the application's gold and black visual identity.
 
 ---
 
-## 🛠️ Stack Tecnológica
+## ✨ Key Features
 
-- **Framework**: [Vue 3](https://vuejs.org/) (Composition API usando `<script setup>` com TypeScript)
-- **Ferramenta de Build & Bundler**: [Vite](https://vite.dev/)
-- **Biblioteca de Interface (UI)**: [Vuetify 4](https://vuetifyjs.com/) (configurada com Material Design Icons e fontes Google Fonts)
-- **Reprodutores de Vídeo**: [Hls.js](https://github.com/video-dev/hls.js/) e [Mpegts.js](https://github.com/xqq/mpegts.js/)
-- **Estilização**: Native CSS & SASS (com gradientes personalizados e estilos de glassmorphism)
-- **Gerenciador de Pacotes**: `pnpm`
+### 📺 Intelligent Hybrid Video Engine
+- **HLS Support (.m3u8)**: Fully integrated with `hls.js` for smooth, low-latency playback of live HTTP Live Streaming feeds.
+- **MPEG-TS Support (.ts)**: Powered by `mpegts.js` to ensure support for high-fidelity MPEG-TS video streams.
+- **Picture-in-Picture (PiP) Mini-Player**: A persistent, floating mini-player at the bottom corner that lets you continue watching your current channel while browsing other categories, editing playlists, checking EPG guides, or configuring settings.
+- **Buffer & Stability Modes**: Three configurable buffer modes (Low Latency, Balanced, or High Stability) to adapt to unstable streams or slow connections.
+- **Screen Aspect Ratio Controls**: Options to Fit Screen, Stretch (Fill), 16:9 widescreen, and classic 4:3.
+- **Auto-Play**: Configurable setting to start playing channels immediately upon selection.
+
+### 🗂️ Multi-Client Playlist Manager
+- **Xtream Codes API Integration**: Direct connection with Xtream Codes servers supporting authentication via Host (URL), Username, and Password.
+- **M3U / M3U8 Import**: Supports loading local files (`.m3u` / `.m3u8` / `.txt`) via Drag & Drop or importing directly from remote URLs.
+- **High-Performance Parser**: Optimized playlist parser featuring a real-time visual progress percentage and status indicator.
+
+### 📅 Integrated EPG TV Guide (XMLTV)
+- Full support for XMLTV program guides imported from local files or remote URLs.
+- Automatic EPG detection from M3U playlists and Xtream Codes servers.
+- **"🔴 NOW PLAYING"** panel displaying the current program name, time range, description, and an active progress bar.
+- **"UPCOMING PROGRAM"** preview with descriptions and start times.
+- **EPG Time Shift**: Adjust EPG guide timezone offset from -12h to +12h directly in settings to perfectly synchronize scheduling with your local system clock.
+- Dedicated **EPG TV Guide** view for a consolidated schedule of each channel.
+
+### 🎬 Movies & Series Metadata (VOD)
+- Automatic retrieval of high-resolution covers, plots, directors, ratings, genres, and release years to enrich the Movies and Series (VOD) catalog.
+- Native integration with **TMDB (The Movie Database)** API supporting multiple languages (Portuguese-BR, Portuguese-PT, English, and Spanish) and optional support for **OMDb API**.
+- Use your own API key or fallback to a public API key.
+
+### 🗄️ High-Performance Local Database (IndexedDB)
+- 100% client-side data persistence utilizing a custom wrapper for the browser's native `IndexedDB`.
+- High-efficiency database operations writing channels and programs in smart batches (5,000 items) to prevent any UI freezing or lagging during synchronization.
+- Automated cleanup of expired EPG guide records older than 24 hours to preserve local disk space.
+- Local saving of user preferences (Volume, Autoplay, Floating Player Mode, Aspect Ratio, Buffer Mode, Last Selected Playlist, Favorites, and Streaming History).
+
+### 🔄 Built-in Local CORS Proxy
+- Dedicated local Node.js proxy server (`scripts/cors-proxy.js`) designed to bypass strict Cross-Origin Resource Sharing (CORS) blocks enforced by IPTV providers.
+- Runs concurrently with the development server on port `8088`.
+- Supports automatic redirect resolution (up to 5 redirects) and efficient response streaming to avoid high memory overhead.
+- Client connection closure detection to immediately abort requests, saving network bandwidth.
+- Configurable Proxy presets for Data (M3U, APIs) and Video Streams (HLS/TS).
+
+### 🕒 Sidebar with History & Favorites
+- **Favorites**: Mark channels as favorites for instant access.
+- **Recent Streams**: A historical feed of the last 10 sintonized streams pinned to the sidebar, with quick individual removal support.
 
 ---
 
-## 📂 Estrutura do Projeto
+## 🛠️ Tech Stack
+
+- **Core Framework**: [Vue 3](https://vuejs.org/) (Composition API using `<script setup>` with TypeScript)
+- **Build Tool & Bundler**: [Vite](https://vite.dev/)
+- **UI Library**: [Vuetify 4](https://vuetifyjs.com/) (configured with Material Design Icons and Google Fonts)
+- **Player Engines**: [Hls.js](https://github.com/video-dev/hls.js/) and [Mpegts.js](https://github.com/xqq/mpegts.js/)
+- **Styling**: Native CSS & SASS (with custom gradients and glassmorphism styling)
+- **Package Manager**: `pnpm`
+
+---
+
+## 📂 Project Structure
 
 ```
-├── public/                # Ativos estáticos públicos
+├── public/                # Static public assets
 ├── scripts/
-│   └── cors-proxy.js      # Servidor de Proxy CORS local em Node.js
+│   └── cors-proxy.js      # Custom Node.js CORS Proxy script
 ├── src/
-│   ├── assets/            # Imagens, mídias e estilos globais do app
-│   ├── components/        # Componentes Vue 3
-│   │   ├── PlaylistManager.vue # Assistente de M3U, URLs, Xtream API e EPG
-│   │   ├── Sidebar.vue         # Menu lateral, histórico e favoritos
-│   │   ├── StreamBrowser.vue   # Navegador de categorias (Canais, Filmes, Séries, Favoritos)
-│   │   ├── TVGuide.vue         # Grade EPG consolidada de programação
-│   │   ├── VideoPlayer.vue     # Reprodutor de vídeo HTML5 (HLS/TS) + mini-player PiP
-│   │   └── Settings.vue        # Configurações de proxy, reprodução, EPG, metadados e manutenção do DB
-│   ├── plugins/           # Configurações de plugins do app (Vuetify, Fontes)
-│   ├── services/          # Serviços do aplicativo
-│   │   ├── db.ts               # Banco IndexedDB local e persistência de dados
-│   │   ├── epgParser.ts        # Analisador de guias XMLTV
-│   │   ├── m3uParser.ts        # Analisador de arquivos e links M3U/M3U8
-│   │   ├── playlistUpdater.ts  # Gerenciador de sincronização automática de listas
-│   │   └── xtreamClient.ts     # Cliente HTTP para APIs Xtream Codes
-│   ├── styles/            # Variáveis SASS, temas e estilos globais do app
-│   ├── App.vue            # Layout raiz do aplicativo Vue
-│   └── main.ts            # Ponto de entrada TypeScript do aplicativo
-├── eslint.config.js       # Configuração do ESLint
-├── vite.config.mts        # Configuração do Vite e plugins associados
-└── package.json           # Scripts, dependências e configurações do projeto
+│   ├── assets/            # App graphics, media, and global styles
+│   ├── components/        # Vue 3 UI Components
+│   │   ├── PlaylistManager.vue # Handles M3U/M3U8 files, URLs, Xtream API, and EPG wizard
+│   │   ├── Sidebar.vue         # Sidebar navigation, favorites, and recent streams
+│   │   ├── StreamBrowser.vue   # Category & stream browser (Live, Movies, Series, Favorites)
+│   │   ├── TVGuide.vue         # Aggregated XMLTV EPG program guide
+│   │   ├── VideoPlayer.vue     # HTML5 media player (HLS/MPEG-TS) + floating PiP mini-player
+│   │   └── Settings.vue        # Proxy URLs, playback options, EPG offset, metadata, and DB cleanup
+│   ├── plugins/           # Application plugin configurations (Vuetify, Fonts)
+│   ├── services/          # Core client logic & database services
+│   │   ├── db.ts               # Custom client-side IndexedDB wrapper
+│   │   ├── epgParser.ts        # XMLTV EPG file parser
+│   │   ├── m3uParser.ts        # M3U/M3U8 file parser
+│   │   ├── playlistUpdater.ts  # Auto-update manager for playlists and EPG
+│   │   └── xtreamClient.ts     # HTTP client for Xtream Codes REST APIs
+│   ├── styles/            # Variable settings, themes, and global stylesheets
+│   ├── App.vue            # Root Vue application layout
+│   └── main.ts            # Application TypeScript entry point
+├── eslint.config.js       # ESLint configurations
+├── vite.config.mts        # Vite configuration and plugins
+└── package.json           # Scripts, dependencies, and configuration
 ```
 
 ---
 
-## 🚀 Instalação e Execução Local
+## 🚀 Installation & Local Setup
 
-### Pré-requisitos
-Certifique-se de ter o [Node.js](https://nodejs.org/) instalado e o gerenciador de pacotes **pnpm** configurado globalmente.
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) installed and the **pnpm** package manager configured globally.
 
-### 1. Clonar o projeto e instalar as dependências
+### 1. Clone the project and install dependencies
 ```bash
 pnpm install
 ```
 
-### 2. Iniciar o servidor de desenvolvimento
-Este comando inicia concorrentemente o servidor de desenvolvimento Vite e o servidor de Proxy CORS local na porta `8088`:
+### 2. Start the development server
+This command starts both the Vite dev server and the local CORS proxy **concurrently** on port `8088`:
 ```bash
 pnpm dev
 ```
 
-### 3. Compilar para produção
-Para compilar um pacote otimizado e com verificação completa de tipos de TypeScript:
+### 3. Build for production
+To build a highly optimized, type-checked production bundle:
 ```bash
 pnpm build
 ```
 
-### 4. Visualizar o build de produção localmente
+### 4. Preview production build locally
 ```bash
 pnpm preview
 ```
 
 ---
 
-## ⚙️ Comandos Disponíveis
+## ⚙️ Available Commands
 
-| Comando | Descrição |
+| Command | Description |
 |---|---|
-| `pnpm dev` | Inicia o servidor Vite e o Proxy CORS local simultaneamente |
-| `pnpm build` | Valida os tipos TypeScript e compila o app para a pasta estática `dist` |
-| `pnpm preview` | Inicia um servidor web local para testar a compilação de produção da pasta `dist` |
-| `pnpm build-only` | Compila o aplicativo ignorando a verificação de tipos do TypeScript |
-| `pnpm type-check` | Executa o compilador do TypeScript (`vue-tsc --build`) para validar tipagens do código |
-| `pnpm proxy` | Inicia apenas o servidor de Proxy CORS local na porta `8088` |
+| `pnpm dev` | Starts Vite developer server and the local CORS proxy concurrently |
+| `pnpm build` | Validates TypeScript types and compiles source files to a static distribution (`dist`) |
+| `pnpm preview` | Launches a local web server to test the production build from `dist` |
+| `pnpm build-only` | Builds the application bypassing TypeScript type verification |
+| `pnpm type-check` | Runs the TypeScript compiler (`vue-tsc --build`) to validate code types |
+| `pnpm proxy` | Launches only the custom Node.js CORS proxy server on port `8088` |
 
 ---
 
-## 🌐 Configuração do Proxy CORS Local
+## 🌐 Configuring the Local CORS Proxy
 
-O player utiliza o proxy local para contornar bloqueios de CORS (Cross-Origin Resource Sharing) impostos por determinados servidores de IPTV que não permitem requisições diretas de navegadores.
+The IPTV player uses a local CORS proxy server to resolve resource access problems caused by rigid CORS filters on provider streams.
 
-Por padrão, as chamadas com `pnpm dev` passam por:
+By default, launching the project with `pnpm dev` routes traffic through:
 `http://localhost:8088/?url=`
 
-Você pode alterar o comportamento do proxy a qualquer momento na tela de **Configurações** do aplicativo, incluindo presets públicos (AllOrigins, Corsproxy.io, etc.), definir se quer usá-lo de forma automática (apenas quando falhar), sempre ou nunca.
+You can adjust or switch the CORS proxy URL at any time via the **Settings** view in the application interface, including public presets (AllOrigins, Corsproxy.io, etc.), and control usage policy (Auto, Always, or Never).
 
 ---
 
-## 🔒 Segurança & Privacidade
+## 🔒 Security & Privacy
 
-Todas as suas listas de reprodução, credenciais da API Xtream Codes (usuário e senha), histórico e lista de canais favoritos são salvos **100% localmente no banco de dados IndexedDB do seu navegador**. Nenhuma informação privada é enviada para servidores de terceiros ou banco de dados remotos externos. O aplicativo opera de forma descentralizada e segura.
+All your playlists, stream URLs, Xtream Codes credentials (usernames and passwords), favorites, and viewing history are stored **100% locally inside your web browser** using `IndexedDB`. No private information is sent to third-party database servers or remote tracking systems. The application operates in a fully decentralized and secure manner.
 
 ---
 
-## 📄 Licença
+## 📄 License
 
-Este projeto está licenciado sob a **GNU General Public License v3.0** (GPL-3.0-or-later). Consulte o arquivo [LICENSE](file:///d:/GitHub/iptv-player-gemini2/LICENSE) para obter os termos e condições completos da licença.
+This project is licensed under the **GNU General Public License v3.0** (GPL-3.0-or-later). See the [LICENSE](file:///d:/GitHub/iptv-player-gemini2/LICENSE) file for the full license text and terms.
