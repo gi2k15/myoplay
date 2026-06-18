@@ -4,20 +4,10 @@
 
 ---
 
-## 🎨 Premium Design & Visual Experience
-
-The application is crafted with visual excellence at its core, featuring:
-- **Optimized Dark Mode (Dark Yellow Theme)**: A sophisticated color palette combining deep blacks (`#080808`) and vibrant golden yellow accents (`#FFB300`) to create a premium, cinematic feel.
-- **Glassmorphism**: Elegant background blur effects (`backdrop-filter: blur`) and translucent borders that add modern depth and layers to the UI.
-- **Fluid Micro-Animations**: Smooth transitions when navigating between pages and elegant hover effects on buttons, channel cards, and list items.
-- **Modern Typography**: Integrated Google Fonts including `Outfit`, `Inter`, and `Roboto` for maximum readability and a clean layout.
-- **Tailored Scrollbars**: Sleek, custom-designed scrollbars that match the application's gold and black visual identity.
-
----
-
 ## ✨ Key Features
 
 ### 📺 Intelligent Hybrid Video Engine
+
 - **HLS Support (.m3u8)**: Fully integrated with `hls.js` for smooth, low-latency playback of live HTTP Live Streaming feeds.
 - **MPEG-TS Support (.ts)**: Powered by `mpegts.js` to ensure support for high-fidelity MPEG-TS video streams.
 - **Picture-in-Picture (PiP) Mini-Player**: A persistent, floating mini-player at the bottom corner that lets you continue watching your current channel while browsing other categories, editing playlists, checking EPG guides, or configuring settings.
@@ -26,11 +16,13 @@ The application is crafted with visual excellence at its core, featuring:
 - **Auto-Play**: Configurable setting to start playing channels immediately upon selection.
 
 ### 🗂️ Multi-Client Playlist Manager
+
 - **Xtream Codes API Integration**: Direct connection with Xtream Codes servers supporting authentication via Host (URL), Username, and Password.
 - **M3U / M3U8 Import**: Supports loading local files (`.m3u` / `.m3u8` / `.txt`) via Drag & Drop or importing directly from remote URLs.
 - **High-Performance Parser**: Optimized playlist parser featuring a real-time visual progress percentage and status indicator.
 
 ### 📅 Integrated EPG TV Guide (XMLTV)
+
 - Full support for XMLTV program guides imported from local files or remote URLs.
 - Automatic EPG detection from M3U playlists and Xtream Codes servers.
 - **"🔴 NOW PLAYING"** panel displaying the current program name, time range, description, and an active progress bar.
@@ -39,17 +31,20 @@ The application is crafted with visual excellence at its core, featuring:
 - Dedicated **EPG TV Guide** view for a consolidated schedule of each channel.
 
 ### 🎬 Movies & Series Metadata (VOD)
+
 - Automatic retrieval of high-resolution covers, plots, directors, ratings, genres, and release years to enrich the Movies and Series (VOD) catalog.
 - Native integration with **TMDB (The Movie Database)** API supporting multiple languages (Portuguese-BR, Portuguese-PT, English, and Spanish) and optional support for **OMDb API**.
 - Use your own API key or fallback to a public API key.
 
 ### 🗄️ High-Performance Local Database (IndexedDB)
+
 - 100% client-side data persistence utilizing a custom wrapper for the browser's native `IndexedDB`.
 - High-efficiency database operations writing channels and programs in smart batches (5,000 items) to prevent any UI freezing or lagging during synchronization.
 - Automated cleanup of expired EPG guide records older than 24 hours to preserve local disk space.
 - Local saving of user preferences (Volume, Autoplay, Floating Player Mode, Aspect Ratio, Buffer Mode, Last Selected Playlist, Favorites, and Streaming History).
 
 ### 🔄 Built-in Local CORS Proxy
+
 - Dedicated local Node.js proxy server (`scripts/cors-proxy.js`) designed to bypass strict Cross-Origin Resource Sharing (CORS) blocks enforced by IPTV providers.
 - Runs concurrently with the development server on port `8088`.
 - Supports automatic redirect resolution (up to 5 redirects) and efficient response streaming to avoid high memory overhead.
@@ -57,6 +52,7 @@ The application is crafted with visual excellence at its core, featuring:
 - Configurable Proxy presets for Data (M3U, APIs) and Video Streams (HLS/TS).
 
 ### 🕒 Sidebar with History & Favorites
+
 - **Favorites**: Mark channels as favorites for instant access.
 - **Recent Streams**: A historical feed of the last 10 sintonized streams pinned to the sidebar, with quick individual removal support.
 
@@ -108,26 +104,33 @@ The application is crafted with visual excellence at its core, featuring:
 ## 🚀 Installation & Local Setup
 
 ### Prerequisites
+
 Make sure you have [Node.js](https://nodejs.org/) installed and the **pnpm** package manager configured globally.
 
 ### 1. Clone the project and install dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 2. Start the development server
+
 This command starts both the Vite dev server and the local CORS proxy **concurrently** on port `8088`:
+
 ```bash
 pnpm dev
 ```
 
 ### 3. Build for production
+
 To build a highly optimized, type-checked production bundle:
+
 ```bash
 pnpm build
 ```
 
 ### 4. Preview production build locally
+
 ```bash
 pnpm preview
 ```
@@ -136,14 +139,14 @@ pnpm preview
 
 ## ⚙️ Available Commands
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Starts Vite developer server and the local CORS proxy concurrently |
-| `pnpm build` | Validates TypeScript types and compiles source files to a static distribution (`dist`) |
-| `pnpm preview` | Launches a local web server to test the production build from `dist` |
-| `pnpm build-only` | Builds the application bypassing TypeScript type verification |
-| `pnpm type-check` | Runs the TypeScript compiler (`vue-tsc --build`) to validate code types |
-| `pnpm proxy` | Launches only the custom Node.js CORS proxy server on port `8088` |
+| Command           | Description                                                                            |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| `pnpm dev`        | Starts Vite developer server and the local CORS proxy concurrently                     |
+| `pnpm build`      | Validates TypeScript types and compiles source files to a static distribution (`dist`) |
+| `pnpm preview`    | Launches a local web server to test the production build from`dist`                    |
+| `pnpm build-only` | Builds the application bypassing TypeScript type verification                          |
+| `pnpm type-check` | Runs the TypeScript compiler (`vue-tsc --build`) to validate code types                |
+| `pnpm proxy`      | Launches only the custom Node.js CORS proxy server on port`8088`                       |
 
 ---
 
