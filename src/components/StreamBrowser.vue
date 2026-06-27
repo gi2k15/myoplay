@@ -8,8 +8,7 @@
         cols="12" 
         md="3" 
         class="category-sidebar border-right pa-4 fill-height d-flex flex-column"
-        :class="{ 'sidebar-collapsed': categoriesCollapsed && !$vuetify.display.mobile }"
-        v-if="!$vuetify.display.mobile || showMobileCategories"
+        v-if="(!$vuetify.display.mobile && !categoriesCollapsed) || ($vuetify.display.mobile && showMobileCategories)"
         style="max-height: calc(100vh - 64px); overflow-y: auto;"
       >
         <div class="d-flex align-center justify-space-between mb-4">
@@ -1267,18 +1266,6 @@ const playMovie = (movie: IPTVChannel) => {
 
 .channels-content-area {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@media (min-width: 960px) {
-  .category-sidebar.sidebar-collapsed {
-    flex: 0 0 0 !important;
-    max-width: 0 !important;
-    padding: 0 !important;
-    opacity: 0 !important;
-    border-right: none !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-  }
 }
 
 .uppercase-title {
