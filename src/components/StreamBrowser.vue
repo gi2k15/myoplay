@@ -7,19 +7,33 @@
       <v-col 
         cols="12" 
         md="3" 
-        class="border-right pa-4 fill-height d-flex flex-column"
+        class="category-sidebar border-right pa-4 fill-height d-flex flex-column"
+        :class="{ 'sidebar-collapsed': categoriesCollapsed && !$vuetify.display.mobile }"
         v-if="!$vuetify.display.mobile || showMobileCategories"
         style="max-height: calc(100vh - 64px); overflow-y: auto;"
       >
         <div class="d-flex align-center justify-space-between mb-4">
           <h3 class="text-subtitle-1 font-weight-bold uppercase-title">Categorias</h3>
-          <v-btn
-            v-if="$vuetify.display.mobile"
-            icon="mdi-close"
-            variant="text"
-            size="small"
-            @click="showMobileCategories = false"
-          />
+          <div class="d-flex align-center gap-1">
+            <!-- Desktop Collapse Button -->
+            <v-btn
+              v-if="!$vuetify.display.mobile"
+              icon="mdi-chevron-left"
+              variant="text"
+              size="small"
+              @click="categoriesCollapsed = true"
+              title="Recolher categorias"
+            />
+            <!-- Mobile Close Button -->
+            <v-btn
+              v-slot:default
+              v-if="$vuetify.display.mobile"
+              icon="mdi-close"
+              variant="text"
+              size="small"
+              @click="showMobileCategories = false"
+            />
+          </div>
         </div>
 
         <v-list density="comfortable" nav bg-color="transparent" class="pa-0">
@@ -68,8 +82,8 @@
       <!-- Channels Browser Content Area -->
       <v-col 
         cols="12" 
-        :md="(!$vuetify.display.mobile || showMobileCategories) ? 9 : 12" 
-        class="pa-0 d-flex flex-column fill-height overflow-hidden"
+        :md="(!$vuetify.display.mobile && categoriesCollapsed) ? 12 : ((!$vuetify.display.mobile || showMobileCategories) ? 9 : 12)" 
+        class="pa-0 d-flex flex-column fill-height overflow-hidden channels-content-area"
         style="max-height: calc(100vh - 64px);"
       >
         <!-- Live Player Top Section (Active when a live channel is playing and not floating) -->
@@ -164,6 +178,16 @@
                 color="primary"
                 class="mr-2"
                 @click="showMobileCategories = !showMobileCategories"
+              />
+              <!-- Desktop Category Toggle (Expand Button) -->
+              <v-btn
+                v-if="!$vuetify.display.mobile && categoriesCollapsed"
+                icon="mdi-chevron-right"
+                variant="text"
+                color="primary"
+                class="mr-2"
+                @click="categoriesCollapsed = false"
+                title="Expandir categorias"
               />
               <div>
                 <h2 class="text-h5 font-weight-bold d-flex align-center">
@@ -658,6 +682,11 @@ const emit = defineEmits<{
 const searchQuery = ref('');
 const selectedCategory = ref('all');
 const showMobileCategories = ref(false);
+const categoriesCollapsed = ref(localStorage.getItem('categories_collapsed') === 'true');
+
+watch(categoriesCollapsed, (val) => {
+  localStorage.setItem('categories_collapsed', String(val));
+});
 
 const categories = ref<{ name: string; count: number }[]>([]);
 const allChannels = ref<IPTVChannel[]>([]);
@@ -1231,6 +1260,27 @@ const playMovie = (movie: IPTVChannel) => {
 </script>
 
 <style scoped>
+.category-sidebar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+.channels-content-area {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 960px) {
+  .category-sidebar.sidebar-collapsed {
+    flex: 0 0 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    border-right: none !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+  }
+}
+
 .uppercase-title {
   font-size: 0.75rem;
   letter-spacing: 2px;
