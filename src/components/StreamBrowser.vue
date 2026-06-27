@@ -75,12 +75,12 @@
         <!-- Live Player Top Section (Active when a live channel is playing and not floating) -->
         <div 
           v-if="type === 'live' && activeChannel && !playerFloatMode" 
-          class="live-player-top-section pa-4 border-bottom-glow flex-shrink-0"
+          class="live-player-top-section py-2 px-4 border-bottom-glow flex-shrink-0"
         >
           <v-row class="ma-0 justify-center">
             <!-- Player (Aumentado, largura total com limite elegante) -->
-            <v-col cols="12" class="pa-2">
-              <div class="player-wrapper mx-auto" style="max-width: 960px; aspect-ratio: 16/9;">
+            <v-col cols="12" class="pa-1">
+              <div class="player-wrapper mx-auto player-wrapper-responsive">
                 <VideoPlayer
                   :channel="activeChannel"
                   :floating="false"
@@ -91,8 +91,8 @@
             </v-col>
             
             <!-- Active Channel EPG / Info Card (Abaixo do player em formato de barra) -->
-            <v-col cols="12" class="pa-2">
-              <v-card class="glass-card pa-4 rounded-xl mx-auto" style="max-width: 960px;" variant="flat">
+            <v-col cols="12" class="pa-1">
+              <v-card class="glass-card py-2 px-4 rounded-xl mx-auto" style="max-width: 960px;" variant="flat">
                 <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between gap-3">
                   <!-- Channel Logo and Name -->
                   <div class="d-flex align-center gap-3 flex-shrink-0" style="min-width: 220px; max-width: 300px;">
@@ -1307,6 +1307,29 @@ const playMovie = (movie: IPTVChannel) => {
   border-bottom: 1px solid rgba(255, 193, 7, 0.15) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   z-index: 5;
+}
+
+.player-wrapper-responsive {
+  max-width: 960px;
+  aspect-ratio: 16/9;
+}
+
+@media (min-width: 960px) {
+  .player-wrapper-responsive {
+    max-height: 38vh;
+  }
+}
+
+@media (min-width: 960px) and (min-height: 1080px) {
+  .player-wrapper-responsive {
+    max-height: 480px;
+  }
+}
+
+@media (min-width: 960px) and (max-height: 850px) {
+  .player-wrapper-responsive {
+    max-height: 32vh;
+  }
 }
 
 .border-bottom-glow {
