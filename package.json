@@ -2,7 +2,7 @@
   "name": "myoplay",
   "private": true,
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.27.38",
   "license": "GPL-3.0-or-later",
   "scripts": {
     "dev": "run-p dev:vite proxy",
