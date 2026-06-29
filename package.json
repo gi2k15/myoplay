@@ -2,8 +2,9 @@
   "name": "myoplay",
   "private": true,
   "type": "module",
-  "version": "0.27.38",
+  "version": "0.28.0",
   "license": "GPL-3.0-or-later",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "run-p dev:vite proxy",
     "dev:vite": "vite",
@@ -11,7 +12,10 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build --force"
+    "type-check": "vue-tsc --build --force",
+    "electron:dev": "node scripts/electron-dev.js",
+    "electron:build": "pnpm build && node scripts/build-electron.js && electron-builder",
+    "electron:build:all": "pnpm build && node scripts/build-electron.js && electron-builder -wml"
   },
   "dependencies": {
     "hls.js": "^1.6.16",
@@ -24,6 +28,9 @@
     "@types/node": "^24.12.0",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vue/tsconfig": "^0.9.0",
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.1",
     "npm-run-all2": "^8.0.4",
     "sass-embedded": "^1.98.0",
     "typescript": "~5.9.3",
@@ -31,5 +38,46 @@
     "vite-plugin-singlefile": "^2.3.3",
     "vite-plugin-vuetify": "^2.1.3",
     "vue-tsc": "^3.2.5"
+  },
+  "build": {
+    "appId": "com.myoplay.app",
+    "productName": "MyOPlay",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "snap"
+      ],
+      "category": "Video"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.video"
+    }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "electron-winstaller",
+      "esbuild"
+    ]
   }
 }
