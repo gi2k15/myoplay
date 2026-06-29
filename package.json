@@ -3,7 +3,7 @@
   "desktopName": "myoplay.desktop",
   "private": true,
   "type": "module",
-  "version": "0.28.7",
+  "version": "0.28.8",
   "description": "IPTV Player built with Vue 3 and Electron",
   "author": "Bruno <dantas.bs@gmail.com>",
   "license": "GPL-3.0-or-later",
@@ -67,7 +67,7 @@
       "syncDesktopName": true
     },
     "win": {
-      "icon": "public/favicon.ico",
+      "icon": "public/favicon.png",
       "target": [
         "nsis",
         "zip"
