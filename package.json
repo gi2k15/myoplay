@@ -2,7 +2,7 @@
   "name": "myoplay",
   "private": true,
   "type": "module",
-  "version": "0.28.2",
+  "version": "0.28.3",
   "description": "IPTV Player built with Vue 3 and Electron",
   "author": "Bruno <bruno@example.com>",
   "license": "GPL-3.0-or-later",
@@ -45,6 +45,7 @@
   "build": {
     "appId": "com.myoplay.app",
     "productName": "MyOPlay",
+    "desktopName": "myoplay.desktop",
     "directories": {
       "output": "release"
     },
@@ -60,7 +61,8 @@
         "deb",
         "snap"
       ],
-      "category": "Video"
+      "category": "Video",
+      "syncDesktopName": true
     },
     "win": {
       "target": [
