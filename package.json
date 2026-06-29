@@ -2,7 +2,9 @@
   "name": "myoplay",
   "private": true,
   "type": "module",
-  "version": "0.28.0",
+  "version": "0.28.1",
+  "description": "IPTV Player built with Vue 3 and Electron",
+  "author": "Bruno <bruno@example.com>",
   "license": "GPL-3.0-or-later",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -67,7 +69,6 @@
     },
     "mac": {
       "target": [
-        "dmg",
         "zip"
       ],
       "category": "public.app-category.video"
