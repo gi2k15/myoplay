@@ -102,8 +102,13 @@ class IPTVDatabase {
         }
       };
 
-      request.onsuccess = () => {
+      request.onsuccess = async () => {
         this.db = request.result;
+        try {
+          await this.syncWithExternalBackup();
+        } catch (err) {
+          console.error('[IPTVDatabase] Error during initial sync with backup:', err);
+        }
         resolve(this.db);
       };
 
@@ -122,13 +127,16 @@ class IPTVDatabase {
     } catch (err) {
       console.warn('[IPTVDatabase] Failed to serialize playlist for add:', err);
     }
-    return new Promise((resolve, reject) => {
+    const id = await new Promise<number>((resolve, reject) => {
       const tx = db.transaction('playlists', 'readwrite');
       const store = tx.objectStore('playlists');
       const req = store.add(cleanPlaylist);
       req.onsuccess = () => resolve(req.result as number);
       req.onerror = () => reject(req.error);
     });
+
+    await this.triggerPlaylistsBackup();
+    return id;
   }
 
   async getPlaylists(): Promise<Playlist[]> {
@@ -145,7 +153,7 @@ class IPTVDatabase {
   async deletePlaylist(playlistId: number): Promise<void> {
     const db = await this.init();
     // Delete playlist record, then delete all its channels and favorites
-    return new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(['playlists', 'channels', 'favorites'], 'readwrite');
       
       // 1. Delete playlist metadata
@@ -178,6 +186,9 @@ class IPTVDatabase {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
+
+    await this.triggerPlaylistsBackup();
+    await this.triggerFavoritesBackup();
   }
 
   async updatePlaylist(playlist: Playlist): Promise<void> {
@@ -188,13 +199,15 @@ class IPTVDatabase {
     } catch (err) {
       console.warn('[IPTVDatabase] Failed to serialize playlist for update:', err);
     }
-    return new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('playlists', 'readwrite');
       const store = tx.objectStore('playlists');
       const req = store.put(cleanPlaylist);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
+
+    await this.triggerPlaylistsBackup();
   }
 
   async clearPlaylistChannels(playlistId: number): Promise<void> {
@@ -430,7 +443,7 @@ class IPTVDatabase {
   // --- FAVORITES ---
   async addFavorite(playlistId: number, channelId: string): Promise<void> {
     const db = await this.init();
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('favorites', 'readwrite');
       const store = tx.objectStore('favorites');
       const id = `${playlistId}_${channelId}`;
@@ -438,11 +451,13 @@ class IPTVDatabase {
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
+
+    await this.triggerFavoritesBackup();
   }
 
   async removeFavorite(playlistId: number, channelId: string): Promise<void> {
     const db = await this.init();
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('favorites', 'readwrite');
       const store = tx.objectStore('favorites');
       const id = `${playlistId}_${channelId}`;
@@ -450,6 +465,8 @@ class IPTVDatabase {
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
+
+    await this.triggerFavoritesBackup();
   }
 
   async getFavorites(playlistId: number): Promise<string[]> {
@@ -481,13 +498,15 @@ class IPTVDatabase {
       }
     }
 
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('settings', 'readwrite');
       const store = tx.objectStore('settings');
       const req = store.put({ key, value: safeValue });
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
+
+    await this.triggerSettingsBackup();
   }
 
   async getSetting(key: string, defaultValue: any = null): Promise<any> {
@@ -505,6 +524,141 @@ class IPTVDatabase {
       };
       req.onerror = () => reject(req.error);
     });
+  }
+
+  // --- EXTERNAL BACKUP TRIGGERS & LOGIC ---
+
+  async triggerPlaylistsBackup(): Promise<void> {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      try {
+        const playlists = await this.getPlaylists();
+        await (window as any).electronAPI.saveToFile('playlists_backup.json', JSON.stringify(playlists));
+        console.log('[IPTVDatabase] Playlists backed up to file.');
+      } catch (err) {
+        console.error('[IPTVDatabase] Failed to backup playlists:', err);
+      }
+    }
+  }
+
+  async triggerFavoritesBackup(): Promise<void> {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      try {
+        const db = await this.init();
+        const favorites = await new Promise<any[]>((resolve, reject) => {
+          const tx = db.transaction('favorites', 'readonly');
+          const store = tx.objectStore('favorites');
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+        await (window as any).electronAPI.saveToFile('favorites_backup.json', JSON.stringify(favorites));
+        console.log('[IPTVDatabase] Favorites backed up to file.');
+      } catch (err) {
+        console.error('[IPTVDatabase] Failed to backup favorites:', err);
+      }
+    }
+  }
+
+  async triggerSettingsBackup(): Promise<void> {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      try {
+        const db = await this.init();
+        const settings = await new Promise<any[]>((resolve, reject) => {
+          const tx = db.transaction('settings', 'readonly');
+          const store = tx.objectStore('settings');
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+        await (window as any).electronAPI.saveToFile('settings_backup.json', JSON.stringify(settings));
+        console.log('[IPTVDatabase] Settings backed up to file.');
+      } catch (err) {
+        console.error('[IPTVDatabase] Failed to backup settings:', err);
+      }
+    }
+  }
+
+  async addPlaylistDirectly(playlist: Playlist): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('playlists', 'readwrite');
+      const store = tx.objectStore('playlists');
+      const req = store.put(playlist);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getAllFavoritesDirectly(): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('favorites', 'readonly');
+      const store = tx.objectStore('favorites');
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getAllSettingsDirectly(): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('settings', 'readonly');
+      const store = tx.objectStore('settings');
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async syncWithExternalBackup(): Promise<void> {
+    if (typeof window === 'undefined' || !(window as any).electronAPI) return;
+
+    try {
+      console.log('[IPTVDatabase] Syncing with external backup files...');
+
+      // 1. Restore Playlists
+      const plRes = await (window as any).electronAPI.readFromFile('playlists_backup.json');
+      if (plRes.success && plRes.data) {
+        const backupPlaylists = JSON.parse(plRes.data) as Playlist[];
+        const localPlaylists = await this.getPlaylists();
+        if (localPlaylists.length === 0 && backupPlaylists.length > 0) {
+          console.log('[IPTVDatabase] Restoring playlists from backup file...');
+          for (const pl of backupPlaylists) {
+            await this.addPlaylistDirectly(pl);
+          }
+        }
+      }
+
+      // 2. Restore Favorites
+      const favRes = await (window as any).electronAPI.readFromFile('favorites_backup.json');
+      if (favRes.success && favRes.data) {
+        const backupFavorites = JSON.parse(favRes.data);
+        const localFavorites = await this.getAllFavoritesDirectly();
+        if (localFavorites.length === 0 && backupFavorites.length > 0) {
+          console.log('[IPTVDatabase] Restoring favorites from backup file...');
+          const tx = this.db!.transaction('favorites', 'readwrite');
+          const store = tx.objectStore('favorites');
+          for (const fav of backupFavorites) {
+            store.put(fav);
+          }
+        }
+      }
+
+      // 3. Restore Settings
+      const setRes = await (window as any).electronAPI.readFromFile('settings_backup.json');
+      if (setRes.success && setRes.data) {
+        const backupSettings = JSON.parse(setRes.data);
+        const localSettings = await this.getAllSettingsDirectly();
+        if (localSettings.length === 0 && backupSettings.length > 0) {
+          console.log('[IPTVDatabase] Restoring settings from backup file...');
+          const tx = this.db!.transaction('settings', 'readwrite');
+          const store = tx.objectStore('settings');
+          for (const s of backupSettings) {
+            store.put(s);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[IPTVDatabase] Error during restore from backup files:', err);
+    }
   }
 }
 

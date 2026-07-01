@@ -206,6 +206,24 @@ onMounted(async () => {
   await checkActivePlaylist();
   await loadRecentStreams();
 
+  // Check if any restored playlist has no channels and update in the background
+  try {
+    const playlists = await db.getPlaylists();
+    for (const pl of playlists) {
+      if (pl.id) {
+        const channels = await db.getChannels(pl.id);
+        if (channels.length === 0) {
+          console.log(`[App] Restored playlist "${pl.name}" has no channels, triggering background update...`);
+          PlaylistUpdater.updatePlaylist(pl).catch(err => {
+            console.error(`[App] Failed to update restored playlist "${pl.name}":`, err);
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[App] Error verifying restored playlist channels:', err);
+  }
+
   // Check and run automatic playlist updates in the background
   PlaylistUpdater.checkAndRunAutoUpdates();
 });
