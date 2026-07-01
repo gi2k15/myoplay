@@ -156,6 +156,7 @@
                 />
 
                 <v-checkbox
+                  v-if="!isElectron"
                   v-model="useCorsProxy"
                   label="Usar Proxy CORS para baixar esta lista"
                   color="secondary"
@@ -232,6 +233,7 @@
                 </v-row>
 
                 <v-checkbox
+                  v-if="!isElectron"
                   v-model="useCorsProxy"
                   label="Usar Proxy CORS para conectar ao servidor"
                   color="secondary"
@@ -477,9 +479,10 @@ const isDragging = ref(false);
 const selectedFile = ref<File | null>(null);
 
 // Form Fields
+const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
 const playlistName = ref('');
 const playlistUrl = ref('');
-const useCorsProxy = ref(true);
+const useCorsProxy = ref(!isElectron);
 
 const xtreamHost = ref('');
 const xtreamUser = ref('');

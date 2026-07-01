@@ -440,6 +440,8 @@ const props = defineProps<{
   floating?: boolean;
 }>();
 
+const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
+
 const emit = defineEmits<{
   (e: "close-player"): void;
   (e: "toggle-float"): void;
@@ -649,6 +651,7 @@ const initializePlayer = () => {
 
   // Determine if stream should be proxied
   const shouldProxy =
+    !isElectron &&
     proxyUrlSetting.value &&
     (playerProxyStreams.value === "always" ||
       (playerProxyStreams.value === "auto" && retryCount.value > 0));

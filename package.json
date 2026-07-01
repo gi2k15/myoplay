@@ -3,7 +3,7 @@
   "desktopName": "myoplay.desktop",
   "private": true,
   "type": "module",
-  "version": "0.28.8",
+  "version": "0.29.0",
   "description": "IPTV Player built with Vue 3 and Electron",
   "author": "Bruno <dantas.bs@gmail.com>",
   "license": "GPL-3.0-or-later",

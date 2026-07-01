@@ -22,7 +22,7 @@
 
         <v-row>
           <!-- CORS Proxy Settings -->
-          <v-col cols="12">
+          <v-col cols="12" v-if="!isElectron">
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-network-outline</v-icon> 
@@ -343,6 +343,9 @@
 import { ref, onMounted } from 'vue';
 import { db } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
+
+// Electron Environment Detection
+const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
 
 // Alert States
 const alertMsg = ref('');

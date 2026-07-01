@@ -661,6 +661,8 @@ import { db, type IPTVChannel } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 
+const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
+
 // Props
 const props = defineProps<{
   playlistId: number;
@@ -1037,7 +1039,7 @@ const openSeriesDetails = async (series: IPTVChannel) => {
     const pl = (await db.getPlaylists()).find(p => p.id === props.playlistId);
     
     if (pl && pl.type === 'xtream' && series.xtreamId) {
-      const proxy = await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+      const proxy = isElectron ? '' : await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
       
       const client = new XtreamClient({
         url: pl.url!,
