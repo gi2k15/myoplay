@@ -712,7 +712,8 @@ watch(sortBy, (val) => {
 
 const sortOptions = [
   { title: 'Ordem de Adição', value: 'added' },
-  { title: 'Ano de Lançamento', value: 'year' },
+  { title: 'Data de Lançamento', value: 'year' },
+  { title: 'Avaliação (Nota)', value: 'rating' },
   { title: 'Nome (A-Z)', value: 'name' }
 ];
 
@@ -982,18 +983,57 @@ const filteredChannels = computed(() => {
         if (addedA !== addedB) {
           return addedB - addedA; // Newest added first
         }
+        const yearA = a.year ? parseInt(a.year, 10) : 0;
+        const yearB = b.year ? parseInt(b.year, 10) : 0;
+        if (yearA !== yearB) {
+          return yearB - yearA; // Newest release first
+        }
+        const ratingA = a.rating ? parseFloat(a.rating) : 0;
+        const ratingB = b.rating ? parseFloat(b.rating) : 0;
+        if (ratingA !== ratingB) {
+          return ratingB - ratingA; // Highest rating first
+        }
         if (a.xtreamId && b.xtreamId) {
           return b.xtreamId - a.xtreamId; // Newest provider ID first
         }
         const indexA = getM3uIndex(a.id);
         const indexB = getM3uIndex(b.id);
         if (!isNaN(indexA) && !isNaN(indexB)) {
-          return indexA - indexB; // M3U playlist order (ascending addition index)
+          return indexA - indexB; // M3U playlist order
         }
         return a.name.localeCompare(b.name);
       });
     } else if (sortBy.value === 'year') {
       result.sort((a, b) => {
+        const yearA = a.year ? parseInt(a.year, 10) : 0;
+        const yearB = b.year ? parseInt(b.year, 10) : 0;
+        if (yearA !== yearB) {
+          return yearB - yearA; // Newest release first
+        }
+        const addedA = a.added ? parseInt(a.added, 10) : 0;
+        const addedB = b.added ? parseInt(b.added, 10) : 0;
+        if (addedA !== addedB) {
+          return addedB - addedA; // Newest added first
+        }
+        const ratingA = a.rating ? parseFloat(a.rating) : 0;
+        const ratingB = b.rating ? parseFloat(b.rating) : 0;
+        if (ratingA !== ratingB) {
+          return ratingB - ratingA; // Highest rating first
+        }
+        return a.name.localeCompare(b.name);
+      });
+    } else if (sortBy.value === 'rating') {
+      result.sort((a, b) => {
+        const ratingA = a.rating ? parseFloat(a.rating) : 0;
+        const ratingB = b.rating ? parseFloat(b.rating) : 0;
+        if (ratingA !== ratingB) {
+          return ratingB - ratingA; // Highest rating first
+        }
+        const addedA = a.added ? parseInt(a.added, 10) : 0;
+        const addedB = b.added ? parseInt(b.added, 10) : 0;
+        if (addedA !== addedB) {
+          return addedB - addedA; // Newest added first
+        }
         const yearA = a.year ? parseInt(a.year, 10) : 0;
         const yearB = b.year ? parseInt(b.year, 10) : 0;
         if (yearA !== yearB) {
