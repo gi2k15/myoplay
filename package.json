@@ -3,7 +3,7 @@
   "desktopName": "myoplay.desktop",
   "private": true,
   "type": "module",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "description": "IPTV Player built with Vue 3 and Electron",
   "author": "Bruno <dantas.bs@gmail.com>",
   "license": "GPL-3.0-or-later",
@@ -20,7 +20,8 @@
     "electron:build": "pnpm build && node scripts/build-electron.js && electron-builder",
     "electron:build:all": "pnpm build && node scripts/build-electron.js && electron-builder -wml",
     "electron:build:win-linux": "pnpm build && node scripts/build-electron.js && electron-builder -wl",
-    "electron:build:win": "pnpm build && node scripts/build-electron.js && electron-builder --win"
+    "electron:build:win": "pnpm build && node scripts/build-electron.js && electron-builder --win",
+    "electron:release": "pnpm build && node scripts/build-electron.js && electron-builder --publish always"
   },
   "dependencies": {
     "hls.js": "^1.6.16",
