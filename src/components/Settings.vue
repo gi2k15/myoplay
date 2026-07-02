@@ -310,6 +310,15 @@
                 </v-btn>
 
                 <v-btn
+                  color="secondary"
+                  variant="tonal"
+                  prepend-icon="mdi-restore"
+                  @click="resetToDefaults"
+                >
+                  Restaurar Configurações Padrão
+                </v-btn>
+
+                <v-btn
                   color="error"
                   variant="flat"
                   prepend-icon="mdi-database-remove"
@@ -394,11 +403,11 @@ const aspectRatios = [
   { title: '16:9 widescreen', value: '16-9' },
   { title: '4:3 clássico', value: '4-3' },
 ];
-const playerBufferMode = ref('low-latency');
+const playerBufferMode = ref('stable');
 const bufferModes = [
-  { title: 'Baixa Latência (Padrão - Menor Delay)', value: 'low-latency' },
+  { title: 'Baixa Latência (Menor Delay)', value: 'low-latency' },
   { title: 'Balanceado (Recomendado - Boa Estabilidade)', value: 'balanced' },
-  { title: 'Alta Estabilidade (Máximo Buffer - Para Streams Lentos)', value: 'stable' },
+  { title: 'Alta Estabilidade (Padrão - Máximo Buffer)', value: 'stable' },
 ];
 
 // EPG Fields
@@ -558,7 +567,8 @@ const syncAllPlaylists = async () => {
 const loadProxySettings = async () => {
   try {
     // 1. Data Proxy
-    const proxy = await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+    const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+    const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
     customProxyUrl.value = proxy;
 
     if (proxy === '') {
@@ -576,7 +586,8 @@ const loadProxySettings = async () => {
     }
 
     // 2. Player Proxy
-    const playerProxy = await db.getSetting('player_proxy_url', 'https://corsproxy.io/?');
+    const defaultPlayerProxyUrl = isElectron ? '' : 'https://corsproxy.io/?';
+    const playerProxy = await db.getSetting('player_proxy_url', defaultPlayerProxyUrl);
     customPlayerProxyUrl.value = playerProxy;
 
     if (playerProxy === '') {
@@ -595,7 +606,8 @@ const loadProxySettings = async () => {
       selectedPlayerProxyPreset.value = 'custom';
     }
 
-    playerProxyStreams.value = await db.getSetting('player_proxy_streams', 'auto');
+    const defaultPlayerProxyStreams = isElectron ? 'never' : 'auto';
+    playerProxyStreams.value = await db.getSetting('player_proxy_streams', defaultPlayerProxyStreams);
   } catch (err) {
     console.error(err);
   }
@@ -655,7 +667,7 @@ const loadPlaybackSettings = async () => {
     autoPlay.value = await db.getSetting('player_autoplay', true);
     defaultFloatMode.value = await db.getSetting('player_default_float', false);
     defaultAspectRatio.value = await db.getSetting('player_default_aspect', 'fit');
-    playerBufferMode.value = await db.getSetting('player_buffer_mode', 'low-latency');
+    playerBufferMode.value = await db.getSetting('player_buffer_mode', 'stable');
   } catch (err) {
     console.error(err);
   }
@@ -748,16 +760,67 @@ const wipeDatabase = async () => {
       }
 
       tx.oncomplete = async () => {
-        // Restore default setting
-        await db.setSetting('cors_proxy_url', 'http://localhost:8088/?url=');
-        await db.setSetting('player_proxy_url', 'https://corsproxy.io/?');
+        // Restore default settings
+        const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+        const defaultPlayerProxyUrl = isElectron ? '' : 'https://corsproxy.io/?';
+        const defaultPlayerProxyStreams = isElectron ? 'never' : 'auto';
+
+        await db.setSetting('cors_proxy_url', defaultProxyUrl);
+        await db.setSetting('player_proxy_url', defaultPlayerProxyUrl);
+        await db.setSetting('player_proxy_streams', defaultPlayerProxyStreams);
+        await db.setSetting('player_autoplay', true);
+        await db.setSetting('player_default_float', false);
+        await db.setSetting('player_default_aspect', 'fit');
+        await db.setSetting('player_buffer_mode', 'stable');
+        await db.setSetting('epg_time_shift', 0);
+        await db.setSetting('playlist_update_interval', 24);
+        await db.setSetting('movie_metadata_source', 'tmdb');
+        await db.setSetting('movie_metadata_api_key', '');
+        await db.setSetting('movie_metadata_language', 'pt-BR');
+
         alertType.value = 'success';
-        alertMsg.value = 'Todo o banco de dados local foi esvaziado com sucesso! Recarregue a página.';
+        alertMsg.value = 'Todo o banco de dados local foi esvaziado e as configurações foram redefinidas! Recarregue a página.';
         await calculateStats();
       };
     } catch (err: any) {
       alertType.value = 'error';
       alertMsg.value = `Erro ao limpar banco: ${err.message}`;
+    }
+  }
+};
+
+const resetToDefaults = async () => {
+  if (confirm('Deseja realmente restaurar todas as configurações para os valores padrão?')) {
+    try {
+      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+      const defaultPlayerProxyUrl = isElectron ? '' : 'https://corsproxy.io/?';
+      const defaultPlayerProxyStreams = isElectron ? 'never' : 'auto';
+
+      await db.setSetting('cors_proxy_url', defaultProxyUrl);
+      await db.setSetting('player_proxy_url', defaultPlayerProxyUrl);
+      await db.setSetting('player_proxy_streams', defaultPlayerProxyStreams);
+      await db.setSetting('player_autoplay', true);
+      await db.setSetting('player_default_float', false);
+      await db.setSetting('player_default_aspect', 'fit');
+      await db.setSetting('player_buffer_mode', 'stable');
+      await db.setSetting('epg_time_shift', 0);
+      await db.setSetting('playlist_update_interval', 24);
+      await db.setSetting('movie_metadata_source', 'tmdb');
+      await db.setSetting('movie_metadata_api_key', '');
+      await db.setSetting('movie_metadata_language', 'pt-BR');
+
+      // Reload settings in the UI
+      await loadProxySettings();
+      await loadPlaybackSettings();
+      await loadEpgSettings();
+      await loadMetadataSettings();
+      await loadUpdateSettings();
+
+      alertType.value = 'success';
+      alertMsg.value = 'Configurações restauradas para o padrão com sucesso!';
+    } catch (err: any) {
+      alertType.value = 'error';
+      alertMsg.value = `Erro ao restaurar configurações: ${err.message}`;
     }
   }
 };

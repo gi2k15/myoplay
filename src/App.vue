@@ -138,6 +138,8 @@ import TVGuide from '@/components/TVGuide.vue';
 import Settings from '@/components/Settings.vue';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 
+const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
+
 // Application States
 const currentPage = ref('playlists'); // Default view
 const activePlaylistId = ref<number | null>(null);
@@ -197,7 +199,8 @@ onMounted(async () => {
   try {
     const currentProxy = await db.getSetting('cors_proxy_url');
     if (currentProxy === 'https://api.allorigins.win/raw?url=') {
-      await db.setSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+      await db.setSetting('cors_proxy_url', defaultProxyUrl);
     }
   } catch (err) {
     console.error('Migration error:', err);

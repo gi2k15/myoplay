@@ -472,21 +472,23 @@ const proxyUrlSetting = ref("");
 const playerProxyStreams = ref("auto");
 const activePlayUrl = ref("");
 const isActiveProxied = ref(false);
-const playerBufferMode = ref("low-latency");
+const playerBufferMode = ref("stable");
 
 const loadSettings = async () => {
   try {
+    const defaultPlayerProxyUrl = isElectron ? "" : "https://corsproxy.io/?";
     proxyUrlSetting.value = await db.getSetting(
       "player_proxy_url",
-      "https://corsproxy.io/?",
+      defaultPlayerProxyUrl,
     );
+    const defaultPlayerProxyStreams = isElectron ? "never" : "auto";
     playerProxyStreams.value = await db.getSetting(
       "player_proxy_streams",
-      "auto",
+      defaultPlayerProxyStreams,
     );
     playerBufferMode.value = await db.getSetting(
       "player_buffer_mode",
-      "low-latency",
+      "stable",
     );
   } catch (e) {
     console.error("Error loading stream proxy settings:", e);
@@ -651,7 +653,6 @@ const initializePlayer = () => {
 
   // Determine if stream should be proxied
   const shouldProxy =
-    !isElectron &&
     proxyUrlSetting.value &&
     (playerProxyStreams.value === "always" ||
       (playerProxyStreams.value === "auto" && retryCount.value > 0));

@@ -1039,7 +1039,8 @@ const openSeriesDetails = async (series: IPTVChannel) => {
     const pl = (await db.getPlaylists()).find(p => p.id === props.playlistId);
     
     if (pl && pl.type === 'xtream' && series.xtreamId) {
-      const proxy = isElectron ? '' : await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+      const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
       
       const client = new XtreamClient({
         url: pl.url!,

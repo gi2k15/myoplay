@@ -55,7 +55,8 @@ export class PlaylistUpdater {
       if (!pl.url) throw new Error('Playlist has no URL');
       onProgress?.('Baixando arquivo M3U...', 0);
       
-      const proxy = isElectron ? '' : await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+      const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
       const fetchUrl = proxy ? `${proxy}${encodeURIComponent(pl.url)}` : pl.url;
 
       const res = await fetch(fetchUrl);
@@ -106,7 +107,8 @@ export class PlaylistUpdater {
       if (!pl.url || !pl.username || !pl.password) throw new Error('Credenciais do Xtream incompletas');
       onProgress?.('Conectando ao servidor Xtream...', 10);
 
-      const proxy = isElectron ? '' : await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+      const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
       const client = new XtreamClient({
         url: pl.url,
         username: pl.username,
@@ -167,7 +169,8 @@ export class PlaylistUpdater {
 
   // Helper to fetch and parse EPG
   private static async updateEpg(epgUrl: string): Promise<void> {
-    const proxy = isElectron ? '' : await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=');
+    const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+    const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(epgUrl)}` : epgUrl;
 
     const res = await fetch(fetchUrl);
