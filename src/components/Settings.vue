@@ -6,7 +6,7 @@
         
         <!-- Header -->
         <h2 class="text-h4 font-weight-bold mb-6 text-glow-small d-flex align-center">
-          <v-icon start color="secondary" class="mr-2">mdi-cog</v-icon> Configurações Gerais
+          <v-icon start color="secondary" class="mr-2">mdi-cog</v-icon> {{ $t('settings.title') }}
         </h2>
 
         <v-alert
@@ -26,18 +26,18 @@
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-network-outline</v-icon> 
-                Proxy CORS (Cross-Origin Resource Sharing)
+                {{ $t('settings.proxy.title') }}
               </h3>
               
               <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                Navegadores bloqueiam requisições a servidores externos que não permitam compartilhamento CORS (muito comum em links de IPTV M3U e EPG remotos). Usar um Proxy CORS ajuda a contornar essa restrição.
+                {{ $t('settings.proxy.desc') }}
               </p>
 
-              <div class="text-subtitle-2 font-weight-bold mb-2">1. Proxy para M3U e APIs (EPG, Categorias, VOD e Séries)</div>
+              <div class="text-subtitle-2 font-weight-bold mb-2">{{ $t('settings.proxy.preset1Label') }}</div>
               <v-select
                 v-model="selectedProxyPreset"
                 :items="proxyPresets"
-                label="Selecione o Servidor de Proxy de Dados"
+                :label="$t('settings.proxy.preset1Select')"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -46,7 +46,7 @@
 
               <v-text-field
                 v-model="customProxyUrl"
-                label="URL do Proxy CORS de Dados Personalizado"
+                :label="$t('settings.proxy.preset1Url')"
                 placeholder="https://sua-url-de-proxy.com/?url="
                 variant="outlined"
                 density="comfortable"
@@ -57,11 +57,11 @@
 
               <v-divider class="mb-6 opacity-10" />
 
-              <div class="text-subtitle-2 font-weight-bold mb-2">2. Proxy para Canais e Streams (Vídeo HLS/TS)</div>
+              <div class="text-subtitle-2 font-weight-bold mb-2">{{ $t('settings.proxy.preset2Label') }}</div>
               <v-select
                 v-model="selectedPlayerProxyPreset"
                 :items="playerProxyPresets"
-                label="Selecione o Servidor de Proxy de Vídeo"
+                :label="$t('settings.proxy.preset2Select')"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -70,7 +70,7 @@
 
               <v-text-field
                 v-model="customPlayerProxyUrl"
-                label="URL do Proxy CORS de Vídeo Personalizado"
+                :label="$t('settings.proxy.preset2Url')"
                 placeholder="https://sua-url-de-proxy.com/?url="
                 variant="outlined"
                 density="comfortable"
@@ -82,7 +82,7 @@
               <v-select
                 v-model="playerProxyStreams"
                 :items="streamProxyOptions"
-                label="Política de Uso do Proxy para Transmissões"
+                :label="$t('settings.proxy.policyLabel')"
                 variant="outlined"
                 density="comfortable"
                 class="mb-6"
@@ -93,7 +93,7 @@
                 prepend-icon="mdi-content-save"
                 @click="saveCorsProxy"
               >
-                Salvar Configurações de Proxy
+                {{ $t('settings.proxy.saveBtn') }}
               </v-btn>
             </v-card>
           </v-col>
@@ -103,12 +103,12 @@
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-play-circle-outline</v-icon> 
-                Preferências de Reprodução
+                {{ $t('settings.playback.title') }}
               </h3>
 
               <v-switch
                 v-model="autoPlay"
-                label="Reprodução Automática (Iniciar canais imediatamente ao clicar)"
+                :label="$t('settings.playback.autoPlay')"
                 color="secondary"
                 hide-details
                 class="mb-2"
@@ -117,7 +117,7 @@
 
               <v-switch
                 v-model="defaultFloatMode"
-                label="Minimizar player para modo flutuante por padrão ao navegar"
+                :label="$t('settings.playback.defaultFloat')"
                 color="secondary"
                 hide-details
                 class="mb-4"
@@ -127,7 +127,7 @@
               <v-select
                 v-model="defaultAspectRatio"
                 :items="aspectRatios"
-                label="Proporção de Tela Padrão do Player"
+                :label="$t('settings.playback.aspectRatio')"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -137,7 +137,7 @@
               <v-select
                 v-model="playerBufferMode"
                 :items="bufferModes"
-                label="Modo de Buffer / Estabilidade (Recomendado para streams que travam)"
+                :label="$t('settings.playback.bufferMode')"
                 variant="outlined"
                 density="comfortable"
                 @update:model-value="savePlaybackSettings"
@@ -150,17 +150,17 @@
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-television-guide</v-icon> 
-                Guia de Programação (EPG)
+                {{ $t('settings.epg.title') }}
               </h3>
 
               <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                Caso a programação exibida no guia EPG esteja desalinhada (adiantada ou atrasada) em relação ao horário do seu sistema, você pode ajustar o deslocamento de horário (Time Shift) abaixo.
+                {{ $t('settings.epg.desc') }}
               </p>
 
               <v-select
                 v-model="epgTimeShift"
                 :items="timeShiftOptions"
-                label="Deslocamento de Horário do EPG (Time Shift)"
+                :label="$t('settings.epg.timeShift')"
                 variant="outlined"
                 density="comfortable"
                 hide-details
@@ -174,17 +174,17 @@
              <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
                <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                  <v-icon start color="primary" class="mr-2">mdi-sync</v-icon>
-                 Sincronização de Listas
+                 {{ $t('settings.sync.title') }}
                </h3>
                
                <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                 Escolha a frequência com que o aplicativo verifica e atualiza automaticamente as listas (M3U ou Xtream) configuradas por URL.
+                 {{ $t('settings.sync.desc') }}
                </p>
 
                <v-select
                  v-model="playlistUpdateInterval"
                  :items="updateIntervalOptions"
-                 label="Intervalo de Atualização Automática"
+                 :label="$t('settings.sync.interval')"
                  variant="outlined"
                  density="comfortable"
                  class="mb-6"
@@ -200,7 +200,7 @@
                    :loading="syncingAll"
                    @click="syncAllPlaylists"
                  >
-                   Sincronizar Todas as Listas Agora
+                   {{ $t('settings.sync.syncAllBtn') }}
                  </v-btn>
                  <span v-if="syncProgressMsg" class="text-caption text-medium-emphasis ml-2">
                    {{ syncProgressMsg }}
@@ -214,17 +214,17 @@
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-movie-search-outline</v-icon> 
-                Banco de Dados de Filmes e Metadados (VOD)
+                {{ $t('settings.metadata.title') }}
               </h3>
               
               <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                Configure um provedor de metadados para buscar automaticamente sinopses, posters de alta resolução, anos de lançamento e notas de filmes que não possuem essas informações na sua lista.
+                {{ $t('settings.metadata.desc') }}
               </p>
 
               <v-select
                 v-model="movieMetadataSource"
                 :items="metadataSources"
-                label="Provedor de Metadados de Filmes"
+                :label="$t('settings.metadata.providerLabel')"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -234,13 +234,13 @@
               <v-text-field
                 v-if="movieMetadataSource !== 'none'"
                 v-model="movieMetadataApiKey"
-                label="Chave de API (API Key)"
-                placeholder="Insira sua chave de API"
+                :label="$t('settings.metadata.apiKeyLabel')"
+                :placeholder="$t('settings.metadata.apiKeyPlaceholder')"
                 variant="outlined"
                 density="comfortable"
                 type="password"
                 prepend-inner-icon="mdi-key-variant"
-                :hint="movieMetadataSource === 'tmdb' ? 'Opcional. Se deixado em branco, uma chave padrão pública será usada.' : 'Obrigatório para OMDb API.'"
+                :hint="movieMetadataSource === 'tmdb' ? $t('settings.metadata.hintTmdb') : $t('settings.metadata.hintOmdb')"
                 persistent-hint
                 class="mb-4"
                 @update:model-value="saveMetadataSettings"
@@ -250,10 +250,33 @@
                 v-if="movieMetadataSource === 'tmdb'"
                 v-model="movieMetadataLanguage"
                 :items="metadataLanguages"
-                label="Idioma de Busca de Sinopses"
+                :label="$t('settings.metadata.languageLabel')"
                 variant="outlined"
                 density="comfortable"
                 @update:model-value="saveMetadataSettings"
+              />
+            </v-card>
+          </v-col>
+
+          <!-- Language Selection -->
+          <v-col cols="12">
+            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+              <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
+                <v-icon start color="primary" class="mr-2">mdi-translate</v-icon> 
+                {{ $t('settings.language.title') }}
+              </h3>
+              
+              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
+                {{ $t('settings.language.desc') }}
+              </p>
+
+              <v-select
+                v-model="activeLanguage"
+                :items="languageOptions"
+                :label="$t('settings.language.select')"
+                variant="outlined"
+                density="comfortable"
+                @update:model-value="saveLanguageSetting"
               />
             </v-card>
           </v-col>
@@ -263,36 +286,34 @@
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-database-cog-outline</v-icon> 
-                Armazenamento & Manutenção
+                {{ $t('settings.maintenance.title') }}
               </h3>
 
-              <p class="text-body-2 text-medium-emphasis mb-6">
-                Todas as suas listas, canais e grades de guia de programação (EPG) são salvos de forma <strong>100% local e privada</strong> no banco de dados IndexedDB do seu próprio navegador.
-              </p>
+              <p class="text-body-2 text-medium-emphasis mb-6" v-html="$t('settings.maintenance.desc')"></p>
 
               <v-row class="mb-4 text-center">
                 <v-col cols="6" sm="3" class="pa-2">
                   <div class="stat-box rounded-xl pa-3 bg-surface-variant">
                     <div class="text-h6 font-weight-bold text-glow-small">{{ stats.playlists }}</div>
-                    <div class="text-caption text-medium-emphasis">Listas</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsPlaylists') }}</div>
                   </div>
                 </v-col>
                 <v-col cols="6" sm="3" class="pa-2">
                   <div class="stat-box rounded-xl pa-3 bg-surface-variant">
                     <div class="text-h6 font-weight-bold text-glow-small">{{ stats.channels.toLocaleString() }}</div>
-                    <div class="text-caption text-medium-emphasis">Canais</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsChannels') }}</div>
                   </div>
                 </v-col>
                 <v-col cols="6" sm="3" class="pa-2">
                   <div class="stat-box rounded-xl pa-3 bg-surface-variant">
                     <div class="text-h6 font-weight-bold text-glow-small">{{ stats.epg.toLocaleString() }}</div>
-                    <div class="text-caption text-medium-emphasis">Guia EPG</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsEpg') }}</div>
                   </div>
                 </v-col>
                 <v-col cols="6" sm="3" class="pa-2">
                   <div class="stat-box rounded-xl pa-3 bg-surface-variant">
                     <div class="text-h6 font-weight-bold text-glow-small">{{ stats.favorites }}</div>
-                    <div class="text-caption text-medium-emphasis">Favoritos</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsFavorites') }}</div>
                   </div>
                 </v-col>
               </v-row>
@@ -306,7 +327,7 @@
                   prepend-icon="mdi-broom"
                   @click="pruneEpg"
                 >
-                  Otimizar Guia EPG (Excluir programação antiga)
+                  {{ $t('settings.maintenance.pruneBtn') }}
                 </v-btn>
 
                 <v-btn
@@ -315,7 +336,7 @@
                   prepend-icon="mdi-restore"
                   @click="resetToDefaults"
                 >
-                  Restaurar Configurações Padrão
+                  {{ $t('settings.maintenance.resetBtn') }}
                 </v-btn>
 
                 <v-btn
@@ -324,7 +345,7 @@
                   prepend-icon="mdi-database-remove"
                   @click="wipeDatabase"
                 >
-                  Limpar Todo o Banco de Dados
+                  {{ $t('settings.maintenance.wipeBtn') }}
                 </v-btn>
               </div>
             </v-card>
@@ -334,9 +355,9 @@
           <v-col cols="12">
             <v-card class="glass-card pa-6 text-center" variant="flat">
               <v-icon size="48" color="secondary" class="mb-2">mdi-shield-check-outline</v-icon>
-              <h3 class="text-subtitle-1 font-weight-bold mb-1">Privacidade Garantida</h3>
+              <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ $t('settings.maintenance.privacyTitle') }}</h3>
               <p class="text-caption text-medium-emphasis max-width-480 mx-auto">
-                Este aplicativo não envia suas listas de IPTV, credenciais de Xtream Codes ou buscas para nenhum servidor externo. Todos os parsers, conexões de API e reprodutores rodam localmente na sua máquina!
+                {{ $t('settings.maintenance.privacyDesc') }}
               </p>
             </v-card>
           </v-col>
@@ -349,9 +370,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { db } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
+
+const { t, locale } = useI18n();
 
 // Electron Environment Detection
 const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
@@ -359,6 +383,38 @@ const isElectron = typeof window !== 'undefined' && !!(window as any).electronAP
 // Alert States
 const alertMsg = ref('');
 const alertType = ref<'success' | 'error' | 'warning' | 'info'>('success');
+
+// Language Preference
+const activeLanguage = ref('en');
+const languageOptions = [
+  { title: 'Português', value: 'pt' },
+  { title: 'English', value: 'en' },
+];
+
+const loadLanguageSetting = async () => {
+  try {
+    const saved = await db.getSetting('language');
+    if (saved) {
+      activeLanguage.value = saved;
+    } else {
+      activeLanguage.value = locale.value;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const saveLanguageSetting = async (val: string) => {
+  try {
+    locale.value = val;
+    await db.setSetting('language', val);
+    alertType.value = 'success';
+    alertMsg.value = t('settings.language.successMsg');
+  } catch (err: any) {
+    alertType.value = 'error';
+    alertMsg.value = err.message || err;
+  }
+};
 
 // Proxy Fields
 const customProxyUrl = ref('');
@@ -368,107 +424,107 @@ const customPlayerProxyUrl = ref('');
 const selectedPlayerProxyPreset = ref('corsproxy');
 
 const playerProxyStreams = ref('auto');
-const streamProxyOptions = [
-  { title: 'Apenas se falhar (Automático - Recomendado)', value: 'auto' },
-  { title: 'Sempre usar proxy para reprodução', value: 'always' },
-  { title: 'Nunca usar proxy para reprodução', value: 'never' },
-];
+const streamProxyOptions = computed(() => [
+  { title: t('settings.proxy.policyOptions.auto'), value: 'auto' },
+  { title: t('settings.proxy.policyOptions.always'), value: 'always' },
+  { title: t('settings.proxy.policyOptions.never'), value: 'never' },
+]);
 
-const proxyPresets = [
-  { title: 'Sem Proxy (Conexão Direta)', value: 'none' },
-  { title: 'Proxy Local (Recomendado - Super Rápido e Sem Limites)', value: 'local' },
-  { title: 'AllOrigins (Alternativa - Sem Limites)', value: 'allorigins' },
-  { title: 'Cors-Anywhere (Exige Ativação de Demo)', value: 'cors-anywhere' },
-  { title: 'ThingProxy (Leve)', value: 'thingproxy' },
-  { title: 'CORS Proxy Personalizado', value: 'custom' },
-];
+const proxyPresets = computed(() => [
+  { title: t('settings.proxy.presets.none'), value: 'none' },
+  { title: t('settings.proxy.presets.local'), value: 'local' },
+  { title: t('settings.proxy.presets.allorigins'), value: 'allorigins' },
+  { title: t('settings.proxy.presets.corsAnywhere'), value: 'cors-anywhere' },
+  { title: t('settings.proxy.presets.thingproxy'), value: 'thingproxy' },
+  { title: t('settings.proxy.presets.custom'), value: 'custom' },
+]);
 
-const playerProxyPresets = [
-  { title: 'Sem Proxy (Conexão Direta)', value: 'none' },
-  { title: 'CorsProxy.io (Recomendado - Excelente para Vídeos)', value: 'corsproxy' },
-  { title: 'Proxy Local (Super Rápido e Sem Limites)', value: 'local' },
-  { title: 'AllOrigins (Sem Limites de Texto/APIs)', value: 'allorigins' },
-  { title: 'Cors-Anywhere (Exige Ativação de Demo)', value: 'cors-anywhere' },
-  { title: 'ThingProxy (Leve)', value: 'thingproxy' },
-  { title: 'CORS Proxy Personalizado', value: 'custom' },
-];
+const playerProxyPresets = computed(() => [
+  { title: t('settings.proxy.presets.none'), value: 'none' },
+  { title: t('settings.proxy.presets.corsproxy'), value: 'corsproxy' },
+  { title: t('settings.proxy.presets.local'), value: 'local' },
+  { title: t('settings.proxy.presets.allorigins'), value: 'allorigins' },
+  { title: t('settings.proxy.presets.corsAnywhere'), value: 'cors-anywhere' },
+  { title: t('settings.proxy.presets.thingproxy'), value: 'thingproxy' },
+  { title: t('settings.proxy.presets.custom'), value: 'custom' },
+]);
 
 // Playback Fields
 const autoPlay = ref(true);
 const defaultFloatMode = ref(true);
 const defaultAspectRatio = ref('fit');
-const aspectRatios = [
-  { title: 'Ajustar Tela (Padrão)', value: 'fit' },
-  { title: 'Esticar (Stretch)', value: 'fill' },
-  { title: '16:9 widescreen', value: '16-9' },
-  { title: '4:3 clássico', value: '4-3' },
-];
+const aspectRatios = computed(() => [
+  { title: t('settings.playback.aspectRatioOptions.fit'), value: 'fit' },
+  { title: t('settings.playback.aspectRatioOptions.fill'), value: 'fill' },
+  { title: t('settings.playback.aspectRatioOptions.widescreen'), value: '16-9' },
+  { title: t('settings.playback.aspectRatioOptions.classic'), value: '4-3' },
+]);
 const playerBufferMode = ref('stable');
-const bufferModes = [
-  { title: 'Baixa Latência (Menor Delay)', value: 'low-latency' },
-  { title: 'Balanceado (Boa Estabilidade)', value: 'balanced' },
-  { title: 'Alta Estabilidade (Padrão - Máximo Buffer)', value: 'stable' },
-];
+const bufferModes = computed(() => [
+  { title: t('settings.playback.bufferOptions.lowLatency'), value: 'low-latency' },
+  { title: t('settings.playback.bufferOptions.balanced'), value: 'balanced' },
+  { title: t('settings.playback.bufferOptions.stable'), value: 'stable' },
+]);
 
 // EPG Fields
 const epgTimeShift = ref(0);
-const timeShiftOptions = [
-  { title: '-12 horas', value: -12 },
-  { title: '-11 horas', value: -11 },
-  { title: '-10 horas', value: -10 },
-  { title: '-9 horas', value: -9 },
-  { title: '-8 horas', value: -8 },
-  { title: '-7 horas', value: -7 },
-  { title: '-6 horas', value: -6 },
-  { title: '-5 horas', value: -5 },
-  { title: '-4 horas', value: -4 },
-  { title: '-3 horas (Brasília se EPG for UTC)', value: -3 },
-  { title: '-2 horas', value: -2 },
-  { title: '-1 hora', value: -1 },
-  { title: 'Sem deslocamento (Padrão)', value: 0 },
-  { title: '+1 hora', value: 1 },
-  { title: '+2 horas', value: 2 },
-  { title: '+3 horas (Se EPG estiver 3h atrasado)', value: 3 },
-  { title: '+4 horas', value: 4 },
-  { title: '+5 horas', value: 5 },
-  { title: '+6 horas', value: 6 },
-  { title: '+7 horas', value: 7 },
-  { title: '+8 horas', value: 8 },
-  { title: '+9 horas', value: 9 },
-  { title: '+10 horas', value: 10 },
-  { title: '+11 horas', value: 11 },
-  { title: '+12 horas', value: 12 },
-];
+const timeShiftOptions = computed(() => [
+  { title: t('settings.epg.hoursAgo', { count: 12 }), value: -12 },
+  { title: t('settings.epg.hoursAgo', { count: 11 }), value: -11 },
+  { title: t('settings.epg.hoursAgo', { count: 10 }), value: -10 },
+  { title: t('settings.epg.hoursAgo', { count: 9 }), value: -9 },
+  { title: t('settings.epg.hoursAgo', { count: 8 }), value: -8 },
+  { title: t('settings.epg.hoursAgo', { count: 7 }), value: -7 },
+  { title: t('settings.epg.hoursAgo', { count: 6 }), value: -6 },
+  { title: t('settings.epg.hoursAgo', { count: 5 }), value: -5 },
+  { title: t('settings.epg.hoursAgo', { count: 4 }), value: -4 },
+  { title: t('settings.epg.brasiliaShift'), value: -3 },
+  { title: t('settings.epg.hoursAgo', { count: 2 }), value: -2 },
+  { title: t('settings.epg.hoursAgo', { count: 1 }), value: -1 },
+  { title: t('settings.epg.noShift'), value: 0 },
+  { title: t('settings.epg.hoursAhead', { count: 1 }), value: 1 },
+  { title: t('settings.epg.hoursAhead', { count: 2 }), value: 2 },
+  { title: t('settings.epg.shiftThreeAhead'), value: 3 },
+  { title: t('settings.epg.hoursAhead', { count: 4 }), value: 4 },
+  { title: t('settings.epg.hoursAhead', { count: 5 }), value: 5 },
+  { title: t('settings.epg.hoursAhead', { count: 6 }), value: 6 },
+  { title: t('settings.epg.hoursAhead', { count: 7 }), value: 7 },
+  { title: t('settings.epg.hoursAhead', { count: 8 }), value: 8 },
+  { title: t('settings.epg.hoursAhead', { count: 9 }), value: 9 },
+  { title: t('settings.epg.hoursAhead', { count: 10 }), value: 10 },
+  { title: t('settings.epg.hoursAhead', { count: 11 }), value: 11 },
+  { title: t('settings.epg.hoursAhead', { count: 12 }), value: 12 },
+]);
 
 // Movie Metadata Fields
 const movieMetadataSource = ref('tmdb');
 const movieMetadataApiKey = ref('');
 const movieMetadataLanguage = ref('pt-BR');
 
-const metadataSources = [
-  { title: 'Nenhum (Apenas metadados locais/lista)', value: 'none' },
-  { title: 'TMDB (The Movie Database - Recomendado em PT)', value: 'tmdb' },
-  { title: 'OMDb API (IMDb - Majoritariamente em inglês)', value: 'omdb' }
-];
+const metadataSources = computed(() => [
+  { title: t('settings.metadata.sources.none'), value: 'none' },
+  { title: t('settings.metadata.sources.tmdb'), value: 'tmdb' },
+  { title: t('settings.metadata.sources.omdb'), value: 'omdb' },
+]);
 
-const metadataLanguages = [
-  { title: 'Português (Brasil)', value: 'pt-BR' },
-  { title: 'Português (Portugal)', value: 'pt-PT' },
-  { title: 'Inglês (Estados Unidos)', value: 'en-US' },
-  { title: 'Espanhol', value: 'es-ES' }
-];
+const metadataLanguages = computed(() => [
+  { title: t('settings.metadata.languages.ptBR'), value: 'pt-BR' },
+  { title: t('settings.metadata.languages.ptPT'), value: 'pt-PT' },
+  { title: t('settings.metadata.languages.enUS'), value: 'en-US' },
+  { title: t('settings.metadata.languages.esES'), value: 'es-ES' },
+]);
 
 // Playlist Synchronization Fields
 const playlistUpdateInterval = ref(24);
 const syncingAll = ref(false);
 const syncProgressMsg = ref('');
-const updateIntervalOptions = [
-  { title: 'Não atualizar automaticamente', value: 'never' },
-  { title: 'A cada 12 horas', value: 12 },
-  { title: 'A cada 24 horas (Padrão)', value: 24 },
-  { title: 'A cada 48 horas', value: 48 },
-  { title: 'Semanalmente (a cada 7 dias)', value: 168 },
-];
+const updateIntervalOptions = computed(() => [
+  { title: t('settings.sync.intervalOptions.never'), value: 'never' },
+  { title: t('settings.sync.intervalOptions.h12'), value: 12 },
+  { title: t('settings.sync.intervalOptions.h24'), value: 24 },
+  { title: t('settings.sync.intervalOptions.h48'), value: 48 },
+  { title: t('settings.sync.intervalOptions.days7'), value: 168 },
+]);
 
 // DB Statistics
 const stats = ref({
@@ -484,6 +540,7 @@ onMounted(async () => {
   await loadEpgSettings();
   await loadMetadataSettings();
   await loadUpdateSettings();
+  await loadLanguageSetting();
   await calculateStats();
 });
 
@@ -519,30 +576,30 @@ const saveUpdateSettings = async () => {
   try {
     await db.setSetting('playlist_update_interval', playlistUpdateInterval.value);
     alertType.value = 'success';
-    alertMsg.value = 'Configuração de atualização automática salva com sucesso!';
+    alertMsg.value = t('settings.sync.successMsg');
   } catch (err: any) {
     alertType.value = 'error';
-    alertMsg.value = `Erro ao salvar configuração de sincronização: ${err.message}`;
+    alertMsg.value = `${t('common.error')}: ${err.message}`;
   }
 };
 
 const syncAllPlaylists = async () => {
   syncingAll.value = true;
-  syncProgressMsg.value = 'Buscando playlists...';
+  syncProgressMsg.value = t('settings.sync.syncingAll');
   alertMsg.value = '';
   try {
     const playlistsList = await db.getPlaylists();
     const toUpdate = playlistsList.filter(p => p.type !== 'file');
     if (toUpdate.length === 0) {
       alertType.value = 'info';
-      alertMsg.value = 'Nenhuma lista cadastrada por URL para sincronizar.';
+      alertMsg.value = t('settings.sync.noPlaylistsMsg');
       syncProgressMsg.value = '';
       return;
     }
     let successCount = 0;
     for (let i = 0; i < toUpdate.length; i++) {
       const pl = toUpdate[i];
-      syncProgressMsg.value = `Sincronizando (${i + 1}/${toUpdate.length}): ${pl.name}...`;
+      syncProgressMsg.value = t('settings.sync.syncProgress', { current: i + 1, total: toUpdate.length, name: pl.name });
       try {
         await PlaylistUpdater.updatePlaylist(pl);
         successCount++;
@@ -551,18 +608,17 @@ const syncAllPlaylists = async () => {
       }
     }
     alertType.value = 'success';
-    alertMsg.value = `Sincronização concluída! ${successCount} de ${toUpdate.length} listas atualizadas com sucesso.`;
+    alertMsg.value = t('settings.sync.syncSuccessDetailed', { success: successCount, total: toUpdate.length });
     await calculateStats();
   } catch (err: any) {
     alertType.value = 'error';
-    alertMsg.value = `Erro geral na sincronização: ${err.message || err}`;
+    alertMsg.value = t('settings.sync.syncErrorMsg', { error: err.message || err });
   } finally {
     syncingAll.value = false;
     syncProgressMsg.value = '';
   }
 };
 
-// --- LOAD PREFERENCES ---
 // --- LOAD PREFERENCES ---
 const loadProxySettings = async () => {
   try {
@@ -655,10 +711,10 @@ const saveCorsProxy = async () => {
     await db.setSetting('player_proxy_url', playerProxyVal);
     await db.setSetting('player_proxy_streams', playerProxyStreams.value);
     alertType.value = 'success';
-    alertMsg.value = 'Configurações de Proxy CORS salvas com sucesso!';
+    alertMsg.value = t('settings.proxy.successMsg');
   } catch (err: any) {
     alertType.value = 'error';
-    alertMsg.value = `Erro ao salvar configurações de proxy: ${err.message}`;
+    alertMsg.value = `${t('common.error')}: ${err.message}`;
   }
 };
 
@@ -696,10 +752,10 @@ const saveEpgSettings = async () => {
   try {
     await db.setSetting('epg_time_shift', epgTimeShift.value);
     alertType.value = 'success';
-    alertMsg.value = 'Configurações de EPG atualizadas com sucesso!';
+    alertMsg.value = t('settings.epg.successMsg');
   } catch (err: any) {
     alertType.value = 'error';
-    alertMsg.value = `Erro ao salvar configurações de EPG: ${err.message}`;
+    alertMsg.value = `${t('common.error')}: ${err.message}`;
   }
 };
 
@@ -740,16 +796,16 @@ const pruneEpg = async () => {
   try {
     const deleted = await db.cleanOldEpg();
     alertType.value = 'success';
-    alertMsg.value = `Otimização concluída! Foram removidos ${deleted.toLocaleString()} registros antigos do guia de EPG.`;
+    alertMsg.value = t('settings.maintenance.pruneSuccess', { count: deleted.toLocaleString() });
     await calculateStats();
   } catch (err: any) {
     alertType.value = 'error';
-    alertMsg.value = `Erro ao limpar EPG: ${err.message}`;
+    alertMsg.value = `${t('common.error')}: ${err.message}`;
   }
 };
 
 const wipeDatabase = async () => {
-  if (confirm('ATENÇÃO: Isso excluirá PERMANENTEMENTE todas as playlists, canais, históricos, favoritos e guias XMLTV salvos neste navegador. Deseja prosseguir?')) {
+  if (confirm(t('settings.maintenance.wipeConfirm'))) {
     try {
       const database = await db.init();
       const stores = Array.from(database.objectStoreNames);
@@ -777,20 +833,23 @@ const wipeDatabase = async () => {
         await db.setSetting('movie_metadata_source', 'tmdb');
         await db.setSetting('movie_metadata_api_key', '');
         await db.setSetting('movie_metadata_language', 'pt-BR');
+        await db.setSetting('language', 'pt');
 
         alertType.value = 'success';
-        alertMsg.value = 'Todo o banco de dados local foi esvaziado e as configurações foram redefinidas! Recarregue a página.';
+        alertMsg.value = t('settings.maintenance.wipeSuccess');
+        locale.value = 'pt';
+        activeLanguage.value = 'pt';
         await calculateStats();
       };
     } catch (err: any) {
       alertType.value = 'error';
-      alertMsg.value = `Erro ao limpar banco: ${err.message}`;
+      alertMsg.value = `${t('common.error')}: ${err.message}`;
     }
   }
 };
 
 const resetToDefaults = async () => {
-  if (confirm('Deseja realmente restaurar todas as configurações para os valores padrão?')) {
+  if (confirm(t('settings.maintenance.resetConfirm'))) {
     try {
       const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
       const defaultPlayerProxyUrl = isElectron ? '' : 'https://corsproxy.io/?';
@@ -815,12 +874,13 @@ const resetToDefaults = async () => {
       await loadEpgSettings();
       await loadMetadataSettings();
       await loadUpdateSettings();
+      await loadLanguageSetting();
 
       alertType.value = 'success';
-      alertMsg.value = 'Configurações restauradas para o padrão com sucesso!';
+      alertMsg.value = t('settings.maintenance.resetSuccess');
     } catch (err: any) {
       alertType.value = 'error';
-      alertMsg.value = `Erro ao restaurar configurações: ${err.message}`;
+      alertMsg.value = `${t('common.error')}: ${err.message}`;
     }
   }
 };

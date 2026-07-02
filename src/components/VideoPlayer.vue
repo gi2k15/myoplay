@@ -13,11 +13,10 @@
         >mdi-picture-in-picture-bottom-right</v-icon
       >
       <div class="text-subtitle-1 font-weight-bold text-glow-small mb-1">
-        Pop-out Ativo
+        {{ $t('videoPlayer.pipActive') }}
       </div>
       <p class="text-caption text-medium-emphasis mb-4 max-width-280">
-        O canal <strong class="text-secondary">{{ channel.name }}</strong> está
-        sendo exibido em uma janela externa sempre no topo.
+        {{ $t('videoPlayer.pipDesc', { name: channel.name }) }}
       </p>
       <v-btn
         size="small"
@@ -26,7 +25,7 @@
         class="text-uppercase font-weight-bold shadow-btn"
         @click="closePip"
       >
-        Trazer de Volta
+        {{ $t('videoPlayer.pipBringBack') }}
       </v-btn>
     </div>
 
@@ -85,8 +84,8 @@
         <span class="text-caption font-weight-bold text-glow-small">
           {{
             isConnecting
-              ? `Conectando (Tentativa ${retryCount}/5)...`
-              : "Carregando stream..."
+              ? $t('videoPlayer.connecting', { attempt: retryCount })
+              : $t('videoPlayer.loadingStream')
           }}
         </span>
       </div>
@@ -98,21 +97,21 @@
       >
         <v-icon size="48" color="error" class="mb-2">mdi-alert-circle</v-icon>
         <div class="text-subtitle-2 font-weight-bold mb-1">
-          Erro de Reprodução
+          {{ $t('videoPlayer.playbackError') }}
         </div>
         <p class="text-caption text-medium-emphasis mb-3 max-width-280">
           {{ errorState }}
         </p>
         <div class="d-flex gap-2">
           <v-btn size="x-small" color="primary" @click="initializePlayer"
-            >Tentar Novamente</v-btn
+            >{{ $t('videoPlayer.retryBtn') }}</v-btn
           >
           <v-btn
             size="x-small"
             color="secondary"
             variant="outlined"
             @click="showStats = !showStats"
-            >Diagnóstico</v-btn
+            >{{ $t('videoPlayer.diagnosticsBtn') }}</v-btn
           >
         </div>
       </div>
@@ -124,7 +123,7 @@
         variant="flat"
       >
         <div class="d-flex align-center justify-space-between mb-2">
-          <strong>Estatísticas do Stream</strong>
+          <strong>{{ $t('videoPlayer.stats.title') }}</strong>
           <v-btn
             icon="mdi-close"
             size="x-small"
@@ -133,34 +132,34 @@
           />
         </div>
         <div>
-          Nome: <span class="text-secondary">{{ channel.name }}</span>
+          {{ $t('videoPlayer.stats.name') }}: <span class="text-secondary">{{ channel.name }}</span>
         </div>
         <div>
-          Tipo:
+          {{ $t('videoPlayer.stats.type') }}:
           <span class="text-secondary">{{ channel.type.toUpperCase() }}</span>
         </div>
         <div>
-          Resolução:
+          {{ $t('videoPlayer.stats.resolution') }}:
           <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span>
         </div>
         <div>
-          Motor:
+          {{ $t('videoPlayer.stats.engine') }}:
           <span class="text-secondary">{{
             hlsInstance ? "Hls.js (MSE)" : "Nativo"
           }}</span>
         </div>
         <div>
-          Modo de Buffer:
+          {{ $t('videoPlayer.stats.bufferMode') }}:
           <span class="text-secondary">{{
             playerBufferMode === "stable"
-              ? "Alta Estabilidade"
+              ? $t('videoPlayer.stats.stable')
               : playerBufferMode === "balanced"
-                ? "Balanceado"
-                : "Baixa Latência"
+                ? $t('videoPlayer.stats.balanced')
+                : $t('videoPlayer.stats.lowLatency')
           }}</span>
         </div>
         <div class="text-truncate" :title="channel.streamUrl">
-          Link original:
+          {{ $t('videoPlayer.stats.originalLink') }}:
           <span class="text-secondary text-caption">{{
             channel.streamUrl
           }}</span>
@@ -170,7 +169,7 @@
           class="text-truncate text-warning font-weight-bold"
           :title="activePlayUrl"
         >
-          CORS Proxy: <span class="text-warning text-caption">Ativo</span>
+          {{ $t('videoPlayer.stats.corsProxy') }}: <span class="text-warning text-caption">{{ $t('videoPlayer.stats.active') }}</span>
         </div>
         <v-alert
           v-if="channel.streamUrl.includes('.ts')"
@@ -180,7 +179,7 @@
           class="mt-2 text-caption py-1 px-2"
           hide-details
         >
-          Streams .ts podem requerer CORS Proxy ou suporte nativo no navegador.
+          {{ $t('videoPlayer.tsWarning') }}
         </v-alert>
       </v-card>
 
@@ -217,7 +216,7 @@
                 variant="text"
                 color="white"
                 size="small"
-                title="Diagnóstico"
+                :title="$t('videoPlayer.diagnosticsBtn')"
                 @click="showStats = !showStats"
               />
               <!-- Pop-out Toggle (Picture-in-Picture) -->
@@ -231,7 +230,7 @@
                 color="white"
                 size="small"
                 :title="
-                  isPipActive ? 'Trazer de Volta' : 'Pop-out (Sempre no Topo)'
+                  isPipActive ? $t('videoPlayer.pipBringBack') : $t('videoPlayer.pipToggle')
                 "
                 @click="togglePip"
               />
@@ -242,7 +241,7 @@
                 variant="text"
                 color="white"
                 size="small"
-                :title="floating ? 'Maximizar Player' : 'Modo Flutuante'"
+                :title="floating ? $t('videoPlayer.fullscreen') : $t('videoPlayer.floatToggle')"
                 @click="$emit('toggle-float')"
               />
               <!-- Close / Stop Button -->
@@ -251,7 +250,7 @@
                 variant="text"
                 color="error"
                 size="small"
-                title="Fechar Player"
+                :title="$t('common.close')"
                 @click="onClosePlayer"
               />
             </div>
@@ -340,7 +339,7 @@
                   color="error"
                   class="ml-2 px-2 font-weight-bold uppercase-tag animate-pulse"
                 >
-                  🔴 AO VIVO
+                  🔴 {{ $t('tvGuide.liveTag') }}
                 </v-chip>
               </div>
 
@@ -358,7 +357,7 @@
                       variant="text"
                       color="white"
                       size="small"
-                      title="Modo de Buffer / Estabilidade"
+                      :title="$t('videoPlayer.stats.bufferMode')"
                       v-bind="props"
                     />
                   </template>
@@ -389,7 +388,7 @@
                       variant="text"
                       color="white"
                       size="small"
-                      title="Proporção da Tela"
+                      :title="$t('videoPlayer.aspectRatio')"
                       v-bind="props"
                     />
                   </template>
@@ -417,7 +416,7 @@
                   variant="text"
                   color="white"
                   size="small"
-                  title="Tela Cheia"
+                  :title="$t('videoPlayer.fullscreen')"
                   @click="toggleFullscreen"
                 />
               </div>
@@ -431,6 +430,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { useI18n } from "vue-i18n";
 import Hls from "hls.js";
 import mpegts from "mpegts.js";
 import { db, type IPTVChannel } from "@/services/db";
@@ -446,6 +446,8 @@ const emit = defineEmits<{
   (e: "close-player"): void;
   (e: "toggle-float"): void;
 }>();
+
+const { t } = useI18n();
 
 // Video Element and Container Refs
 const videoRef = ref<HTMLVideoElement | null>(null);
@@ -505,18 +507,18 @@ const videoHeight = ref(0);
 
 // Playback Options
 const aspectRatio = ref("fit"); // fit, fill, 16-9, 4-3
-const aspectRatios = [
-  { label: "Ajustar Tela (Padrão)", value: "fit" },
-  { label: "Esticar (Stretch)", value: "fill" },
-  { label: "16:9 widescreen", value: "16-9" },
-  { label: "4:3 clássico", value: "4-3" },
-];
+const aspectRatios = computed(() => [
+  { label: t('settings.playback.aspectRatios.fit'), value: "fit" },
+  { label: t('settings.playback.aspectRatios.fill'), value: "fill" },
+  { label: t('settings.playback.aspectRatios.widescreen'), value: "16-9" },
+  { label: t('settings.playback.aspectRatios.classic'), value: "4-3" },
+]);
 
-const bufferModes = [
-  { title: "Baixa Latência (Rápido)", value: "low-latency" },
-  { title: "Balanceado (Normal)", value: "balanced" },
-  { title: "Alta Estabilidade (Lento)", value: "stable" },
-];
+const bufferModes = computed(() => [
+  { title: t('settings.playback.bufferModes.lowLatency'), value: "low-latency" },
+  { title: t('settings.playback.bufferModes.balanced'), value: "balanced" },
+  { title: t('settings.playback.bufferModes.stable'), value: "stable" },
+]);
 
 const changeBufferMode = async (mode: string) => {
   playerBufferMode.value = mode;

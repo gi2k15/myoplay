@@ -75,7 +75,7 @@
 
                 <!-- EPG Programme Info -->
                 <div v-if="activeChannelEpg.current" class="mt-2">
-                  <div class="text-caption text-secondary font-weight-bold mb-1">🔴 NO AR AGORA</div>
+                  <div class="text-caption text-secondary font-weight-bold mb-1">🔴 {{ $t('streamBrowser.onAirNow') }}</div>
                   <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.current.title }}</div>
                   <p v-if="activeChannelEpg.current.desc" class="text-caption text-medium-emphasis mb-2 leading-relaxed text-line-clamp">
                     {{ activeChannelEpg.current.desc }}
@@ -88,23 +88,23 @@
                 </div>
 
                 <div v-if="activeChannelEpg.next" class="mt-2 pt-2 border-top">
-                  <div class="text-caption text-medium-emphasis font-weight-bold mb-1">PRÓXIMO PROGRAMA</div>
+                  <div class="text-caption text-medium-emphasis font-weight-bold mb-1">{{ $t('streamBrowser.nextProg') }}</div>
                   <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.next.title }}</div>
                   <div class="text-caption text-medium-emphasis">
-                    Começa às {{ formatEpgTime(activeChannelEpg.next.start) }}
+                    {{ $t('streamBrowser.startsAt', { time: formatEpgTime(activeChannelEpg.next.start) }) }}
                   </div>
                 </div>
 
                 <!-- Description for Movies / Series VOD -->
                 <div v-if="activeChannel.plot" class="mt-2 pt-2 border-top">
-                  <div class="text-caption text-secondary font-weight-bold mb-1">SINOPSE</div>
+                  <div class="text-caption text-secondary font-weight-bold mb-1">{{ $t('streamBrowser.movieDetails.sinopse') }}</div>
                   <p class="text-caption text-medium-emphasis leading-relaxed mb-0">
                     {{ activeChannel.plot }}
                   </p>
                 </div>
 
                 <div v-if="!activeChannelEpg.current && !activeChannel.plot" class="text-caption text-medium-emphasis italic text-center py-2">
-                  Nenhum detalhe de programação disponível para este canal.
+                  {{ $t('streamBrowser.noEpgShort') }}
                 </div>
               </v-card>
             </div>
@@ -127,8 +127,11 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
+
+const { t, locale } = useI18n();
 
 // Import UI components
 import Sidebar from '@/components/Sidebar.vue';
@@ -194,6 +197,16 @@ const loadRecentStreams = async () => {
 
 onMounted(async () => {
   await db.init();
+
+  // Load language setting
+  try {
+    const savedLang = await db.getSetting('language');
+    if (savedLang) {
+      locale.value = savedLang;
+    }
+  } catch (err) {
+    console.error('Error loading language setting:', err);
+  }
   
   // Migrate old AllOrigins proxy setting to local proxy
   try {
@@ -364,13 +377,13 @@ const browserType = computed(() => {
 });
 
 const getPageTitle = () => {
-  if (currentPage.value === 'live') return 'Canais ao Vivo';
-  if (currentPage.value === 'movie') return 'Filmes (VOD)';
-  if (currentPage.value === 'series') return 'Séries (VOD)';
-  if (currentPage.value === 'epg') return 'Grade EPG';
-  if (currentPage.value === 'favorites') return 'Favoritos';
-  if (currentPage.value === 'settings') return 'Configurações';
-  return 'Listas M3U / APIs';
+  if (currentPage.value === 'live') return t('sidebar.liveTv');
+  if (currentPage.value === 'movie') return t('sidebar.movies');
+  if (currentPage.value === 'series') return t('sidebar.series');
+  if (currentPage.value === 'epg') return t('sidebar.epg');
+  if (currentPage.value === 'favorites') return t('sidebar.favorites');
+  if (currentPage.value === 'settings') return t('sidebar.settings');
+  return t('sidebar.managePlaylists');
 };
 </script>
 
