@@ -281,7 +281,7 @@ const onPlayStream = async (channel: IPTVChannel) => {
   activeChannel.value = channel;
   
   // Retrieve player float settings
-  const defaultFloat = await db.getSetting('player_default_float', false);
+  const defaultFloat = await db.getSetting('player_default_float', true);
   playerFloatMode.value = defaultFloat;
 
   // Sync playlist if different

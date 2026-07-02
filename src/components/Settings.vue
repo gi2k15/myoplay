@@ -395,7 +395,7 @@ const playerProxyPresets = [
 
 // Playback Fields
 const autoPlay = ref(true);
-const defaultFloatMode = ref(false);
+const defaultFloatMode = ref(true);
 const defaultAspectRatio = ref('fit');
 const aspectRatios = [
   { title: 'Ajustar Tela (Padrão)', value: 'fit' },
@@ -665,7 +665,7 @@ const saveCorsProxy = async () => {
 const loadPlaybackSettings = async () => {
   try {
     autoPlay.value = await db.getSetting('player_autoplay', true);
-    defaultFloatMode.value = await db.getSetting('player_default_float', false);
+    defaultFloatMode.value = await db.getSetting('player_default_float', true);
     defaultAspectRatio.value = await db.getSetting('player_default_aspect', 'fit');
     playerBufferMode.value = await db.getSetting('player_buffer_mode', 'stable');
   } catch (err) {
@@ -769,7 +769,7 @@ const wipeDatabase = async () => {
         await db.setSetting('player_proxy_url', defaultPlayerProxyUrl);
         await db.setSetting('player_proxy_streams', defaultPlayerProxyStreams);
         await db.setSetting('player_autoplay', true);
-        await db.setSetting('player_default_float', false);
+        await db.setSetting('player_default_float', true);
         await db.setSetting('player_default_aspect', 'fit');
         await db.setSetting('player_buffer_mode', 'stable');
         await db.setSetting('epg_time_shift', 0);
@@ -800,7 +800,7 @@ const resetToDefaults = async () => {
       await db.setSetting('player_proxy_url', defaultPlayerProxyUrl);
       await db.setSetting('player_proxy_streams', defaultPlayerProxyStreams);
       await db.setSetting('player_autoplay', true);
-      await db.setSetting('player_default_float', false);
+      await db.setSetting('player_default_float', true);
       await db.setSetting('player_default_aspect', 'fit');
       await db.setSetting('player_buffer_mode', 'stable');
       await db.setSetting('epg_time_shift', 0);
