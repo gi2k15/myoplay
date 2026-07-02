@@ -14,7 +14,5 @@
 
 ## Planning Workflow
 
-- **After editing**: Do not run a build. Don't run the command `pnpm build` or anything like that. A type-check is allowed.
-
 - **Completion Commit**: Upon finishing the execution of all tasks in a plan and before presenting the walkthrough, the agent MUST create an automatic commit with all consolidated changes (e.g., `git add .` followed by `git commit -m "feat/fix: <english summary of what was done>"`). The commit message/description must be written in English and clearly summarize what was implemented in the plan.
   - Also increment automatically the version in `package.json` in the format 0.X.Y where **X** is incremented when a 'feat' commit is done and **Y** is incremented when any other commit is done.
