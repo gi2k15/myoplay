@@ -183,7 +183,8 @@ export class XtreamClient {
               rating: stream.rating || undefined,
               plot: stream.plot || undefined,
               duration: stream.duration || undefined,
-              year: stream.year || undefined
+              year: stream.year || undefined,
+              added: stream.added ? String(stream.added) : undefined
             });
           }
         }
@@ -216,7 +217,8 @@ export class XtreamClient {
               xtreamId: series.series_id,
               rating: series.rating || undefined,
               plot: series.plot || undefined,
-              year: series.releaseDate || undefined
+              year: series.releaseDate || undefined,
+              added: series.last_modified ? String(series.last_modified) : undefined
             });
           }
         }

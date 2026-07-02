@@ -31,6 +31,7 @@ export interface IPTVChannel {
   year?: string;
   director?: string;
   genre?: string;
+  added?: string;
 }
 
 export interface EPGProgram {

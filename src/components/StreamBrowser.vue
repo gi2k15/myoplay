@@ -201,18 +201,33 @@
               </div>
             </div>
 
-            <!-- Search Bar -->
-            <v-text-field
-              v-model="searchQuery"
-              placeholder="Buscar por nome..."
-              variant="outlined"
-              density="compact"
-              prepend-inner-icon="mdi-magnify"
-              hide-details
-              clearable
-              style="max-width: 320px; width: 100%;"
-              @update:model-value="resetPagination"
-            />
+            <!-- Search & Sort Controls -->
+            <div class="d-flex align-center gap-2 w-100 w-sm-auto" style="max-width: 480px;">
+              <v-select
+                v-if="type === 'movie' || type === 'series'"
+                v-model="sortBy"
+                :items="sortOptions"
+                label="Ordenar"
+                variant="outlined"
+                density="compact"
+                hide-details
+                prepend-inner-icon="mdi-sort"
+                style="max-width: 200px; min-width: 170px;"
+                @update:model-value="resetPagination"
+              />
+
+              <v-text-field
+                v-model="searchQuery"
+                placeholder="Buscar por nome..."
+                variant="outlined"
+                density="compact"
+                prepend-inner-icon="mdi-magnify"
+                hide-details
+                clearable
+                style="max-width: 280px; width: 100%;"
+                @update:model-value="resetPagination"
+              />
+            </div>
           </div>
         </div>
 
@@ -689,6 +704,24 @@ watch(categoriesCollapsed, (val) => {
   localStorage.setItem('categories_collapsed', String(val));
 });
 
+// Sorting States
+const sortBy = ref(localStorage.getItem('movie_sort_by') || 'added');
+watch(sortBy, (val) => {
+  localStorage.setItem('movie_sort_by', val);
+});
+
+const sortOptions = [
+  { title: 'Ordem de Adição', value: 'added' },
+  { title: 'Ano de Lançamento', value: 'year' },
+  { title: 'Nome (A-Z)', value: 'name' }
+];
+
+const getM3uIndex = (id: string) => {
+  const parts = id.split('_');
+  const lastPart = parts[parts.length - 1];
+  return parseInt(lastPart, 10);
+};
+
 const categories = ref<{ name: string; count: number }[]>([]);
 const allChannels = ref<IPTVChannel[]>([]);
 const favoritesSet = ref<Set<string>>(new Set());
@@ -937,6 +970,40 @@ const filteredChannels = computed(() => {
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase().trim();
     result = result.filter(ch => ch.name.toLowerCase().includes(q));
+  }
+
+  // Sort movies and series in-memory
+  if (props.type === 'movie' || props.type === 'series') {
+    result = [...result];
+    if (sortBy.value === 'added') {
+      result.sort((a, b) => {
+        const addedA = a.added ? parseInt(a.added, 10) : 0;
+        const addedB = b.added ? parseInt(b.added, 10) : 0;
+        if (addedA !== addedB) {
+          return addedB - addedA; // Newest added first
+        }
+        if (a.xtreamId && b.xtreamId) {
+          return b.xtreamId - a.xtreamId; // Newest provider ID first
+        }
+        const indexA = getM3uIndex(a.id);
+        const indexB = getM3uIndex(b.id);
+        if (!isNaN(indexA) && !isNaN(indexB)) {
+          return indexA - indexB; // M3U playlist order (ascending addition index)
+        }
+        return a.name.localeCompare(b.name);
+      });
+    } else if (sortBy.value === 'year') {
+      result.sort((a, b) => {
+        const yearA = a.year ? parseInt(a.year, 10) : 0;
+        const yearB = b.year ? parseInt(b.year, 10) : 0;
+        if (yearA !== yearB) {
+          return yearB - yearA; // Newest release first
+        }
+        return a.name.localeCompare(b.name);
+      });
+    } else if (sortBy.value === 'name') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    }
   }
 
   return result;
