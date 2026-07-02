@@ -378,6 +378,7 @@ const playSelectedChannel = () => {
 .text-glow-small {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

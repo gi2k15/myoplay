@@ -417,6 +417,7 @@ html, body {
 .text-glow-small {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 8px rgba(255, 224, 130, 0.2));
 }

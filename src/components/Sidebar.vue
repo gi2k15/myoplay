@@ -233,6 +233,7 @@ const navItems = computed(() => [
 .text-glow-small {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.3));
 }
