@@ -406,7 +406,7 @@ const aspectRatios = [
 const playerBufferMode = ref('stable');
 const bufferModes = [
   { title: 'Baixa Latência (Menor Delay)', value: 'low-latency' },
-  { title: 'Balanceado (Recomendado - Boa Estabilidade)', value: 'balanced' },
+  { title: 'Balanceado (Boa Estabilidade)', value: 'balanced' },
   { title: 'Alta Estabilidade (Padrão - Máximo Buffer)', value: 'stable' },
 ];
 
