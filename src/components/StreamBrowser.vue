@@ -539,7 +539,7 @@
                     </v-avatar>
                   </template>
                   
-                  <v-list-item-title class="font-weight-bold">
+                  <v-list-item-title class="font-weight-bold text-white">
                     {{ ep.episodeNum }}. {{ ep.title }}
                   </v-list-item-title>
                   
