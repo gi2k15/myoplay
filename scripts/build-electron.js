@@ -1,11 +1,49 @@
 import esbuild from 'esbuild';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function archiveOldReleases() {
+  const releaseDir = path.join(__dirname, '../release');
+  const oldsDir = path.join(releaseDir, 'olds');
+
+  try {
+    await fs.access(releaseDir);
+  } catch {
+    // Release directory doesn't exist, nothing to archive
+    return;
+  }
+
+  console.log('Archiving old releases inside release/olds...');
+  await fs.mkdir(oldsDir, { recursive: true });
+
+  const entries = await fs.readdir(releaseDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (entry.name === 'olds') {
+      continue;
+    }
+
+    const srcPath = path.join(releaseDir, entry.name);
+    const destPath = path.join(oldsDir, entry.name);
+
+    try {
+      await fs.rm(destPath, { recursive: true, force: true });
+      await fs.rename(srcPath, destPath);
+      console.log(`Moved to olds: ${entry.name}`);
+    } catch (err) {
+      console.warn(`Warning: Could not archive ${entry.name}:`, err.message);
+    }
+  }
+}
+
 async function buildProduction() {
+  // Archive old releases before compiler starts
+  await archiveOldReleases();
+
   console.log('Building Electron scripts for production...');
   
   // Build Main process script (ESM)
