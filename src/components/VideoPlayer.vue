@@ -508,16 +508,16 @@ const videoHeight = ref(0);
 // Playback Options
 const aspectRatio = ref("fit"); // fit, fill, 16-9, 4-3
 const aspectRatios = computed(() => [
-  { label: t('settings.playback.aspectRatios.fit'), value: "fit" },
-  { label: t('settings.playback.aspectRatios.fill'), value: "fill" },
-  { label: t('settings.playback.aspectRatios.widescreen'), value: "16-9" },
-  { label: t('settings.playback.aspectRatios.classic'), value: "4-3" },
+  { label: t('settings.playback.aspectRatioOptions.fit'), value: "fit" },
+  { label: t('settings.playback.aspectRatioOptions.fill'), value: "fill" },
+  { label: t('settings.playback.aspectRatioOptions.widescreen'), value: "16-9" },
+  { label: t('settings.playback.aspectRatioOptions.classic'), value: "4-3" },
 ]);
 
 const bufferModes = computed(() => [
-  { title: t('settings.playback.bufferModes.lowLatency'), value: "low-latency" },
-  { title: t('settings.playback.bufferModes.balanced'), value: "balanced" },
-  { title: t('settings.playback.bufferModes.stable'), value: "stable" },
+  { title: t('settings.playback.bufferOptions.lowLatency'), value: "low-latency" },
+  { title: t('settings.playback.bufferOptions.balanced'), value: "balanced" },
+  { title: t('settings.playback.bufferOptions.stable'), value: "stable" },
 ]);
 
 const changeBufferMode = async (mode: string) => {
@@ -560,6 +560,8 @@ const isHealing = ref(false);
 let isHandlingError = false;
 let lastErrorCode: number | null = null;
 
+let resizeObserver: ResizeObserver | null = null;
+
 onMounted(async () => {
   await loadSettings();
   initializePlayer();
@@ -567,6 +569,26 @@ onMounted(async () => {
 
   // Listen for Fullscreen changes
   document.addEventListener("fullscreenchange", onFullscreenChange);
+
+  // Setup ResizeObserver for floating player to save dimensions
+  if (props.floating && playerContainerRef.value) {
+    const savedWidth = await db.getSetting("floating_player_width", 480);
+    const savedHeight = await db.getSetting("floating_player_height", 270);
+    playerContainerRef.value.style.width = `${savedWidth}px`;
+    playerContainerRef.value.style.height = `${savedHeight}px`;
+
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // Don't save if width/height are too small or close to 0 (e.g. hidden/unmounted)
+        if (width > 50 && height > 50) {
+          db.setSetting("floating_player_width", Math.round(width));
+          db.setSetting("floating_player_height", Math.round(height));
+        }
+      }
+    });
+    resizeObserver.observe(playerContainerRef.value);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -576,6 +598,10 @@ onBeforeUnmount(() => {
   document.removeEventListener("fullscreenchange", onFullscreenChange);
   if (retryTimeout) clearTimeout(retryTimeout);
   if (controlsTimeout) clearTimeout(controlsTimeout);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
 });
 
 // Watch for stream URL change
@@ -1299,13 +1325,18 @@ const onClosePlayer = () => {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 320px;
-  height: 180px;
-  min-height: 180px !important;
+  width: 480px;
+  height: 270px;
+  min-width: 320px;
+  min-height: 180px;
+  max-width: 90vw;
+  max-height: 90vh;
   z-index: 999;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 193, 7, 0.5) !important;
+  resize: both;
+  overflow: hidden;
 }
 
 .video-poster-overlay,
