@@ -571,7 +571,7 @@
           <v-btn icon="mdi-close" variant="text" size="small" @click="movieDialog = false" />
         </div>
 
-        <v-row class="ma-0 mb-4">
+        <v-row class="ma-0 mb-4 movie-details-row">
           <!-- Poster do Filme -->
           <v-col cols="12" sm="4" class="pa-2">
             <v-img 
@@ -587,7 +587,7 @@
           </v-col>
 
           <!-- Informações de Metadados do Filme -->
-          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start">
+          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start movie-details-col">
             <h2 class="text-h4 font-weight-bold mb-2 text-glow-small">{{ selectedMovie.name }}</h2>
             
             <div class="d-flex align-center mb-4 gap-2 flex-wrap">
@@ -597,13 +597,14 @@
               <v-chip v-if="selectedMovie.duration" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedMovie.duration }} min</v-chip>
             </div>
 
-            <!-- Gênero e Dire            <div v-if="selectedMovie.genre || selectedMovie.director" class="ma-0 mb-4 text-caption text-medium-emphasis">
-              <span v-slot:default v-if="selectedMovie.genre" class="mr-3"><strong>{{ $t('common.category') }}:</strong> {{ selectedMovie.genre }}</span>
-              <span v-slot:default v-if="selectedMovie.director"><strong>{{ $t('streamBrowser.movieDetails.directorLabel') }}</strong> {{ selectedMovie.director }}</span>
+            <!-- Gênero e Diretor -->
+            <div v-if="selectedMovie.genre || selectedMovie.director" class="ma-0 mb-4 text-caption text-medium-emphasis">
+              <span v-if="selectedMovie.genre" class="mr-3"><strong>{{ $t('common.category') }}:</strong> {{ selectedMovie.genre }}</span>
+              <span v-if="selectedMovie.director"><strong>{{ $t('streamBrowser.movieDetails.directorLabel') }}</strong> {{ selectedMovie.director }}</span>
             </div>
             
             <!-- Sinopse -->
-            <div class="flex-grow-1 mb-6">
+            <div class="flex-grow-1 mb-6 d-flex flex-column overflow-hidden">
               <h4 class="text-subtitle-2 font-weight-bold text-glow-small mb-2">{{ $t('streamBrowser.movieDetails.sinopse') }}</h4>
               <p v-if="selectedMovie.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height-movie">
                 {{ selectedMovie.plot }}
@@ -1525,8 +1526,25 @@ const playMovie = (movie: IPTVChannel) => {
 }
 
 .max-plot-height-movie {
-  max-height: 200px;
+  max-height: 150px;
   overflow-y: auto;
+}
+
+@media (min-width: 600px) {
+  .movie-details-row {
+    position: relative;
+  }
+  .movie-details-col {
+    position: absolute !important;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 66.666667% !important;
+  }
+  .max-plot-height-movie {
+    max-height: none;
+    flex-grow: 1;
+  }
 }
 
 .max-episodes-height {
