@@ -171,6 +171,13 @@ watch(activeChannel, () => {
   loadActiveChannelEpg();
 });
 
+watch(currentPage, (newVal, oldVal) => {
+  const categories = ['live', 'movie', 'series'];
+  if (categories.includes(newVal) && categories.includes(oldVal)) {
+    onClosePlayer();
+  }
+});
+
 const formatEpgTime = (timestamp: number) => {
   if (!timestamp) return '';
   const d = new Date(timestamp);
