@@ -352,7 +352,7 @@
                   <v-btn
                     :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
                     :color="isFavorite(ch.id) ? 'warning' : 'white'"
-                    variant="flat"
+                    variant="text"
                     size="x-small"
                     class="favorite-overlay-btn"
                     @click.stop="toggleFavorite(ch.id)"
@@ -418,7 +418,7 @@
                   <v-btn
                     :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
                     :color="isFavorite(ch.id) ? 'warning' : 'white'"
-                    variant="flat"
+                    variant="text"
                     size="x-small"
                     class="favorite-overlay-btn"
                     @click.stop="toggleFavorite(ch.id)"
@@ -486,6 +486,18 @@
               <v-chip size="small" color="primary" class="font-weight-bold">{{ selectedSeries.category }}</v-chip>
               <v-chip v-if="selectedSeries.rating" size="small" color="secondary" class="font-weight-bold">★ {{ selectedSeries.rating }}</v-chip>
               <v-chip v-if="selectedSeries.year" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedSeries.year }}</v-chip>
+              
+              <!-- Favorite Button -->
+              <v-btn
+                :prepend-icon="isFavorite(selectedSeries.id) ? 'mdi-star' : 'mdi-star-outline'"
+                :color="isFavorite(selectedSeries.id) ? 'warning' : 'medium-emphasis'"
+                variant="outlined"
+                size="small"
+                class="ml-sm-auto"
+                @click="toggleFavorite(selectedSeries.id)"
+              >
+                {{ isFavorite(selectedSeries.id) ? $t('streamBrowser.movieDetails.favorited') : $t('streamBrowser.movieDetails.favorite') }}
+              </v-btn>
             </div>
             
             <div class="flex-grow-1 mb-0 d-flex flex-column overflow-hidden">
@@ -1459,10 +1471,10 @@ const playMovie = (movie: IPTVChannel) => {
 }
 
 .favorite-overlay-btn {
-  position: absolute;
+  position: absolute !important;
   top: 8px;
   right: 8px;
-  z-index: 3;
+  z-index: 10 !important;
   background: rgba(0, 0, 0, 0.6) !important;
   backdrop-filter: blur(4px);
   border-radius: 8px;
@@ -1495,6 +1507,7 @@ const playMovie = (movie: IPTVChannel) => {
   opacity: 0;
   z-index: 2;
   transition: all 0.3s ease;
+  pointer-events: none;
 }
 
 .movie-card:hover .play-overlay {
