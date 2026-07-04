@@ -464,7 +464,7 @@
           <v-btn icon="mdi-close" variant="text" size="small" @click="seriesDialog = false" />
         </div>
 
-        <v-row class="ma-0 mb-6">
+        <v-row class="ma-0 mb-6 series-details-row">
           <!-- Series Cover -->
           <v-col cols="12" sm="4" class="pa-2">
             <v-img 
@@ -480,7 +480,7 @@
           </v-col>
 
           <!-- Series Meta Info -->
-          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-center">
+          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start series-details-col">
             <h2 class="text-h4 font-weight-bold mb-2 text-glow-small">{{ selectedSeries.name }}</h2>
             <div class="d-flex align-center mb-4 gap-2 flex-wrap">
               <v-chip size="small" color="primary" class="font-weight-bold">{{ selectedSeries.category }}</v-chip>
@@ -488,12 +488,14 @@
               <v-chip v-if="selectedSeries.year" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedSeries.year }}</v-chip>
             </div>
             
-            <p v-if="selectedSeries.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height">
-              {{ selectedSeries.plot }}
-            </p>
-            <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
-              Nenhuma descrição disponível para esta série.
-            </p>
+            <div class="flex-grow-1 mb-0 d-flex flex-column overflow-hidden">
+              <p v-if="selectedSeries.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height">
+                {{ selectedSeries.plot }}
+              </p>
+              <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
+                Nenhuma descrição disponível para esta série.
+              </p>
+            </div>
           </v-col>
         </v-row>
 
@@ -1531,17 +1533,20 @@ const playMovie = (movie: IPTVChannel) => {
 }
 
 @media (min-width: 600px) {
-  .movie-details-row {
+  .movie-details-row,
+  .series-details-row {
     position: relative;
   }
-  .movie-details-col {
+  .movie-details-col,
+  .series-details-col {
     position: absolute !important;
     right: 0;
     top: 0;
     bottom: 0;
     width: 66.666667% !important;
   }
-  .max-plot-height-movie {
+  .max-plot-height-movie,
+  .max-plot-height {
     max-height: none;
     flex-grow: 1;
   }
