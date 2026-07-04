@@ -224,7 +224,7 @@
                 prepend-inner-icon="mdi-magnify"
                 hide-details
                 clearable
-                style="max-width: 280px; width: 100%;"
+                width="280px"
                 @update:model-value="resetPagination"
               />
             </div>
