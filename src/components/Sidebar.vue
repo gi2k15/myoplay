@@ -148,8 +148,22 @@
         </v-btn>
 
         <!-- Active Playlist Summary -->
-        <v-list-item v-if="activePlaylistName && !rail" class="playlist-info-card rounded-lg pa-3">
-          <div class="text-caption text-medium-emphasis">{{ $t('sidebar.activePlaylist') }}</div>
+        <v-list-item 
+          v-if="activePlaylistName && !rail" 
+          class="playlist-info-card rounded-lg pa-3 transition-all"
+          :class="{ 'updating-card': isPlaylistUpdating }"
+        >
+          <div class="d-flex align-center justify-space-between mb-1">
+            <div class="text-caption text-medium-emphasis">{{ $t('sidebar.activePlaylist') }}</div>
+            <v-icon
+              v-if="isPlaylistUpdating"
+              size="14"
+              color="amber-accent-2"
+              class="spin-sync-icon"
+            >
+              mdi-sync
+            </v-icon>
+          </div>
           <div class="text-subtitle-2 font-weight-bold text-truncate text-secondary">
             {{ activePlaylistName }}
           </div>
@@ -169,6 +183,7 @@ const { t } = useI18n();
 const props = defineProps<{
   modelValue: string; // Current active page value
   activePlaylistName?: string | null;
+  isPlaylistUpdating?: boolean;
   recentStreams?: any[]; // Array of IPTVChannel
 }>();
 
@@ -264,6 +279,44 @@ const navItems = computed(() => [
 .playlist-info-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.playlist-info-card.updating-card {
+  background: rgba(255, 193, 7, 0.02) !important;
+  animation: card-pulse 2s ease-in-out infinite;
+}
+
+.spin-sync-icon {
+  animation: spin 1.8s linear infinite;
+}
+
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.gap-1 {
+  gap: 4px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes card-pulse {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 rgba(255, 193, 7, 0);
+  }
+  50% {
+    border-color: rgba(255, 193, 7, 0.3) !important;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.06);
+  }
 }
 
 .justify-start-rail {

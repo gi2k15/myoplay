@@ -5,6 +5,7 @@
     <Sidebar 
       v-model="currentPage" 
       :active-playlist-name="activePlaylistName" 
+      :is-playlist-updating="isActivePlaylistUpdating"
       :recent-streams="recentStreams"
       @remove-recent="onRemoveRecentStream"
       @play-stream="onPlayStream"
@@ -126,7 +127,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
@@ -149,6 +150,37 @@ const activePlaylistId = ref<number | null>(null);
 const activePlaylistName = ref<string | null>(null);
 const hasPlaylists = ref(false);
 const recentStreams = ref<IPTVChannel[]>([]);
+
+// Background playlist update states
+const updatingPlaylistIds = ref<number[]>([]);
+
+const isActivePlaylistUpdating = computed(() => {
+  return activePlaylistId.value !== null && updatingPlaylistIds.value.includes(activePlaylistId.value);
+});
+
+const handlePlaylistUpdating = (e: Event) => {
+  const customEvent = e as CustomEvent<{ playlistId: number }>;
+  const id = customEvent.detail?.playlistId;
+  if (id && !updatingPlaylistIds.value.includes(id)) {
+    updatingPlaylistIds.value.push(id);
+  }
+};
+
+const handlePlaylistUpdated = (e: Event) => {
+  const customEvent = e as CustomEvent<{ playlistId: number }>;
+  const id = customEvent.detail?.playlistId;
+  if (id) {
+    updatingPlaylistIds.value = updatingPlaylistIds.value.filter(x => x !== id);
+  }
+};
+
+const handlePlaylistUpdateFailed = (e: Event) => {
+  const customEvent = e as CustomEvent<{ playlistId: number }>;
+  const id = customEvent.detail?.playlistId;
+  if (id) {
+    updatingPlaylistIds.value = updatingPlaylistIds.value.filter(x => x !== id);
+  }
+};
 
 // Global Video Player States
 const activeChannel = ref<IPTVChannel | null>(null);
@@ -203,6 +235,10 @@ const loadRecentStreams = async () => {
 };
 
 onMounted(async () => {
+  window.addEventListener('playlist-updating', handlePlaylistUpdating);
+  window.addEventListener('playlist-updated', handlePlaylistUpdated);
+  window.addEventListener('playlist-update-failed', handlePlaylistUpdateFailed);
+
   await db.init();
 
   // Load language setting
@@ -249,6 +285,12 @@ onMounted(async () => {
 
   // Check and run automatic playlist updates in the background
   PlaylistUpdater.checkAndRunAutoUpdates();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('playlist-updating', handlePlaylistUpdating);
+  window.removeEventListener('playlist-updated', handlePlaylistUpdated);
+  window.removeEventListener('playlist-update-failed', handlePlaylistUpdateFailed);
 });
 
 const checkActivePlaylist = async () => {

@@ -51,119 +51,126 @@ export class PlaylistUpdater {
   static async updatePlaylist(pl: Playlist, onProgress?: (msg: string, percent?: number) => void): Promise<void> {
     if (!pl.id) return;
 
-    if (pl.type === 'url') {
-      if (!pl.url) throw new Error('Playlist has no URL');
-      onProgress?.('Baixando arquivo M3U...', 0);
-      
-      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
-      const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
-      const fetchUrl = proxy ? `${proxy}${encodeURIComponent(pl.url)}` : pl.url;
+    window.dispatchEvent(new CustomEvent('playlist-updating', { detail: { playlistId: pl.id } }));
 
-      const res = await fetch(fetchUrl);
-      if (!res.ok) {
-        throw new Error(`Erro de rede HTTP ${res.status}`);
-      }
-      const text = await res.text();
+    try {
+      if (pl.type === 'url') {
+        if (!pl.url) throw new Error('Playlist has no URL');
+        onProgress?.('Baixando arquivo M3U...', 0);
+        
+        const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+        const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+        const fetchUrl = proxy ? `${proxy}${encodeURIComponent(pl.url)}` : pl.url;
 
-      onProgress?.('Analisando lista M3U...', 50);
-      const { channels, epgUrl: autoEpg } = parseM3U(text, pl.id);
+        const res = await fetch(fetchUrl);
+        if (!res.ok) {
+          throw new Error(`Erro de rede HTTP ${res.status}`);
+        }
+        const text = await res.text();
 
-      if (channels.length === 0) {
-        throw new Error('Nenhum canal encontrado na lista');
-      }
+        onProgress?.('Analisando lista M3U...', 50);
+        const { channels, epgUrl: autoEpg } = parseM3U(text, pl.id);
 
-      onProgress?.('Limpando canais antigos...', 70);
-      await db.clearPlaylistChannels(pl.id);
+        if (channels.length === 0) {
+          throw new Error('Nenhum canal encontrado na lista');
+        }
 
-      onProgress?.('Salvando novos canais...', 80);
-      const mappedChannels = channels.map(c => ({
-        ...c,
-        id: c.id.includes('_') ? `${pl.id}_${c.id.split('_').slice(1).join('_')}` : `${pl.id}_${c.id}`,
-        playlistId: pl.id as number
-      }));
-      await db.addChannelsBatch(mappedChannels);
+        onProgress?.('Limpando canais antigos...', 70);
+        await db.clearPlaylistChannels(pl.id);
 
-      // Auto update EPG if epgUrl exists
-      const finalEpgUrl = pl.epgUrl || autoEpg;
-      if (finalEpgUrl) {
+        onProgress?.('Salvando novos canais...', 80);
+        const mappedChannels = channels.map(c => ({
+          ...c,
+          id: c.id.includes('_') ? `${pl.id}_${c.id.split('_').slice(1).join('_')}` : `${pl.id}_${c.id}`,
+          playlistId: pl.id as number
+        }));
+        await db.addChannelsBatch(mappedChannels);
+
+        // Auto update EPG if epgUrl exists
+        const finalEpgUrl = pl.epgUrl || autoEpg;
+        if (finalEpgUrl) {
+          onProgress?.('Atualizando guia EPG...', 90);
+          try {
+            await this.updateEpg(finalEpgUrl);
+            if (autoEpg && autoEpg !== pl.epgUrl) {
+              pl.epgUrl = autoEpg;
+            }
+          } catch (e) {
+            console.warn('Erro ao atualizar EPG durante update da lista:', e);
+          }
+        }
+
+        pl.lastUpdatedAt = Date.now();
+        await db.updatePlaylist(pl);
+
+        // Dispatch event to notify components
+        window.dispatchEvent(new CustomEvent('playlist-updated', { detail: { playlistId: pl.id } }));
+
+      } else if (pl.type === 'xtream') {
+        if (!pl.url || !pl.username || !pl.password) throw new Error('Credenciais do Xtream incompletas');
+        onProgress?.('Conectando ao servidor Xtream...', 10);
+
+        const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+        const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+        const client = new XtreamClient({
+          url: pl.url,
+          username: pl.username,
+          password: pl.password,
+          corsProxy: proxy
+        });
+
+        const auth = await client.authenticate();
+        if (!auth.success) {
+          throw new Error(`Autenticação Xtream falhou: ${auth.message}`);
+        }
+
+        onProgress?.('Baixando dados do Xtream...', 30);
+        const channels = await client.fetchAllData(pl.id, (msg, percent) => {
+          onProgress?.(`Baixando dados Xtream: ${msg}`, percent);
+        });
+
+        if (channels.length === 0) {
+          throw new Error('Nenhum canal encontrado no Xtream');
+        }
+
+        onProgress?.('Limpando canais antigos...', 70);
+        await db.clearPlaylistChannels(pl.id);
+
+        onProgress?.('Salvando novos canais...', 80);
+        const mappedChannels = channels.map(c => ({
+          ...c,
+          id: c.id.includes('_') ? `${pl.id}_${c.id.split('_').slice(1).join('_')}` : `${pl.id}_${c.id}`,
+          playlistId: pl.id as number
+        }));
+        await db.addChannelsBatch(mappedChannels);
+
+        // Xtream standard EPG url
+        let baseUrl = pl.url.trim();
+        if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+          baseUrl = 'http://' + baseUrl;
+        }
+        if (baseUrl.endsWith('/')) {
+          baseUrl = baseUrl.slice(0, -1);
+        }
+        const autoEpg = `${baseUrl}/xmltv.php?username=${pl.username.trim()}&password=${pl.password.trim()}`;
+        
         onProgress?.('Atualizando guia EPG...', 90);
         try {
-          await this.updateEpg(finalEpgUrl);
-          if (autoEpg && autoEpg !== pl.epgUrl) {
-            pl.epgUrl = autoEpg;
-          }
+          await this.updateEpg(autoEpg);
+          pl.epgUrl = autoEpg;
         } catch (e) {
-          console.warn('Erro ao atualizar EPG durante update da lista:', e);
+          console.warn('Erro ao atualizar EPG do Xtream:', e);
         }
+
+        pl.lastUpdatedAt = Date.now();
+        await db.updatePlaylist(pl);
+
+        // Dispatch event to notify components
+        window.dispatchEvent(new CustomEvent('playlist-updated', { detail: { playlistId: pl.id } }));
       }
-
-      pl.lastUpdatedAt = Date.now();
-      await db.updatePlaylist(pl);
-
-      // Dispatch event to notify components
-      window.dispatchEvent(new CustomEvent('playlist-updated', { detail: { playlistId: pl.id } }));
-
-    } else if (pl.type === 'xtream') {
-      if (!pl.url || !pl.username || !pl.password) throw new Error('Credenciais do Xtream incompletas');
-      onProgress?.('Conectando ao servidor Xtream...', 10);
-
-      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
-      const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
-      const client = new XtreamClient({
-        url: pl.url,
-        username: pl.username,
-        password: pl.password,
-        corsProxy: proxy
-      });
-
-      const auth = await client.authenticate();
-      if (!auth.success) {
-        throw new Error(`Autenticação Xtream falhou: ${auth.message}`);
-      }
-
-      onProgress?.('Baixando dados do Xtream...', 30);
-      const channels = await client.fetchAllData(pl.id, (msg, percent) => {
-        onProgress?.(`Baixando dados Xtream: ${msg}`, percent);
-      });
-
-      if (channels.length === 0) {
-        throw new Error('Nenhum canal encontrado no Xtream');
-      }
-
-      onProgress?.('Limpando canais antigos...', 70);
-      await db.clearPlaylistChannels(pl.id);
-
-      onProgress?.('Salvando novos canais...', 80);
-      const mappedChannels = channels.map(c => ({
-        ...c,
-        id: c.id.includes('_') ? `${pl.id}_${c.id.split('_').slice(1).join('_')}` : `${pl.id}_${c.id}`,
-        playlistId: pl.id as number
-      }));
-      await db.addChannelsBatch(mappedChannels);
-
-      // Xtream standard EPG url
-      let baseUrl = pl.url.trim();
-      if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-        baseUrl = 'http://' + baseUrl;
-      }
-      if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-      }
-      const autoEpg = `${baseUrl}/xmltv.php?username=${pl.username.trim()}&password=${pl.password.trim()}`;
-      
-      onProgress?.('Atualizando guia EPG...', 90);
-      try {
-        await this.updateEpg(autoEpg);
-        pl.epgUrl = autoEpg;
-      } catch (e) {
-        console.warn('Erro ao atualizar EPG do Xtream:', e);
-      }
-
-      pl.lastUpdatedAt = Date.now();
-      await db.updatePlaylist(pl);
-
-      // Dispatch event to notify components
-      window.dispatchEvent(new CustomEvent('playlist-updated', { detail: { playlistId: pl.id } }));
+    } catch (err) {
+      window.dispatchEvent(new CustomEvent('playlist-update-failed', { detail: { playlistId: pl.id, error: err } }));
+      throw err;
     }
   }
 

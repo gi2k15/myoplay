@@ -22,6 +22,7 @@ export default {
     recent: 'Recentes',
     collapse: 'Recolher',
     activePlaylist: 'Lista Ativa',
+    updatingBackground: 'Atualizando em segundo plano...',
     typeLive: 'Ao Vivo',
     typeMovie: 'Filme',
     typeSeries: 'Série',

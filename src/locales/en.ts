@@ -22,6 +22,7 @@ export default {
     recent: 'Recent',
     collapse: 'Collapse',
     activePlaylist: 'Active Playlist',
+    updatingBackground: 'Updating in background...',
     typeLive: 'Live',
     typeMovie: 'Movie',
     typeSeries: 'Series',
