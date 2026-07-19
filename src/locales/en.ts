@@ -345,6 +345,9 @@ export default {
     playbackError: 'Playback Error',
     retryBtn: 'Try Again',
     diagnosticsBtn: 'Diagnostics',
+    rewind10: 'Rewind 10 seconds',
+    forward10: 'Forward 10 seconds',
+    goToLiveBtn: 'GO TO LIVE',
     stats: {
       title: 'Stream Statistics',
       name: 'Name',

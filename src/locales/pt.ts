@@ -345,6 +345,9 @@ export default {
     playbackError: 'Erro de Reprodução',
     retryBtn: 'Tentar Novamente',
     diagnosticsBtn: 'Diagnóstico',
+    rewind10: 'Voltar 10 segundos',
+    forward10: 'Avançar 10 segundos',
+    goToLiveBtn: 'IR PARA O AO VIVO',
     stats: {
       title: 'Estatísticas do Stream',
       name: 'Nome',

@@ -273,14 +273,15 @@
 
           <!-- Bottom Controls Bar -->
           <div class="pa-3 bottom-gradient">
-            <!-- Timeline progress bar (For VOD movies or series) -->
-            <div v-if="!isLive" class="px-2 mb-2 d-flex align-center gap-2">
+            <!-- Timeline progress bar (For VOD movies/series or live streams with DVR) -->
+            <div v-if="!isLive || hasLiveDVR" class="px-2 mb-2 d-flex align-center gap-2">
               <span class="text-caption text-white">{{
-                formatTimelineTime(currentTime)
+                isLive ? formatLiveRelativeTime() : formatTimelineTime(currentTime)
               }}</span>
               <v-slider
                 v-model="currentTime"
-                :max="duration || 100"
+                :min="isLive ? liveSeekableStart : 0"
+                :max="isLive ? liveSeekableEnd : (duration || 100)"
                 color="secondary"
                 track-color="rgba(255, 255, 255, 0.2)"
                 hide-details
@@ -288,7 +289,7 @@
                 @update:model-value="onTimelineSeek"
               />
               <span class="text-caption text-white">{{
-                formatTimelineTime(duration)
+                isLive ? 'Live' : formatTimelineTime(duration)
               }}</span>
             </div>
 
@@ -302,6 +303,28 @@
                   color="white"
                   size="small"
                   @click="togglePlay"
+                />
+
+                <!-- Rewind 10 seconds -->
+                <v-btn
+                  v-if="!isLive || hasLiveDVR"
+                  icon="mdi-rewind-10"
+                  variant="text"
+                  color="white"
+                  size="small"
+                  :title="$t('videoPlayer.rewind10')"
+                  @click="seekRelative(-10)"
+                />
+
+                <!-- Forward 10 seconds -->
+                <v-btn
+                  v-if="!isLive || hasLiveDVR"
+                  icon="mdi-fast-forward-10"
+                  variant="text"
+                  color="white"
+                  size="small"
+                  :title="$t('videoPlayer.forward10')"
+                  @click="seekRelative(10)"
                 />
 
                 <!-- Volume Control -->
@@ -336,10 +359,18 @@
                 <v-chip
                   v-if="isLive"
                   size="x-small"
-                  color="error"
-                  class="ml-2 px-2 font-weight-bold uppercase-tag animate-pulse"
+                  :color="isAtLiveEdge ? 'error' : 'grey-darken-2'"
+                  :class="{
+                    'ml-2 px-2 font-weight-bold uppercase-tag': true,
+                    'animate-pulse': isAtLiveEdge
+                  }"
+                  style="transition: all 0.3s ease;"
+                  :title="isAtLiveEdge ? undefined : $t('videoPlayer.goToLiveBtn')"
+                  @click="!isAtLiveEdge && goToLive()"
                 >
-                  🔴 {{ $t('tvGuide.liveTag') }}
+                  <v-icon v-if="!isAtLiveEdge" start size="10" class="mr-1">mdi-play-circle</v-icon>
+                  <span v-if="isAtLiveEdge">🔴 {{ $t('tvGuide.liveTag') }}</span>
+                  <span v-else>{{ $t('videoPlayer.goToLiveBtn') }}</span>
                 </v-chip>
               </div>
 
@@ -501,6 +532,51 @@ const currentTime = ref(0);
 const duration = ref(0);
 const volume = ref(0.8);
 const isMuted = ref(false);
+
+// Live DVR / Time-shift Support
+const liveSeekableStart = ref(0);
+const liveSeekableEnd = ref(0);
+const hasLiveDVR = ref(false);
+
+const isAtLiveEdge = computed(() => {
+  if (!isLive.value) return false;
+  if (!videoRef.value) return true;
+  if (!hasLiveDVR.value) return true;
+  const threshold = 5; // 5 seconds safe window to be considered "Live"
+  return (liveSeekableEnd.value - currentTime.value) < threshold;
+});
+
+const goToLive = () => {
+  if (videoRef.value && videoRef.value.seekable && videoRef.value.seekable.length > 0) {
+    const end = videoRef.value.seekable.end(0);
+    // Seek to live edge minus a small safe offset (e.g. 1 second) to avoid freezing/buffering
+    videoRef.value.currentTime = Math.max(videoRef.value.seekable.start(0), end - 1);
+  }
+};
+
+const seekRelative = (offsetSeconds: number) => {
+  if (!videoRef.value) return;
+  let target = videoRef.value.currentTime + offsetSeconds;
+  
+  if (isLive.value) {
+    target = Math.max(liveSeekableStart.value, Math.min(liveSeekableEnd.value, target));
+  } else {
+    target = Math.max(0, Math.min(duration.value, target));
+  }
+  
+  videoRef.value.currentTime = target;
+  currentTime.value = target;
+};
+
+const formatLiveRelativeTime = () => {
+  if (!videoRef.value || !hasLiveDVR.value) return "";
+  if (isAtLiveEdge.value) {
+    return t('tvGuide.liveTag');
+  }
+  const diff = liveSeekableEnd.value - currentTime.value;
+  if (diff <= 0) return "";
+  return `-${formatTimelineTime(diff)}`;
+};
 
 const videoWidth = ref(0);
 const videoHeight = ref(0);
@@ -1009,14 +1085,35 @@ const handlePlaybackError = (code?: number) => {
 
 // --- TIMELINE TRACKERS ---
 const onTimeUpdate = () => {
-  if (videoRef.value && !isLive.value) {
+  if (!videoRef.value) return;
+
+  if (!isLive.value) {
+    currentTime.value = videoRef.value.currentTime;
+  } else {
+    const seekable = videoRef.value.seekable;
+    if (seekable && seekable.length > 0) {
+      const start = seekable.start(0);
+      const end = seekable.end(0);
+      const dvrWindow = end - start;
+      if (dvrWindow > 15) {
+        liveSeekableStart.value = start;
+        liveSeekableEnd.value = end;
+        hasLiveDVR.value = true;
+      } else {
+        hasLiveDVR.value = false;
+      }
+    } else {
+      hasLiveDVR.value = false;
+    }
     currentTime.value = videoRef.value.currentTime;
   }
 };
 
 const onTimelineSeek = (time: number) => {
-  if (videoRef.value && !isLive.value) {
-    videoRef.value.currentTime = time;
+  if (videoRef.value) {
+    if (!isLive.value || hasLiveDVR.value) {
+      videoRef.value.currentTime = time;
+    }
   }
 };
 
@@ -1132,6 +1229,18 @@ const handleKeyDown = (e: KeyboardEvent) => {
     case "arrowdown":
       e.preventDefault();
       volume.value = Math.max(0, volume.value - 0.1);
+      break;
+    case "arrowleft":
+      e.preventDefault();
+      if (!isLive.value || hasLiveDVR.value) {
+        seekRelative(-10);
+      }
+      break;
+    case "arrowright":
+      e.preventDefault();
+      if (!isLive.value || hasLiveDVR.value) {
+        seekRelative(10);
+      }
       break;
   }
 };
