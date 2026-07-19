@@ -258,8 +258,8 @@
 
           <!-- Center Play Overlay Indicator (Only for normal view) -->
           <div
-            v-if="!floating"
-            class="d-flex align-center justify-center flex-grow-1"
+            v-if="!floating && !errorState"
+            class="d-flex align-center justify-center flex-grow-1 click-to-play"
             @click="togglePlay"
           >
             <v-btn
@@ -1372,6 +1372,7 @@ const onClosePlayer = () => {
   height: 100%;
   z-index: 5;
   background: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
 }
 
 .top-gradient {
@@ -1380,6 +1381,7 @@ const onClosePlayer = () => {
     rgba(0, 0, 0, 0.8) 0%,
     rgba(0, 0, 0, 0) 100%
   );
+  pointer-events: auto;
 }
 
 .bottom-gradient {
@@ -1388,6 +1390,11 @@ const onClosePlayer = () => {
     rgba(0, 0, 0, 0.8) 0%,
     rgba(0, 0, 0, 0) 100%
   );
+  pointer-events: auto;
+}
+
+.click-to-play {
+  pointer-events: auto;
 }
 
 .play-center-btn {
