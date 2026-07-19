@@ -1400,7 +1400,7 @@ const onClosePlayer = () => {
 }
 
 .volume-slider-container {
-  width: 45px;
+  width: 36px;
   overflow: hidden;
   transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
@@ -1411,6 +1411,14 @@ const onClosePlayer = () => {
 
 .volume-slider {
   width: 70px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.volume-slider-container:hover .volume-slider {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .stats-panel {
