@@ -27,7 +27,7 @@
         :class="$vuetify.display.mobile ? 'flex-column-reverse' : 'flex-row'"
       >
         <!-- Left Pane: Main App Components -->
-        <div class="flex-grow-1 min-width-0 h-100 position-relative overflow-y-auto">
+        <div class="flex-grow-1 min-width-0 h-100 position-relative overflow-y-auto" style="overflow-x: hidden;">
           <KeepAlive>
             <component 
               :is="activeComponent" 
