@@ -234,6 +234,7 @@
         <!-- Scrollable Channels Container -->
         <div 
           class="flex-grow-1 overflow-y-auto px-4 pb-4 pt-2"
+          style="overflow-x: hidden;"
           @scroll="onScroll"
         >
 
