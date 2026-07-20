@@ -9,11 +9,8 @@ const __dirname = path.dirname(__filename);
 async function start() {
   console.log('Building Electron scripts...');
   
-  const options = {
-    entryPoints: [
-      path.join(__dirname, '../electron/main.ts'),
-      path.join(__dirname, '../electron/preload.ts')
-    ],
+  const mainOptions = {
+    entryPoints: [path.join(__dirname, '../electron/main.ts')],
     bundle: true,
     platform: 'node',
     target: 'node22',
@@ -23,8 +20,20 @@ async function start() {
     sourcemap: true,
   };
 
+  const preloadOptions = {
+    entryPoints: [path.join(__dirname, '../electron/preload.ts')],
+    bundle: true,
+    platform: 'node',
+    target: 'node22',
+    outdir: path.join(__dirname, '../dist-electron'),
+    external: ['electron'],
+    format: 'cjs',
+    sourcemap: true,
+  };
+
   // Perform initial sync build
-  await esbuild.build(options);
+  await esbuild.build(mainOptions);
+  await esbuild.build(preloadOptions);
   console.log('Initial build complete.');
 
   console.log('Starting CORS proxy...');
@@ -66,14 +75,14 @@ async function start() {
     startElectron();
   }
 
-  // Create watch context
-  const watchContext = await esbuild.context({
-    ...options,
+  // Create watch contexts
+  const mainContext = await esbuild.context({
+    ...mainOptions,
     plugins: [{
-      name: 'rebuild-notify',
+      name: 'rebuild-notify-main',
       setup(build) {
         build.onEnd((result) => {
-          console.log('Electron scripts rebuilt.');
+          console.log('Electron main script rebuilt.');
           if (electronProcess) {
             restartElectron();
           }
@@ -82,7 +91,23 @@ async function start() {
     }]
   });
 
-  await watchContext.watch();
+  const preloadContext = await esbuild.context({
+    ...preloadOptions,
+    plugins: [{
+      name: 'rebuild-notify-preload',
+      setup(build) {
+        build.onEnd((result) => {
+          console.log('Electron preload script rebuilt.');
+          if (electronProcess) {
+            restartElectron();
+          }
+        });
+      }
+    }]
+  });
+
+  await mainContext.watch();
+  await preloadContext.watch();
   console.log('Watcher active for Electron scripts.');
 
   function cleanup() {
@@ -90,7 +115,8 @@ async function start() {
     try { proxyProcess.kill('SIGINT'); } catch(e) {}
     try { viteProcess.kill('SIGINT'); } catch(e) {}
     try { if (electronProcess) electronProcess.kill('SIGINT'); } catch(e) {}
-    try { watchContext.dispose(); } catch(e) {}
+    try { mainContext.dispose(); } catch(e) {}
+    try { preloadContext.dispose(); } catch(e) {}
   }
 
   // Wait 2.5s for Vite server to start before opening Electron

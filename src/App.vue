@@ -5,6 +5,7 @@
     <Sidebar 
       v-model="currentPage" 
       :active-playlist-name="activePlaylistName" 
+      :is-playlist-updating="isActivePlaylistUpdating"
       :recent-streams="recentStreams"
       @remove-recent="onRemoveRecentStream"
       @play-stream="onPlayStream"
@@ -26,7 +27,7 @@
         :class="$vuetify.display.mobile ? 'flex-column-reverse' : 'flex-row'"
       >
         <!-- Left Pane: Main App Components -->
-        <div class="flex-grow-1 min-width-0 h-100 position-relative overflow-y-auto">
+        <div class="flex-grow-1 min-width-0 h-100 position-relative overflow-y-auto" style="overflow-x: hidden;">
           <KeepAlive>
             <component 
               :is="activeComponent" 
@@ -75,7 +76,7 @@
 
                 <!-- EPG Programme Info -->
                 <div v-if="activeChannelEpg.current" class="mt-2">
-                  <div class="text-caption text-secondary font-weight-bold mb-1">🔴 NO AR AGORA</div>
+                  <div class="text-caption text-secondary font-weight-bold mb-1">🔴 {{ $t('streamBrowser.onAirNow') }}</div>
                   <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.current.title }}</div>
                   <p v-if="activeChannelEpg.current.desc" class="text-caption text-medium-emphasis mb-2 leading-relaxed text-line-clamp">
                     {{ activeChannelEpg.current.desc }}
@@ -88,23 +89,23 @@
                 </div>
 
                 <div v-if="activeChannelEpg.next" class="mt-2 pt-2 border-top">
-                  <div class="text-caption text-medium-emphasis font-weight-bold mb-1">PRÓXIMO PROGRAMA</div>
+                  <div class="text-caption text-medium-emphasis font-weight-bold mb-1">{{ $t('streamBrowser.nextProg') }}</div>
                   <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.next.title }}</div>
                   <div class="text-caption text-medium-emphasis">
-                    Começa às {{ formatEpgTime(activeChannelEpg.next.start) }}
+                    {{ $t('streamBrowser.startsAt', { time: formatEpgTime(activeChannelEpg.next.start) }) }}
                   </div>
                 </div>
 
                 <!-- Description for Movies / Series VOD -->
                 <div v-if="activeChannel.plot" class="mt-2 pt-2 border-top">
-                  <div class="text-caption text-secondary font-weight-bold mb-1">SINOPSE</div>
+                  <div class="text-caption text-secondary font-weight-bold mb-1">{{ $t('streamBrowser.movieDetails.sinopse') }}</div>
                   <p class="text-caption text-medium-emphasis leading-relaxed mb-0">
                     {{ activeChannel.plot }}
                   </p>
                 </div>
 
                 <div v-if="!activeChannelEpg.current && !activeChannel.plot" class="text-caption text-medium-emphasis italic text-center py-2">
-                  Nenhum detalhe de programação disponível para este canal.
+                  {{ $t('streamBrowser.noEpgShort') }}
                 </div>
               </v-card>
             </div>
@@ -126,9 +127,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
+
+const { t, locale } = useI18n();
 
 // Import UI components
 import Sidebar from '@/components/Sidebar.vue';
@@ -146,6 +150,37 @@ const activePlaylistId = ref<number | null>(null);
 const activePlaylistName = ref<string | null>(null);
 const hasPlaylists = ref(false);
 const recentStreams = ref<IPTVChannel[]>([]);
+
+// Background playlist update states
+const updatingPlaylistIds = ref<number[]>([]);
+
+const isActivePlaylistUpdating = computed(() => {
+  return activePlaylistId.value !== null && updatingPlaylistIds.value.includes(activePlaylistId.value);
+});
+
+const handlePlaylistUpdating = (e: Event) => {
+  const customEvent = e as CustomEvent<{ playlistId: number }>;
+  const id = customEvent.detail?.playlistId;
+  if (id && !updatingPlaylistIds.value.includes(id)) {
+    updatingPlaylistIds.value.push(id);
+  }
+};
+
+const handlePlaylistUpdated = (e: Event) => {
+  const customEvent = e as CustomEvent<{ playlistId: number }>;
+  const id = customEvent.detail?.playlistId;
+  if (id) {
+    updatingPlaylistIds.value = updatingPlaylistIds.value.filter(x => x !== id);
+  }
+};
+
+const handlePlaylistUpdateFailed = (e: Event) => {
+  const customEvent = e as CustomEvent<{ playlistId: number }>;
+  const id = customEvent.detail?.playlistId;
+  if (id) {
+    updatingPlaylistIds.value = updatingPlaylistIds.value.filter(x => x !== id);
+  }
+};
 
 // Global Video Player States
 const activeChannel = ref<IPTVChannel | null>(null);
@@ -166,6 +201,13 @@ const loadActiveChannelEpg = async () => {
 
 watch(activeChannel, () => {
   loadActiveChannelEpg();
+});
+
+watch(currentPage, (newVal, oldVal) => {
+  const categories = ['live', 'movie', 'series'];
+  if (categories.includes(newVal) && categories.includes(oldVal)) {
+    onClosePlayer();
+  }
 });
 
 const formatEpgTime = (timestamp: number) => {
@@ -193,7 +235,21 @@ const loadRecentStreams = async () => {
 };
 
 onMounted(async () => {
+  window.addEventListener('playlist-updating', handlePlaylistUpdating);
+  window.addEventListener('playlist-updated', handlePlaylistUpdated);
+  window.addEventListener('playlist-update-failed', handlePlaylistUpdateFailed);
+
   await db.init();
+
+  // Load language setting
+  try {
+    const savedLang = await db.getSetting('language');
+    if (savedLang) {
+      locale.value = savedLang;
+    }
+  } catch (err) {
+    console.error('Error loading language setting:', err);
+  }
   
   // Migrate old AllOrigins proxy setting to local proxy
   try {
@@ -229,6 +285,12 @@ onMounted(async () => {
 
   // Check and run automatic playlist updates in the background
   PlaylistUpdater.checkAndRunAutoUpdates();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('playlist-updating', handlePlaylistUpdating);
+  window.removeEventListener('playlist-updated', handlePlaylistUpdated);
+  window.removeEventListener('playlist-update-failed', handlePlaylistUpdateFailed);
 });
 
 const checkActivePlaylist = async () => {
@@ -364,13 +426,13 @@ const browserType = computed(() => {
 });
 
 const getPageTitle = () => {
-  if (currentPage.value === 'live') return 'Canais ao Vivo';
-  if (currentPage.value === 'movie') return 'Filmes (VOD)';
-  if (currentPage.value === 'series') return 'Séries (VOD)';
-  if (currentPage.value === 'epg') return 'Grade EPG';
-  if (currentPage.value === 'favorites') return 'Favoritos';
-  if (currentPage.value === 'settings') return 'Configurações';
-  return 'Listas M3U / APIs';
+  if (currentPage.value === 'live') return t('sidebar.liveTv');
+  if (currentPage.value === 'movie') return t('sidebar.movies');
+  if (currentPage.value === 'series') return t('sidebar.series');
+  if (currentPage.value === 'epg') return t('sidebar.epg');
+  if (currentPage.value === 'favorites') return t('sidebar.favorites');
+  if (currentPage.value === 'settings') return t('sidebar.settings');
+  return t('sidebar.managePlaylists');
 };
 </script>
 
@@ -404,6 +466,7 @@ html, body {
 .text-glow-small {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 8px rgba(255, 224, 130, 0.2));
 }

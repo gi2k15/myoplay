@@ -13,11 +13,10 @@
         >mdi-picture-in-picture-bottom-right</v-icon
       >
       <div class="text-subtitle-1 font-weight-bold text-glow-small mb-1">
-        Pop-out Ativo
+        {{ $t('videoPlayer.pipActive') }}
       </div>
       <p class="text-caption text-medium-emphasis mb-4 max-width-280">
-        O canal <strong class="text-secondary">{{ channel.name }}</strong> está
-        sendo exibido em uma janela externa sempre no topo.
+        {{ $t('videoPlayer.pipDesc', { name: channel.name }) }}
       </p>
       <v-btn
         size="small"
@@ -26,7 +25,7 @@
         class="text-uppercase font-weight-bold shadow-btn"
         @click="closePip"
       >
-        Trazer de Volta
+        {{ $t('videoPlayer.pipBringBack') }}
       </v-btn>
     </div>
 
@@ -85,8 +84,8 @@
         <span class="text-caption font-weight-bold text-glow-small">
           {{
             isConnecting
-              ? `Conectando (Tentativa ${retryCount}/5)...`
-              : "Carregando stream..."
+              ? $t('videoPlayer.connecting', { attempt: retryCount })
+              : $t('videoPlayer.loadingStream')
           }}
         </span>
       </div>
@@ -98,21 +97,21 @@
       >
         <v-icon size="48" color="error" class="mb-2">mdi-alert-circle</v-icon>
         <div class="text-subtitle-2 font-weight-bold mb-1">
-          Erro de Reprodução
+          {{ $t('videoPlayer.playbackError') }}
         </div>
         <p class="text-caption text-medium-emphasis mb-3 max-width-280">
           {{ errorState }}
         </p>
         <div class="d-flex gap-2">
           <v-btn size="x-small" color="primary" @click="initializePlayer"
-            >Tentar Novamente</v-btn
+            >{{ $t('videoPlayer.retryBtn') }}</v-btn
           >
           <v-btn
             size="x-small"
             color="secondary"
             variant="outlined"
             @click="showStats = !showStats"
-            >Diagnóstico</v-btn
+            >{{ $t('videoPlayer.diagnosticsBtn') }}</v-btn
           >
         </div>
       </div>
@@ -124,7 +123,7 @@
         variant="flat"
       >
         <div class="d-flex align-center justify-space-between mb-2">
-          <strong>Estatísticas do Stream</strong>
+          <strong>{{ $t('videoPlayer.stats.title') }}</strong>
           <v-btn
             icon="mdi-close"
             size="x-small"
@@ -133,34 +132,34 @@
           />
         </div>
         <div>
-          Nome: <span class="text-secondary">{{ channel.name }}</span>
+          {{ $t('videoPlayer.stats.name') }}: <span class="text-secondary">{{ channel.name }}</span>
         </div>
         <div>
-          Tipo:
+          {{ $t('videoPlayer.stats.type') }}:
           <span class="text-secondary">{{ channel.type.toUpperCase() }}</span>
         </div>
         <div>
-          Resolução:
+          {{ $t('videoPlayer.stats.resolution') }}:
           <span class="text-secondary">{{ videoWidth }}x{{ videoHeight }}</span>
         </div>
         <div>
-          Motor:
+          {{ $t('videoPlayer.stats.engine') }}:
           <span class="text-secondary">{{
             hlsInstance ? "Hls.js (MSE)" : "Nativo"
           }}</span>
         </div>
         <div>
-          Modo de Buffer:
+          {{ $t('videoPlayer.stats.bufferMode') }}:
           <span class="text-secondary">{{
             playerBufferMode === "stable"
-              ? "Alta Estabilidade"
+              ? $t('videoPlayer.stats.stable')
               : playerBufferMode === "balanced"
-                ? "Balanceado"
-                : "Baixa Latência"
+                ? $t('videoPlayer.stats.balanced')
+                : $t('videoPlayer.stats.lowLatency')
           }}</span>
         </div>
         <div class="text-truncate" :title="channel.streamUrl">
-          Link original:
+          {{ $t('videoPlayer.stats.originalLink') }}:
           <span class="text-secondary text-caption">{{
             channel.streamUrl
           }}</span>
@@ -170,7 +169,7 @@
           class="text-truncate text-warning font-weight-bold"
           :title="activePlayUrl"
         >
-          CORS Proxy: <span class="text-warning text-caption">Ativo</span>
+          {{ $t('videoPlayer.stats.corsProxy') }}: <span class="text-warning text-caption">{{ $t('videoPlayer.stats.active') }}</span>
         </div>
         <v-alert
           v-if="channel.streamUrl.includes('.ts')"
@@ -180,7 +179,7 @@
           class="mt-2 text-caption py-1 px-2"
           hide-details
         >
-          Streams .ts podem requerer CORS Proxy ou suporte nativo no navegador.
+          {{ $t('videoPlayer.tsWarning') }}
         </v-alert>
       </v-card>
 
@@ -217,7 +216,7 @@
                 variant="text"
                 color="white"
                 size="small"
-                title="Diagnóstico"
+                :title="$t('videoPlayer.diagnosticsBtn')"
                 @click="showStats = !showStats"
               />
               <!-- Pop-out Toggle (Picture-in-Picture) -->
@@ -231,7 +230,7 @@
                 color="white"
                 size="small"
                 :title="
-                  isPipActive ? 'Trazer de Volta' : 'Pop-out (Sempre no Topo)'
+                  isPipActive ? $t('videoPlayer.pipBringBack') : $t('videoPlayer.pipToggle')
                 "
                 @click="togglePip"
               />
@@ -242,7 +241,7 @@
                 variant="text"
                 color="white"
                 size="small"
-                :title="floating ? 'Maximizar Player' : 'Modo Flutuante'"
+                :title="floating ? $t('videoPlayer.fullscreen') : $t('videoPlayer.floatToggle')"
                 @click="$emit('toggle-float')"
               />
               <!-- Close / Stop Button -->
@@ -251,7 +250,7 @@
                 variant="text"
                 color="error"
                 size="small"
-                title="Fechar Player"
+                :title="$t('common.close')"
                 @click="onClosePlayer"
               />
             </div>
@@ -259,8 +258,8 @@
 
           <!-- Center Play Overlay Indicator (Only for normal view) -->
           <div
-            v-if="!floating"
-            class="d-flex align-center justify-center flex-grow-1"
+            v-if="!floating && !errorState"
+            class="d-flex align-center justify-center flex-grow-1 click-to-play"
             @click="togglePlay"
           >
             <v-btn
@@ -274,14 +273,15 @@
 
           <!-- Bottom Controls Bar -->
           <div class="pa-3 bottom-gradient">
-            <!-- Timeline progress bar (For VOD movies or series) -->
-            <div v-if="!isLive" class="px-2 mb-2 d-flex align-center gap-2">
+            <!-- Timeline progress bar (For VOD movies/series or live streams with DVR) -->
+            <div v-if="!isLive || hasLiveDVR" class="px-2 mb-2 d-flex align-center gap-2">
               <span class="text-caption text-white">{{
-                formatTimelineTime(currentTime)
+                isLive ? formatLiveRelativeTime() : formatTimelineTime(currentTime)
               }}</span>
               <v-slider
                 v-model="currentTime"
-                :max="duration || 100"
+                :min="isLive ? liveSeekableStart : 0"
+                :max="isLive ? liveSeekableEnd : (duration || 100)"
                 color="secondary"
                 track-color="rgba(255, 255, 255, 0.2)"
                 hide-details
@@ -289,7 +289,7 @@
                 @update:model-value="onTimelineSeek"
               />
               <span class="text-caption text-white">{{
-                formatTimelineTime(duration)
+                isLive ? 'Live' : formatTimelineTime(duration)
               }}</span>
             </div>
 
@@ -303,6 +303,28 @@
                   color="white"
                   size="small"
                   @click="togglePlay"
+                />
+
+                <!-- Rewind 10 seconds -->
+                <v-btn
+                  v-if="!isLive || hasLiveDVR"
+                  icon="mdi-rewind-10"
+                  variant="text"
+                  color="white"
+                  size="small"
+                  :title="$t('videoPlayer.rewind10')"
+                  @click="seekRelative(-10)"
+                />
+
+                <!-- Forward 10 seconds -->
+                <v-btn
+                  v-if="!isLive || hasLiveDVR"
+                  icon="mdi-fast-forward-10"
+                  variant="text"
+                  color="white"
+                  size="small"
+                  :title="$t('videoPlayer.forward10')"
+                  @click="seekRelative(10)"
                 />
 
                 <!-- Volume Control -->
@@ -337,10 +359,18 @@
                 <v-chip
                   v-if="isLive"
                   size="x-small"
-                  color="error"
-                  class="ml-2 px-2 font-weight-bold uppercase-tag animate-pulse"
+                  :color="isAtLiveEdge ? 'error' : 'grey-darken-2'"
+                  :class="{
+                    'ml-2 px-2 font-weight-bold uppercase-tag': true,
+                    'animate-pulse': isAtLiveEdge
+                  }"
+                  style="transition: all 0.3s ease;"
+                  :title="isAtLiveEdge ? undefined : $t('videoPlayer.goToLiveBtn')"
+                  @click="!isAtLiveEdge && goToLive()"
                 >
-                  🔴 AO VIVO
+                  <v-icon v-if="!isAtLiveEdge" start size="10" class="mr-1">mdi-play-circle</v-icon>
+                  <span v-if="isAtLiveEdge">🔴 {{ $t('tvGuide.liveTag') }}</span>
+                  <span v-else>{{ $t('videoPlayer.goToLiveBtn') }}</span>
                 </v-chip>
               </div>
 
@@ -358,7 +388,7 @@
                       variant="text"
                       color="white"
                       size="small"
-                      title="Modo de Buffer / Estabilidade"
+                      :title="$t('videoPlayer.stats.bufferMode')"
                       v-bind="props"
                     />
                   </template>
@@ -389,7 +419,7 @@
                       variant="text"
                       color="white"
                       size="small"
-                      title="Proporção da Tela"
+                      :title="$t('videoPlayer.aspectRatio')"
                       v-bind="props"
                     />
                   </template>
@@ -417,7 +447,7 @@
                   variant="text"
                   color="white"
                   size="small"
-                  title="Tela Cheia"
+                  :title="$t('videoPlayer.fullscreen')"
                   @click="toggleFullscreen"
                 />
               </div>
@@ -431,6 +461,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { useI18n } from "vue-i18n";
 import Hls from "hls.js";
 import mpegts from "mpegts.js";
 import { db, type IPTVChannel } from "@/services/db";
@@ -446,6 +477,8 @@ const emit = defineEmits<{
   (e: "close-player"): void;
   (e: "toggle-float"): void;
 }>();
+
+const { t } = useI18n();
 
 // Video Element and Container Refs
 const videoRef = ref<HTMLVideoElement | null>(null);
@@ -500,23 +533,68 @@ const duration = ref(0);
 const volume = ref(0.8);
 const isMuted = ref(false);
 
+// Live DVR / Time-shift Support
+const liveSeekableStart = ref(0);
+const liveSeekableEnd = ref(0);
+const hasLiveDVR = ref(false);
+
+const isAtLiveEdge = computed(() => {
+  if (!isLive.value) return false;
+  if (!videoRef.value) return true;
+  if (!hasLiveDVR.value) return true;
+  const threshold = 5; // 5 seconds safe window to be considered "Live"
+  return (liveSeekableEnd.value - currentTime.value) < threshold;
+});
+
+const goToLive = () => {
+  if (videoRef.value && videoRef.value.seekable && videoRef.value.seekable.length > 0) {
+    const end = videoRef.value.seekable.end(0);
+    // Seek to live edge minus a small safe offset (e.g. 1 second) to avoid freezing/buffering
+    videoRef.value.currentTime = Math.max(videoRef.value.seekable.start(0), end - 1);
+  }
+};
+
+const seekRelative = (offsetSeconds: number) => {
+  if (!videoRef.value) return;
+  let target = videoRef.value.currentTime + offsetSeconds;
+  
+  if (isLive.value) {
+    target = Math.max(liveSeekableStart.value, Math.min(liveSeekableEnd.value, target));
+  } else {
+    target = Math.max(0, Math.min(duration.value, target));
+  }
+  
+  videoRef.value.currentTime = target;
+  currentTime.value = target;
+};
+
+const formatLiveRelativeTime = () => {
+  if (!videoRef.value || !hasLiveDVR.value) return "";
+  if (isAtLiveEdge.value) {
+    return t('tvGuide.liveTag');
+  }
+  const diff = liveSeekableEnd.value - currentTime.value;
+  if (diff <= 0) return "";
+  return `-${formatTimelineTime(diff)}`;
+};
+
 const videoWidth = ref(0);
 const videoHeight = ref(0);
 
 // Playback Options
 const aspectRatio = ref("fit"); // fit, fill, 16-9, 4-3
-const aspectRatios = [
-  { label: "Ajustar Tela (Padrão)", value: "fit" },
-  { label: "Esticar (Stretch)", value: "fill" },
-  { label: "16:9 widescreen", value: "16-9" },
-  { label: "4:3 clássico", value: "4-3" },
-];
+const aspectRatios = computed(() => [
+  { label: t('settings.playback.aspectRatioOptions.fit'), value: "fit" },
+  { label: t('settings.playback.aspectRatioOptions.fill'), value: "fill" },
+  { label: t('settings.playback.aspectRatioOptions.widescreen'), value: "16-9" },
+  { label: t('settings.playback.aspectRatioOptions.classic'), value: "4-3" },
+]);
 
-const bufferModes = [
-  { title: "Baixa Latência (Rápido)", value: "low-latency" },
-  { title: "Balanceado (Normal)", value: "balanced" },
-  { title: "Alta Estabilidade (Lento)", value: "stable" },
-];
+const bufferModes = computed(() => [
+  { title: t('settings.playback.bufferOptions.lowLatency'), value: "low-latency" },
+  { title: t('settings.playback.bufferOptions.balanced'), value: "balanced" },
+  { title: t('settings.playback.bufferOptions.stable'), value: "stable" },
+]);
 
 const changeBufferMode = async (mode: string) => {
   playerBufferMode.value = mode;
@@ -558,6 +636,8 @@ const isHealing = ref(false);
 let isHandlingError = false;
 let lastErrorCode: number | null = null;
 
+let resizeObserver: ResizeObserver | null = null;
+
 onMounted(async () => {
   await loadSettings();
   initializePlayer();
@@ -565,6 +645,26 @@ onMounted(async () => {
 
   // Listen for Fullscreen changes
   document.addEventListener("fullscreenchange", onFullscreenChange);
+
+  // Setup ResizeObserver for floating player to save dimensions
+  if (props.floating && playerContainerRef.value) {
+    const savedWidth = await db.getSetting("floating_player_width", 480);
+    const savedHeight = await db.getSetting("floating_player_height", 270);
+    playerContainerRef.value.style.width = `${savedWidth}px`;
+    playerContainerRef.value.style.height = `${savedHeight}px`;
+
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // Don't save if width/height are too small or close to 0 (e.g. hidden/unmounted)
+        if (width > 50 && height > 50) {
+          db.setSetting("floating_player_width", Math.round(width));
+          db.setSetting("floating_player_height", Math.round(height));
+        }
+      }
+    });
+    resizeObserver.observe(playerContainerRef.value);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -574,6 +674,10 @@ onBeforeUnmount(() => {
   document.removeEventListener("fullscreenchange", onFullscreenChange);
   if (retryTimeout) clearTimeout(retryTimeout);
   if (controlsTimeout) clearTimeout(controlsTimeout);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
 });
 
 // Watch for stream URL change
@@ -981,14 +1085,35 @@ const handlePlaybackError = (code?: number) => {
 
 // --- TIMELINE TRACKERS ---
 const onTimeUpdate = () => {
-  if (videoRef.value && !isLive.value) {
+  if (!videoRef.value) return;
+
+  if (!isLive.value) {
+    currentTime.value = videoRef.value.currentTime;
+  } else {
+    const seekable = videoRef.value.seekable;
+    if (seekable && seekable.length > 0) {
+      const start = seekable.start(0);
+      const end = seekable.end(0);
+      const dvrWindow = end - start;
+      if (dvrWindow > 15) {
+        liveSeekableStart.value = start;
+        liveSeekableEnd.value = end;
+        hasLiveDVR.value = true;
+      } else {
+        hasLiveDVR.value = false;
+      }
+    } else {
+      hasLiveDVR.value = false;
+    }
     currentTime.value = videoRef.value.currentTime;
   }
 };
 
 const onTimelineSeek = (time: number) => {
-  if (videoRef.value && !isLive.value) {
-    videoRef.value.currentTime = time;
+  if (videoRef.value) {
+    if (!isLive.value || hasLiveDVR.value) {
+      videoRef.value.currentTime = time;
+    }
   }
 };
 
@@ -1104,6 +1229,18 @@ const handleKeyDown = (e: KeyboardEvent) => {
     case "arrowdown":
       e.preventDefault();
       volume.value = Math.max(0, volume.value - 0.1);
+      break;
+    case "arrowleft":
+      e.preventDefault();
+      if (!isLive.value || hasLiveDVR.value) {
+        seekRelative(-10);
+      }
+      break;
+    case "arrowright":
+      e.preventDefault();
+      if (!isLive.value || hasLiveDVR.value) {
+        seekRelative(10);
+      }
       break;
   }
 };
@@ -1297,13 +1434,18 @@ const onClosePlayer = () => {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 320px;
-  height: 180px;
-  min-height: 180px !important;
+  width: 480px;
+  height: 270px;
+  min-width: 320px;
+  min-height: 180px;
+  max-width: 90vw;
+  max-height: 90vh;
   z-index: 999;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 193, 7, 0.5) !important;
+  resize: both;
+  overflow: hidden;
 }
 
 .video-poster-overlay,
@@ -1339,6 +1481,7 @@ const onClosePlayer = () => {
   height: 100%;
   z-index: 5;
   background: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
 }
 
 .top-gradient {
@@ -1347,6 +1490,7 @@ const onClosePlayer = () => {
     rgba(0, 0, 0, 0.8) 0%,
     rgba(0, 0, 0, 0) 100%
   );
+  pointer-events: auto;
 }
 
 .bottom-gradient {
@@ -1355,6 +1499,11 @@ const onClosePlayer = () => {
     rgba(0, 0, 0, 0.8) 0%,
     rgba(0, 0, 0, 0) 100%
   );
+  pointer-events: auto;
+}
+
+.click-to-play {
+  pointer-events: auto;
 }
 
 .play-center-btn {
@@ -1367,7 +1516,7 @@ const onClosePlayer = () => {
 }
 
 .volume-slider-container {
-  width: 45px;
+  width: 36px;
   overflow: hidden;
   transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
@@ -1378,6 +1527,14 @@ const onClosePlayer = () => {
 
 .volume-slider {
   width: 70px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.volume-slider-container:hover .volume-slider {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .stats-panel {

@@ -12,7 +12,7 @@
         style="max-height: calc(100vh - 64px); overflow-y: auto;"
       >
         <div class="d-flex align-center justify-space-between mb-4">
-          <h3 class="text-subtitle-1 font-weight-bold uppercase-title">Categorias</h3>
+          <h3 class="text-subtitle-1 font-weight-bold uppercase-title">{{ $t('streamBrowser.categoriesTitle') }}</h3>
           <div class="d-flex align-center gap-1">
             <!-- Desktop Collapse Button -->
             <v-btn
@@ -21,7 +21,7 @@
               variant="text"
               size="small"
               @click="categoriesCollapsed = true"
-              title="Recolher categorias"
+              :title="$t('streamBrowser.collapseCategories')"
             />
             <!-- Mobile Close Button -->
             <v-btn
@@ -47,7 +47,7 @@
             <template v-slot:prepend>
               <v-icon>mdi-border-all</v-icon>
             </template>
-            <v-list-item-title class="font-weight-medium">Todas as Categorias</v-list-item-title>
+            <v-list-item-title class="font-weight-medium">{{ $t('streamBrowser.allCategories') }}</v-list-item-title>
             <template v-slot:append>
               <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">{{ totalChannelsCount }}</v-chip>
             </template>
@@ -69,7 +69,7 @@
               <v-icon>{{ getCategoryIcon() }}</v-icon>
             </template>
             <v-list-item-title class="font-weight-medium text-truncate" style="max-width: 150px;">
-              {{ cat.name }}
+              {{ cat.name === 'Sem Categoria' ? $t('common.noCategory') : cat.name }}
             </v-list-item-title>
             <template v-slot:append>
               <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">{{ cat.count }}</v-chip>
@@ -114,14 +114,14 @@
                     </v-avatar>
                     <div class="min-width-0">
                       <h3 class="text-subtitle-2 font-weight-bold text-truncate text-glow-small mb-0">{{ activeChannel.name }}</h3>
-                      <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag mt-1">{{ activeChannel.category }}</v-chip>
+                      <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag mt-1">{{ activeChannel.category === 'Sem Categoria' ? $t('common.noCategory') : activeChannel.category }}</v-chip>
                     </div>
                   </div>
 
                   <!-- EPG Current Programme -->
                   <div v-if="activeChannelEpg?.current" class="flex-grow-1 min-width-0 px-sm-4 border-left-sm">
                     <div class="text-caption text-secondary font-weight-bold d-flex align-center mb-1">
-                      <span class="mr-1">🔴</span> NO AR AGORA
+                      <span class="mr-1">🔴</span> {{ $t('streamBrowser.onAirNow') }}
                     </div>
                     <div class="text-body-2 font-weight-bold text-truncate mb-1">
                       {{ activeChannelEpg.current.title }}
@@ -137,16 +137,16 @@
 
                   <!-- EPG Next Programme -->
                   <div v-if="activeChannelEpg?.next" class="flex-grow-1 min-width-0 px-sm-4 border-left-sm hidden-xs-only">
-                    <div class="text-caption text-medium-emphasis font-weight-bold mb-1">PRÓXIMO PROGRAMA</div>
+                    <div class="text-caption text-medium-emphasis font-weight-bold mb-1">{{ $t('streamBrowser.nextProg') }}</div>
                     <div class="text-body-2 font-weight-bold text-truncate mb-1">{{ activeChannelEpg.next.title }}</div>
                     <div class="text-caption text-medium-emphasis">
-                      Começa às {{ formatTime(activeChannelEpg.next.start) }}
+                      {{ $t('streamBrowser.startsAt', { time: formatTime(activeChannelEpg.next.start) }) }}
                     </div>
                   </div>
 
                   <!-- Fallback if no EPG -->
                   <div v-if="!activeChannelEpg?.current" class="text-caption text-medium-emphasis italic py-2 flex-grow-1 text-center">
-                    Nenhum detalhe de programação disponível para este canal.
+                    {{ $t('streamBrowser.noEpgShort') }}
                   </div>
                 </div>
               </v-card>
@@ -159,7 +159,7 @@
             class="player-resize-divider"
             @mousedown="initResize"
             @dblclick="resetResize"
-            title="Arraste para cima/baixo para redimensionar o player. Clique duplo para restaurar o padrão."
+            :title="$t('streamBrowser.resizeTooltip')"
           >
             <div class="resize-handle-line"></div>
           </div>
@@ -186,7 +186,7 @@
                 color="primary"
                 class="mr-2"
                 @click="categoriesCollapsed = false"
-                title="Expandir categorias"
+                :title="$t('streamBrowser.expandCategories')"
               />
               <div>
                 <h2 class="text-h5 font-weight-bold d-flex align-center">
@@ -196,7 +196,7 @@
                   </v-chip>
                 </h2>
                 <div class="text-caption text-medium-emphasis">
-                  {{ selectedCategory === 'all' ? 'Exibindo todos os canais' : `Categoria: ${selectedCategory}` }}
+                  {{ selectedCategory === 'all' ? getBrowserSubtitleAll() : $t('streamBrowser.categoryLabel', { name: selectedCategory === 'Sem Categoria' ? $t('common.noCategory') : selectedCategory }) }}
                 </div>
               </div>
             </div>
@@ -207,7 +207,7 @@
                 v-if="type === 'movie' || type === 'series'"
                 v-model="sortBy"
                 :items="sortOptions"
-                label="Ordenar"
+                :label="$t('streamBrowser.sortOptions.label')"
                 variant="outlined"
                 density="compact"
                 hide-details
@@ -218,13 +218,13 @@
 
               <v-text-field
                 v-model="searchQuery"
-                placeholder="Buscar por nome..."
+                :placeholder="$t('streamBrowser.searchPlaceholder')"
                 variant="outlined"
                 density="compact"
                 prepend-inner-icon="mdi-magnify"
                 hide-details
                 clearable
-                style="max-width: 280px; width: 100%;"
+                width="280px"
                 @update:model-value="resetPagination"
               />
             </div>
@@ -234,14 +234,15 @@
         <!-- Scrollable Channels Container -->
         <div 
           class="flex-grow-1 overflow-y-auto px-4 pb-4 pt-2"
+          style="overflow-x: hidden;"
           @scroll="onScroll"
         >
 
           <!-- No Channels Alert -->
           <div v-if="filteredChannels.length === 0" class="text-center py-12">
             <v-icon size="60" color="medium-emphasis" class="mb-4">mdi-alert-circle-outline</v-icon>
-            <h3 class="text-h6 font-weight-bold text-medium-emphasis">Nenhum canal encontrado</h3>
-            <p class="text-caption text-medium-emphasis">Tente limpar sua busca ou escolha outra categoria.</p>
+            <h3 class="text-h6 font-weight-bold text-medium-emphasis">{{ $t('streamBrowser.noChannelsSearchTitle') }}</h3>
+            <p class="text-caption text-medium-emphasis">{{ $t('streamBrowser.noChannelsSearchDesc') }}</p>
           </div>
 
           <!-- Live Channels View (List Layout) -->
@@ -352,7 +353,7 @@
                   <v-btn
                     :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
                     :color="isFavorite(ch.id) ? 'warning' : 'white'"
-                    variant="flat"
+                    variant="text"
                     size="x-small"
                     class="favorite-overlay-btn"
                     @click.stop="toggleFavorite(ch.id)"
@@ -418,7 +419,7 @@
                   <v-btn
                     :icon="isFavorite(ch.id) ? 'mdi-star' : 'mdi-star-outline'"
                     :color="isFavorite(ch.id) ? 'warning' : 'white'"
-                    variant="flat"
+                    variant="text"
                     size="x-small"
                     class="favorite-overlay-btn"
                     @click.stop="toggleFavorite(ch.id)"
@@ -464,7 +465,7 @@
           <v-btn icon="mdi-close" variant="text" size="small" @click="seriesDialog = false" />
         </div>
 
-        <v-row class="ma-0 mb-6">
+        <v-row class="ma-0 mb-6 series-details-row">
           <!-- Series Cover -->
           <v-col cols="12" sm="4" class="pa-2">
             <v-img 
@@ -480,20 +481,34 @@
           </v-col>
 
           <!-- Series Meta Info -->
-          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-center">
+          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start series-details-col">
             <h2 class="text-h4 font-weight-bold mb-2 text-glow-small">{{ selectedSeries.name }}</h2>
             <div class="d-flex align-center mb-4 gap-2 flex-wrap">
               <v-chip size="small" color="primary" class="font-weight-bold">{{ selectedSeries.category }}</v-chip>
               <v-chip v-if="selectedSeries.rating" size="small" color="secondary" class="font-weight-bold">★ {{ selectedSeries.rating }}</v-chip>
               <v-chip v-if="selectedSeries.year" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedSeries.year }}</v-chip>
+              
+              <!-- Favorite Button -->
+              <v-btn
+                :prepend-icon="isFavorite(selectedSeries.id) ? 'mdi-star' : 'mdi-star-outline'"
+                :color="isFavorite(selectedSeries.id) ? 'warning' : 'medium-emphasis'"
+                variant="outlined"
+                size="small"
+                class="ml-sm-auto"
+                @click="toggleFavorite(selectedSeries.id)"
+              >
+                {{ isFavorite(selectedSeries.id) ? $t('streamBrowser.movieDetails.favorited') : $t('streamBrowser.movieDetails.favorite') }}
+              </v-btn>
             </div>
             
-            <p v-if="selectedSeries.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height">
-              {{ selectedSeries.plot }}
-            </p>
-            <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
-              Nenhuma descrição disponível para esta série.
-            </p>
+            <div class="flex-grow-1 mb-0 d-flex flex-column overflow-hidden">
+              <p v-if="selectedSeries.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height">
+                {{ selectedSeries.plot }}
+              </p>
+              <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
+                Nenhuma descrição disponível para esta série.
+              </p>
+            </div>
           </v-col>
         </v-row>
 
@@ -501,24 +516,24 @@
 
         <!-- Seasons and Episodes Hub -->
         <h3 class="text-h6 font-weight-bold mb-3 d-flex align-center">
-          <v-icon start color="secondary">mdi-folder-play</v-icon> Temporadas & Episódios
+          <v-icon start color="secondary">mdi-folder-play</v-icon> {{ $t('streamBrowser.seriesDetails.seasons') }} & {{ $t('streamBrowser.seriesDetails.episodes') }}
         </h3>
 
         <!-- Loading Episodes Circular -->
         <div v-if="loadingEpisodes" class="text-center py-8">
           <v-progress-circular color="primary" indeterminate size="40" class="mb-2" />
-          <div class="text-caption text-medium-emphasis">Buscando episódios no servidor...</div>
+          <div class="text-caption text-medium-emphasis">{{ $t('streamBrowser.seriesDetails.loadingEpisodes') }}</div>
         </div>
 
         <div v-else-if="Object.keys(seasonsData).length === 0" class="text-center py-8 text-medium-emphasis">
-          Nenhum episódio cadastrado neste servidor Xtream.
+          {{ $t('streamBrowser.seriesDetails.noEpisodes') }}
         </div>
 
         <div v-else>
           <!-- Season Tabs -->
           <v-tabs v-model="activeSeason" color="secondary" class="border-bottom mb-4">
             <v-tab v-for="season in sortedSeasons" :key="season" :value="season">
-              Temporada {{ season }}
+              {{ $t('streamBrowser.seriesDetails.seasonLabel', { season }) }}
             </v-tab>
           </v-tabs>
 
@@ -571,7 +586,7 @@
           <v-btn icon="mdi-close" variant="text" size="small" @click="movieDialog = false" />
         </div>
 
-        <v-row class="ma-0 mb-4">
+        <v-row class="ma-0 mb-4 movie-details-row">
           <!-- Poster do Filme -->
           <v-col cols="12" sm="4" class="pa-2">
             <v-img 
@@ -587,7 +602,7 @@
           </v-col>
 
           <!-- Informações de Metadados do Filme -->
-          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start">
+          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start movie-details-col">
             <h2 class="text-h4 font-weight-bold mb-2 text-glow-small">{{ selectedMovie.name }}</h2>
             
             <div class="d-flex align-center mb-4 gap-2 flex-wrap">
@@ -597,24 +612,24 @@
               <v-chip v-if="selectedMovie.duration" size="small" color="secondary" variant="tonal" class="font-weight-bold">{{ selectedMovie.duration }} min</v-chip>
             </div>
 
-            <!-- Gênero e Diretor (vindo de APIs como OMDb) -->
-            <div v-if="selectedMovie.genre || selectedMovie.director" class="mb-4 text-caption text-medium-emphasis">
-              <span v-if="selectedMovie.genre" class="mr-3"><strong>Gênero:</strong> {{ selectedMovie.genre }}</span>
-              <span v-if="selectedMovie.director"><strong>Diretor:</strong> {{ selectedMovie.director }}</span>
+            <!-- Gênero e Diretor -->
+            <div v-if="selectedMovie.genre || selectedMovie.director" class="ma-0 mb-4 text-caption text-medium-emphasis">
+              <span v-if="selectedMovie.genre" class="mr-3"><strong>{{ $t('common.category') }}:</strong> {{ selectedMovie.genre }}</span>
+              <span v-if="selectedMovie.director"><strong>{{ $t('streamBrowser.movieDetails.directorLabel') }}</strong> {{ selectedMovie.director }}</span>
             </div>
             
             <!-- Sinopse -->
-            <div class="flex-grow-1 mb-6">
-              <h4 class="text-subtitle-2 font-weight-bold text-glow-small mb-2">Sinopse</h4>
+            <div class="flex-grow-1 mb-6 d-flex flex-column overflow-hidden">
+              <h4 class="text-subtitle-2 font-weight-bold text-glow-small mb-2">{{ $t('streamBrowser.movieDetails.sinopse') }}</h4>
               <p v-if="selectedMovie.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height-movie">
                 {{ selectedMovie.plot }}
               </p>
               <p v-else-if="loadingMovieInfo" class="text-body-2 text-medium-emphasis mb-0 italic">
                 <v-progress-circular size="16" width="2" color="secondary" indeterminate class="mr-2" />
-                Buscando sinopse e detalhes online...
+                {{ $t('streamBrowser.movieDetails.loadingOnline') }}
               </p>
               <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
-                Nenhuma sinopse disponível para este filme.
+                {{ $t('streamBrowser.movieDetails.noSynopsis') }}
               </p>
             </div>
 
@@ -635,7 +650,7 @@
                   class="play-btn-glow"
                   @click="playMovie(selectedMovie)"
                 >
-                  Assistir
+                  {{ $t('streamBrowser.movieDetails.watchBtn') }}
                 </v-btn>
 
                 <!-- Botão Favoritar -->
@@ -646,7 +661,7 @@
                   size="large"
                   @click="toggleFavorite(selectedMovie.id)"
                 >
-                  {{ isFavorite(selectedMovie.id) ? 'Favoritado' : 'Favoritar' }}
+                  {{ isFavorite(selectedMovie.id) ? $t('streamBrowser.movieDetails.favorited') : $t('streamBrowser.movieDetails.favorite') }}
                 </v-btn>
               </div>
 
@@ -659,22 +674,24 @@
                 :loading="loadingMovieInfo"
                 @click="forceSearchMetadata"
               >
-                Buscar Metadados
+                {{ $t('streamBrowser.movieDetails.fetchMetadata') }}
               </v-btn>
             </div>
           </v-col>
         </v-row>
       </v-card>
     </v-dialog>
-
   </v-container>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
 import VideoPlayer from '@/components/VideoPlayer.vue';
+
+const { t } = useI18n();
 
 const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
 
@@ -710,12 +727,12 @@ watch(sortBy, (val) => {
   localStorage.setItem('movie_sort_by', val);
 });
 
-const sortOptions = [
-  { title: 'Ordem de Adição', value: 'added' },
-  { title: 'Data de Lançamento', value: 'year' },
-  { title: 'Avaliação (Nota)', value: 'rating' },
-  { title: 'Nome (A-Z)', value: 'name' }
-];
+const sortOptions = computed(() => [
+  { title: t('streamBrowser.sortOptions.default'), value: 'added' },
+  { title: t('streamBrowser.sortOptions.yearDesc'), value: 'year' },
+  { title: t('streamBrowser.sortOptions.rating'), value: 'rating' },
+  { title: t('streamBrowser.sortOptions.nameAsc'), value: 'name' }
+]);
 
 const getM3uIndex = (id: string) => {
   const parts = id.split('_');
@@ -952,10 +969,17 @@ const getCategoryIcon = () => {
 };
 
 const getBrowserTitle = () => {
-  if (props.type === 'live') return 'Canais ao Vivo';
-  if (props.type === 'movie') return 'Filmes Disponíveis';
-  if (props.type === 'series') return 'Séries Cadastradas';
-  return 'Seus Canais e Filmes Favoritos';
+  if (props.type === 'live') return t('streamBrowser.titleLive');
+  if (props.type === 'movie') return t('streamBrowser.titleMovie');
+  if (props.type === 'series') return t('streamBrowser.titleSeries');
+  return t('streamBrowser.titleFavorites');
+};
+
+const getBrowserSubtitleAll = () => {
+  if (props.type === 'live') return t('streamBrowser.showingAll');
+  if (props.type === 'movie') return t('streamBrowser.showingAllMovies');
+  if (props.type === 'series') return t('streamBrowser.showingAllSeries');
+  return t('streamBrowser.showingAllFavorites');
 };
 
 // Filtered Channels logic
@@ -1448,10 +1472,10 @@ const playMovie = (movie: IPTVChannel) => {
 }
 
 .favorite-overlay-btn {
-  position: absolute;
+  position: absolute !important;
   top: 8px;
   right: 8px;
-  z-index: 3;
+  z-index: 10 !important;
   background: rgba(0, 0, 0, 0.6) !important;
   backdrop-filter: blur(4px);
   border-radius: 8px;
@@ -1484,6 +1508,7 @@ const playMovie = (movie: IPTVChannel) => {
   opacity: 0;
   z-index: 2;
   transition: all 0.3s ease;
+  pointer-events: none;
 }
 
 .movie-card:hover .play-overlay {
@@ -1497,6 +1522,7 @@ const playMovie = (movie: IPTVChannel) => {
 .text-glow-small {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1516,8 +1542,28 @@ const playMovie = (movie: IPTVChannel) => {
 }
 
 .max-plot-height-movie {
-  max-height: 200px;
+  max-height: 150px;
   overflow-y: auto;
+}
+
+@media (min-width: 600px) {
+  .movie-details-row,
+  .series-details-row {
+    position: relative;
+  }
+  .movie-details-col,
+  .series-details-col {
+    position: absolute !important;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 66.666667% !important;
+  }
+  .max-plot-height-movie,
+  .max-plot-height {
+    max-height: none;
+    flex-grow: 1;
+  }
 }
 
 .max-episodes-height {

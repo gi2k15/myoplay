@@ -44,10 +44,10 @@
     <!-- Recent Streams Section -->
     <div v-if="recentStreams && recentStreams.length > 0" class="recent-section mt-2 px-2">
       <!-- Section Header -->
-      <div v-if="!rail" class="d-flex align-center justify-space-between px-3 py-2 text-caption text-uppercase font-weight-bold text-medium-emphasis letter-spacing-1">
+        <div v-if="!rail" class="d-flex align-center justify-space-between px-3 py-2 text-caption text-uppercase font-weight-bold text-medium-emphasis letter-spacing-1">
         <div class="d-flex align-center gap-2">
           <v-icon size="small" color="secondary">mdi-history</v-icon>
-          <span>Recentes</span>
+          <span>{{ $t('sidebar.recent') }}</span>
         </div>
       </div>
       <div v-else class="text-center py-2">
@@ -122,10 +122,10 @@
               </v-avatar>
               <span class="font-weight-bold text-white">{{ stream.name }}</span>
             </div>
-            <div class="text-caption text-white mb-1">Tipo: {{ formatStreamType(stream.type) }}</div>
-            <div class="text-caption text-medium-emphasis">Clique para assistir</div>
+            <div class="text-caption text-white mb-1">{{ $t('common.type') }}: {{ formatStreamType(stream.type) }}</div>
+            <div class="text-caption text-medium-emphasis">{{ $t('sidebar.clickToWatch') }}</div>
             <div class="text-caption text-error font-weight-bold mt-1" v-if="rail">
-              Clique no 'X' para remover
+              {{ $t('sidebar.removeRecent') }}
             </div>
           </v-tooltip>
         </v-list-item>
@@ -144,12 +144,26 @@
           @click="rail = !rail"
         >
           <v-icon start>{{ rail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left' }}</v-icon>
-          <span v-if="!rail">Recolher</span>
+          <span v-if="!rail">{{ $t('sidebar.collapse') }}</span>
         </v-btn>
 
         <!-- Active Playlist Summary -->
-        <v-list-item v-if="activePlaylistName && !rail" class="playlist-info-card rounded-lg pa-3">
-          <div class="text-caption text-medium-emphasis">Lista Ativa</div>
+        <v-list-item 
+          v-if="activePlaylistName && !rail" 
+          class="playlist-info-card rounded-lg pa-3 transition-all"
+          :class="{ 'updating-card': isPlaylistUpdating }"
+        >
+          <div class="d-flex align-center justify-space-between mb-1">
+            <div class="text-caption text-medium-emphasis">{{ $t('sidebar.activePlaylist') }}</div>
+            <v-icon
+              v-if="isPlaylistUpdating"
+              size="14"
+              color="amber-accent-2"
+              class="spin-sync-icon"
+            >
+              mdi-sync
+            </v-icon>
+          </div>
           <div class="text-subtitle-2 font-weight-bold text-truncate text-secondary">
             {{ activePlaylistName }}
           </div>
@@ -160,12 +174,16 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useDisplay } from 'vuetify';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   modelValue: string; // Current active page value
   activePlaylistName?: string | null;
+  isPlaylistUpdating?: boolean;
   recentStreams?: any[]; // Array of IPTVChannel
 }>();
 
@@ -176,9 +194,9 @@ const emit = defineEmits<{
 }>();
 
 const formatStreamType = (type: string) => {
-  if (type === 'live') return 'Ao Vivo';
-  if (type === 'movie') return 'Filme';
-  if (type === 'series') return 'Série';
+  if (type === 'live') return t('sidebar.typeLive');
+  if (type === 'movie') return t('sidebar.typeMovie');
+  if (type === 'series') return t('sidebar.typeSeries');
   return type;
 };
 
@@ -201,15 +219,15 @@ watch(mobile, (isMobile) => {
   }
 });
 
-const navItems = [
-  { title: 'Canais ao Vivo', value: 'live', icon: 'mdi-television-classic' },
-  { title: 'Filmes (VOD)', value: 'movie', icon: 'mdi-movie-roll' },
-  { title: 'Séries (VOD)', value: 'series', icon: 'mdi-youtube-subscription' },
-  { title: 'Guia de TV (EPG)', value: 'epg', icon: 'mdi-television-guide' },
-  { title: 'Favoritos', value: 'favorites', icon: 'mdi-star' },
-  { title: 'Gerenciar Listas', value: 'playlists', icon: 'mdi-playlist-edit' },
-  { title: 'Configurações', value: 'settings', icon: 'mdi-cog' },
-];
+const navItems = computed(() => [
+  { title: t('sidebar.liveTv'), value: 'live', icon: 'mdi-television-classic' },
+  { title: t('sidebar.movies'), value: 'movie', icon: 'mdi-movie-roll' },
+  { title: t('sidebar.series'), value: 'series', icon: 'mdi-youtube-subscription' },
+  { title: t('sidebar.epg'), value: 'epg', icon: 'mdi-television-guide' },
+  { title: t('sidebar.favorites'), value: 'favorites', icon: 'mdi-star' },
+  { title: t('sidebar.managePlaylists'), value: 'playlists', icon: 'mdi-playlist-edit' },
+  { title: t('sidebar.settings'), value: 'settings', icon: 'mdi-cog' },
+]);
 </script>
 
 <style scoped>
@@ -230,6 +248,7 @@ const navItems = [
 .text-glow-small {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.3));
 }
@@ -260,6 +279,44 @@ const navItems = [
 .playlist-info-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.playlist-info-card.updating-card {
+  background: rgba(255, 193, 7, 0.02) !important;
+  animation: card-pulse 2s ease-in-out infinite;
+}
+
+.spin-sync-icon {
+  animation: spin 1.8s linear infinite;
+}
+
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.gap-1 {
+  gap: 4px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes card-pulse {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 rgba(255, 193, 7, 0);
+  }
+  50% {
+    border-color: rgba(255, 193, 7, 0.3) !important;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.06);
+  }
 }
 
 .justify-start-rail {

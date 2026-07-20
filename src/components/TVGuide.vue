@@ -12,13 +12,13 @@
         style="max-height: 100%; overflow-y: auto;"
       >
         <div class="d-flex align-center justify-space-between mb-4">
-          <h3 class="text-subtitle-1 font-weight-bold uppercase-title">Guia de Canais</h3>
+          <h3 class="text-subtitle-1 font-weight-bold uppercase-title">{{ $t('tvGuide.title') }}</h3>
         </div>
 
         <!-- Search Bar -->
         <v-text-field
           v-model="searchQuery"
-          placeholder="Buscar canal..."
+          :placeholder="$t('tvGuide.searchPlaceholder')"
           variant="outlined"
           density="compact"
           prepend-inner-icon="mdi-magnify"
@@ -33,7 +33,7 @@
         </div>
 
         <div v-else-if="filteredChannels.length === 0" class="text-center py-8 text-medium-emphasis">
-          Nenhum canal com guia EPG ativo encontrado.
+          {{ $t('tvGuide.noChannels') }}
         </div>
 
         <!-- Channels List -->
@@ -64,7 +64,7 @@
               🔴 {{ currentShows[ch.tvgId || ''].title }}
             </v-list-item-subtitle>
             <v-list-item-subtitle v-else class="text-caption text-medium-emphasis mt-1">
-              Sem guia disponível
+              {{ $t('tvGuide.noGuide') }}
             </v-list-item-subtitle>
           </v-list-item>
         </v-list>
@@ -80,9 +80,9 @@
       >
         <div v-if="!selectedChannel" class="fill-height d-flex flex-column align-center justify-center text-center py-12">
           <v-icon size="64" color="medium-emphasis" class="mb-4">mdi-television-guide</v-icon>
-          <h3 class="text-h6 font-weight-bold text-medium-emphasis">Selecione um canal</h3>
+          <h3 class="text-h6 font-weight-bold text-medium-emphasis">{{ $t('tvGuide.selectChannelTitle') }}</h3>
           <p class="text-caption text-medium-emphasis max-width-280">
-            Escolha um canal do guia na barra lateral para carregar a grade completa de programação.
+            {{ $t('tvGuide.selectChannelDesc') }}
           </p>
         </div>
 
@@ -97,7 +97,7 @@
               <div>
                 <h2 class="text-h6 font-weight-bold text-glow-small">{{ selectedChannel.name }}</h2>
                 <div class="text-caption text-medium-emphasis">
-                  Categoria: {{ selectedChannel.category }}
+                  {{ $t('tvGuide.categoryLabel', { name: selectedChannel.category === 'Sem Categoria' ? $t('common.noCategory') : selectedChannel.category }) }}
                 </div>
               </div>
             </div>
@@ -108,28 +108,28 @@
               class="play-btn-glow"
               @click="playSelectedChannel"
             >
-              Assistir Canal
+              {{ $t('tvGuide.watchBtn') }}
             </v-btn>
           </v-card>
 
           <!-- Timeline Header -->
           <h3 class="text-subtitle-1 font-weight-bold mb-4 uppercase-title d-flex align-center">
             <v-icon start color="secondary" size="small">mdi-timeline-text-outline</v-icon>
-            Grade de Programação para Hoje
+            {{ $t('tvGuide.timelineTitle') }}
           </h3>
 
           <!-- Loading Schedule Loader -->
           <div v-if="loadingSchedule" class="text-center py-12 flex-grow-1">
             <v-progress-circular indeterminate color="secondary" size="48" />
-            <div class="text-caption text-medium-emphasis mt-2">Carregando cronograma...</div>
+            <div class="text-caption text-medium-emphasis mt-2">{{ $t('tvGuide.loadingSchedule') }}</div>
           </div>
 
           <!-- Empty Timeline -->
           <div v-else-if="schedule.length === 0" class="text-center py-12 flex-grow-1 d-flex flex-column align-center justify-center">
             <v-icon size="40" color="medium-emphasis" class="mb-2">mdi-calendar-blank</v-icon>
-            <div class="text-subtitle-2 text-medium-emphasis">Sem eventos programados</div>
+            <div class="text-subtitle-2 text-medium-emphasis">{{ $t('tvGuide.noEventsTitle') }}</div>
             <p class="text-caption text-medium-emphasis max-width-280">
-              Não encontramos horários de programas cadastrados para este canal nas próximas 24 horas.
+              {{ $t('tvGuide.noEventsDesc') }}
             </p>
           </div>
 
@@ -165,7 +165,7 @@
                   
                   <!-- Live tag badge -->
                   <v-chip v-if="isCurrentlyLive(prog)" size="x-small" color="error" class="font-weight-bold">
-                    🔴 NO AR
+                    🔴 {{ $t('tvGuide.liveTag') }}
                   </v-chip>
                 </div>
 
@@ -198,7 +198,10 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel, type EPGProgram } from '@/services/db';
+
+const { t } = useI18n();
 
 // Props
 const props = defineProps<{
@@ -375,6 +378,7 @@ const playSelectedChannel = () => {
 .text-glow-small {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

@@ -7,7 +7,7 @@
         <!-- Header -->
         <div class="text-center mb-8">
           <h1 class="text-h3 font-weight-bold mb-2 text-glow">MyoPlay</h1>
-          <p class="text-subtitle-1 text-medium-emphasis">Seu player de IPTV local, rápido e privado.</p>
+          <p class="text-subtitle-1 text-medium-emphasis">{{ $t('playlistManager.wizardSubtitle') }}</p>
         </div>
 
         <!-- Progress Overlay -->
@@ -39,16 +39,16 @@
         <v-card v-else class="glass-card mb-8" elevation="4">
           <v-tabs v-model="tab" color="primary" align-tabs="center" class="border-bottom">
             <v-tab value="m3u-file">
-              <v-icon start>mdi-file-code</v-icon> Arquivo M3U
+              <v-icon start>mdi-file-code</v-icon> {{ $t('playlistManager.tabs.m3uFile') }}
             </v-tab>
             <v-tab value="m3u-url">
-              <v-icon start>mdi-link</v-icon> Link M3U
+              <v-icon start>mdi-link</v-icon> {{ $t('playlistManager.tabs.m3uUrl') }}
             </v-tab>
             <v-tab value="xtream">
-              <v-icon start>mdi-server</v-icon> Xtream Codes API
+              <v-icon start>mdi-server</v-icon> {{ $t('playlistManager.tabs.xtream') }}
             </v-tab>
             <v-tab value="epg">
-              <v-icon start>mdi-television-guide</v-icon> Guia EPG
+              <v-icon start>mdi-television-guide</v-icon> {{ $t('playlistManager.tabs.epg') }}
             </v-tab>
           </v-tabs>
 
@@ -79,7 +79,7 @@
               <!-- M3U Local File Tab -->
               <v-window-item value="m3u-file">
                 <p class="text-body-2 text-medium-emphasis mb-6">
-                  Carregue seu arquivo de lista M3U ou M3U8 localmente. Isso ignora qualquer bloqueio de CORS do seu navegador e é processado de forma offline e instantânea.
+                  {{ $t('playlistManager.fileTab.desc') }}
                 </p>
 
                 <div 
@@ -99,17 +99,17 @@
                   />
                   <v-icon size="48" color="primary" class="mb-2">mdi-cloud-upload</v-icon>
                   <div class="text-subtitle-1 font-weight-bold">
-                    {{ selectedFile ? selectedFile.name : 'Arraste e solte seu arquivo M3U aqui' }}
+                    {{ selectedFile ? selectedFile.name : $t('playlistManager.fileTab.dragPlaceholder') }}
                   </div>
                   <div class="text-caption text-medium-emphasis mt-1">
-                    {{ selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'Ou clique para navegar nos seus arquivos' }}
+                    {{ selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : $t('playlistManager.fileTab.clickPlaceholder') }}
                   </div>
                 </div>
 
                 <v-text-field
                   v-model="playlistName"
-                  label="Nome da Lista (Opcional)"
-                  placeholder="Minha Lista M3U"
+                  :label="$t('playlistManager.fileTab.playlistNameLabel')"
+                  :placeholder="$t('playlistManager.fileTab.playlistNamePlaceholder')"
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-format-title"
@@ -123,42 +123,42 @@
                   :disabled="!selectedFile"
                   @click="importM3UFile"
                 >
-                  <v-icon start>mdi-import</v-icon> Importar Lista M3U
+                  <v-icon start>mdi-import</v-icon> {{ $t('playlistManager.fileTab.importBtn') }}
                 </v-btn>
               </v-window-item>
 
               <!-- M3U URL Tab -->
               <v-window-item value="m3u-url">
                 <p class="text-body-2 text-medium-emphasis mb-6">
-                  Insira o link M3U fornecido pelo seu provedor de IPTV. Se o link apresentar erros de CORS no navegador, tente ativar o Proxy CORS nas configurações.
+                  {{ $t('playlistManager.urlTab.desc') }}
                 </p>
 
                 <v-text-field
                   v-model="playlistName"
-                  label="Nome da Lista"
-                  placeholder="Minha Lista de Canais"
+                  :label="$t('playlistManager.urlTab.playlistNameLabel')"
+                  :placeholder="$t('playlistManager.urlTab.playlistNamePlaceholder')"
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-format-title"
                   class="mb-4"
-                  :rules="[v => !!v || 'Nome é obrigatório']"
+                  :rules="[v => !!v || $t('playlistManager.urlTab.validationName')]"
                 />
 
                 <v-text-field
                   v-model="playlistUrl"
-                  label="URL da Lista M3U"
-                  placeholder="http://seuprovedor.com/get.php?auth=..."
+                  :label="$t('playlistManager.urlTab.playlistUrlLabel')"
+                  :placeholder="$t('playlistManager.urlTab.playlistUrlPlaceholder')"
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-link-variant"
                   class="mb-4"
-                  :rules="[v => !!v || 'URL é obrigatória']"
+                  :rules="[v => !!v || $t('playlistManager.urlTab.validationUrl')]"
                 />
 
                 <v-checkbox
                   v-if="!isElectron"
                   v-model="useCorsProxy"
-                  label="Usar Proxy CORS para baixar esta lista"
+                  :label="$t('playlistManager.urlTab.useProxy')"
                   color="secondary"
                   hide-details
                   class="mb-6"
@@ -171,63 +171,63 @@
                   :disabled="!playlistUrl || !playlistName"
                   @click="importM3UUrl"
                 >
-                  <v-icon start>mdi-cloud-download</v-icon> Carregar M3U da URL
+                  <v-icon start>mdi-cloud-download</v-icon> {{ $t('playlistManager.urlTab.loadBtn') }}
                 </v-btn>
               </v-window-item>
 
               <!-- Xtream Codes API Tab -->
               <v-window-item value="xtream">
                 <p class="text-body-2 text-medium-emphasis mb-6">
-                  Insira os seus dados de acesso da API Xtream Codes para importar canais ao vivo, filmes e séries de forma integrada e estruturada.
+                  {{ $t('playlistManager.xtreamTab.desc') }}
                 </p>
 
                 <v-row>
                   <v-col cols="12">
                     <v-text-field
                       v-model="playlistName"
-                      label="Nome da Conexão"
-                      placeholder="Minha Conta IPTV"
+                      :label="$t('playlistManager.xtreamTab.nameLabel')"
+                      :placeholder="$t('playlistManager.xtreamTab.namePlaceholder')"
                       variant="outlined"
                       density="comfortable"
                       prepend-inner-icon="mdi-format-title"
-                      :rules="[v => !!v || 'Nome é obrigatório']"
+                      :rules="[v => !!v || $t('playlistManager.urlTab.validationName')]"
                     />
                   </v-col>
 
                   <v-col cols="12">
                     <v-text-field
                       v-model="xtreamHost"
-                      label="Servidor / Host (URL)"
-                      placeholder="http://servidoriptv.com:8080"
+                      :label="$t('playlistManager.xtreamTab.hostLabel')"
+                      :placeholder="$t('playlistManager.xtreamTab.hostPlaceholder')"
                       variant="outlined"
                       density="comfortable"
                       prepend-inner-icon="mdi-server"
-                      :rules="[v => !!v || 'Host do servidor é obrigatório']"
+                      :rules="[v => !!v || $t('playlistManager.xtreamTab.validationHost')]"
                     />
                   </v-col>
 
                   <v-col cols="12" sm="6">
                     <v-text-field
                       v-model="xtreamUser"
-                      label="Usuário"
-                      placeholder="seu_usuario"
+                      :label="$t('playlistManager.xtreamTab.usernameLabel')"
+                      :placeholder="$t('playlistManager.xtreamTab.usernamePlaceholder')"
                       variant="outlined"
                       density="comfortable"
                       prepend-inner-icon="mdi-account"
-                      :rules="[v => !!v || 'Usuário é obrigatório']"
+                      :rules="[v => !!v || $t('playlistManager.xtreamTab.validationUser')]"
                     />
                   </v-col>
 
                   <v-col cols="12" sm="6">
                     <v-text-field
                       v-model="xtreamPass"
-                      label="Senha"
+                      :label="$t('playlistManager.xtreamTab.passwordLabel')"
                       type="password"
-                      placeholder="sua_senha"
+                      :placeholder="$t('playlistManager.xtreamTab.passwordPlaceholder')"
                       variant="outlined"
                       density="comfortable"
                       prepend-inner-icon="mdi-lock"
-                      :rules="[v => !!v || 'Senha é obrigatória']"
+                      :rules="[v => !!v || $t('playlistManager.xtreamTab.validationPass')]"
                     />
                   </v-col>
                 </v-row>
@@ -235,7 +235,7 @@
                 <v-checkbox
                   v-if="!isElectron"
                   v-model="useCorsProxy"
-                  label="Usar Proxy CORS para conectar ao servidor"
+                  :label="$t('playlistManager.xtreamTab.useProxy')"
                   color="secondary"
                   hide-details
                   class="mb-6"
@@ -248,26 +248,26 @@
                   :disabled="!playlistName || !xtreamHost || !xtreamUser || !xtreamPass"
                   @click="importXtream"
                 >
-                  <v-icon start>mdi-server-plus</v-icon> Conectar ao Servidor
+                  <v-icon start>mdi-server-plus</v-icon> {{ $t('playlistManager.xtreamTab.connectBtn') }}
                 </v-btn>
               </v-window-item>
 
               <!-- EPG Tab -->
               <v-window-item value="epg">
                 <p class="text-body-2 text-medium-emphasis mb-6">
-                  Carregue um guia eletrônico de programação (XMLTV) para mostrar o que está passando em tempo real nos canais de TV.
+                  {{ $t('playlistManager.epgTab.desc') }}
                 </p>
 
                 <!-- EPG Status -->
                 <v-card class="pa-4 mb-6 bg-surface-variant rounded-lg" variant="flat">
                   <div class="d-flex align-center justify-between mb-2">
-                    <span class="text-subtitle-2 font-weight-bold">Status do EPG Local:</span>
+                    <span class="text-subtitle-2 font-weight-bold">{{ $t('playlistManager.epgTab.statusLabel') }}</span>
                     <v-chip size="small" :color="epgCount > 0 ? 'success' : 'warning'">
-                      {{ epgCount > 0 ? 'Ativo' : 'Nenhum Guia' }}
+                      {{ epgCount > 0 ? $t('playlistManager.epgTab.statusActive') : $t('playlistManager.epgTab.statusNone') }}
                     </v-chip>
                   </div>
                   <div class="text-body-2 mb-3">
-                    Programas no Cache: <strong>{{ epgCount.toLocaleString() }}</strong>
+                    {{ $t('playlistManager.epgTab.cacheLabel') }} <strong>{{ epgCount.toLocaleString() }}</strong>
                   </div>
                   <v-btn
                     v-if="epgCount > 0"
@@ -277,16 +277,16 @@
                     prepend-icon="mdi-trash-can"
                     @click="clearEPGCache"
                   >
-                    Limpar Cache de EPG
+                    {{ $t('playlistManager.epgTab.clearCacheBtn') }}
                   </v-btn>
                 </v-card>
 
                 <v-divider class="mb-6" />
 
-                <div class="text-subtitle-2 font-weight-bold mb-3">Método 1: Enviar Arquivo XMLTV (.xml ou .gz)</div>
+                <div class="text-subtitle-2 font-weight-bold mb-3">{{ $t('playlistManager.epgTab.method1') }}</div>
                 <v-file-input
                   v-model="epgFile"
-                  label="Selecione o arquivo de EPG (.xml)"
+                  :label="$t('playlistManager.epgTab.selectEpgFile')"
                   variant="outlined"
                   density="comfortable"
                   accept=".xml,.xmltv"
@@ -298,18 +298,17 @@
                   color="primary"
                   block
                   size="large"
-                  class="mb-8"
                   :disabled="!epgFile"
                   @click="importEPGFile"
                 >
-                  <v-icon start>mdi-import</v-icon> Importar EPG local
+                  <v-icon start>mdi-import</v-icon> {{ $t('playlistManager.epgTab.importLocalBtn') }}
                 </v-btn>
 
-                <div class="text-subtitle-2 font-weight-bold mb-3">Método 2: Baixar do link EPG XMLTV</div>
+                <div class="text-subtitle-2 font-weight-bold mb-3 mt-6">{{ $t('playlistManager.epgTab.method2') }}</div>
                 <v-text-field
                   v-model="epgUrl"
-                  label="URL do Guia XMLTV"
-                  placeholder="http://exemplo.com/epg.xml"
+                  :label="$t('playlistManager.epgTab.epgUrlLabel')"
+                  :placeholder="$t('playlistManager.epgTab.epgUrlPlaceholder')"
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-link-variant"
@@ -323,7 +322,7 @@
                   :disabled="!epgUrl"
                   @click="importEPGUrl"
                 >
-                  <v-icon start>mdi-cloud-download</v-icon> Baixar Guia XMLTV
+                  <v-icon start>mdi-cloud-download</v-icon> {{ $t('playlistManager.epgTab.downloadBtn') }}
                 </v-btn>
               </v-window-item>
             </v-window>
@@ -332,13 +331,13 @@
 
         <!-- Existing Playlists Panel -->
         <h2 class="text-h5 font-weight-bold mb-4 d-flex align-center">
-          <v-icon start color="primary">mdi-playlist-play</v-icon> Suas Listas Cadastradas
+          <v-icon start color="primary">mdi-playlist-play</v-icon> {{ $t('playlistManager.myPlaylists.title') }}
         </h2>
 
         <v-card v-if="playlists.length === 0" class="glass-card pa-6 text-center" variant="flat">
           <v-icon size="40" class="text-medium-emphasis mb-2">mdi-playlist-remove</v-icon>
-          <div class="text-subtitle-1 text-medium-emphasis">Nenhuma lista cadastrada ainda.</div>
-          <div class="text-caption text-medium-emphasis">Adicione sua primeira lista usando as abas acima para começar!</div>
+          <div class="text-subtitle-1 text-medium-emphasis">{{ $t('playlistManager.myPlaylists.noPlaylistsTitle') }}</div>
+          <div class="text-caption text-medium-emphasis">{{ $t('playlistManager.myPlaylists.noPlaylistsDesc') }}</div>
         </v-card>
 
         <v-row v-else>
@@ -355,7 +354,7 @@
                       {{ pl.name }}
                     </div>
                     <div class="text-caption text-medium-emphasis">
-                      Tipo: 
+                      {{ $t('common.type') }}: 
                       <v-chip size="x-small" :color="getPlaylistTypeColor(pl.type)" class="ml-1 font-weight-bold">
                         {{ pl.type.toUpperCase() }}
                       </v-chip>
@@ -367,6 +366,7 @@
                     color="error"
                     size="small"
                     variant="text"
+                    :title="$t('common.delete')"
                     @click="deletePlaylist(pl.id!)"
                   />
                 </div>
@@ -375,7 +375,7 @@
               <v-card-text class="pt-0 flex-grow-1">
                 <div class="text-caption text-medium-emphasis mt-2">
                   <div class="d-flex justify-space-between mb-1">
-                    <span>Canais Cadastrados:</span>
+                    <span>{{ $t('playlistManager.myPlaylists.channelsCountLabel') }}</span>
                     <strong class="text-primary">{{ pl.channelCount || 0 }}</strong>
                   </div>
                   <div class="d-flex justify-space-between mb-1" v-if="pl.epgUrl">
@@ -383,12 +383,12 @@
                     <span class="text-truncate text-secondary text-right" style="max-width: 160px;" :title="pl.epgUrl">{{ pl.epgUrl }}</span>
                   </div>
                   <div class="d-flex justify-space-between mb-1">
-                    <span>Cadastrada em:</span>
+                    <span>{{ $t('playlistManager.myPlaylists.createdAtPrefix') }}</span>
                     <span>{{ new Date(pl.createdAt).toLocaleDateString() }}</span>
                   </div>
                   <div class="d-flex justify-space-between" v-if="pl.type !== 'file'">
-                    <span>Atualizada em:</span>
-                    <span>{{ pl.lastUpdatedAt ? new Date(pl.lastUpdatedAt).toLocaleString() : 'Nunca' }}</span>
+                    <span>{{ $t('playlistManager.myPlaylists.updatedAtPrefix') }}</span>
+                    <span>{{ pl.lastUpdatedAt ? new Date(pl.lastUpdatedAt).toLocaleString() : $t('playlistManager.myPlaylists.never') }}</span>
                   </div>
                 </div>
               </v-card-text>
@@ -404,7 +404,7 @@
                   prepend-icon="mdi-check-circle"
                   @click="$emit('select-playlist', pl.id)"
                 >
-                  Ativa
+                  {{ $t('playlistManager.myPlaylists.active') }}
                 </v-btn>
                 <v-btn
                   v-else
@@ -414,7 +414,7 @@
                   prepend-icon="mdi-play-network"
                   @click="activatePlaylist(pl.id!)"
                 >
-                  Ativar
+                  {{ $t('playlistManager.myPlaylists.activate') }}
                 </v-btn>
                 
                 <v-btn
@@ -422,7 +422,7 @@
                   icon="mdi-refresh"
                   color="primary"
                   variant="tonal"
-                  title="Sincronizar Playlist"
+                  :title="$t('playlistManager.myPlaylists.syncPlaylist')"
                   :loading="loading && syncingPlaylistId === pl.id"
                   :disabled="loading"
                   @click="syncPlaylist(pl)"
@@ -433,7 +433,7 @@
                   icon="mdi-television-guide"
                   color="secondary"
                   variant="tonal"
-                  title="Sincronizar EPG"
+                  :title="$t('playlistManager.myPlaylists.syncEpg')"
                   :disabled="loading"
                   @click="syncEPG(pl)"
                 />
@@ -449,11 +449,14 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
 import { db, type Playlist, type IPTVChannel } from '@/services/db';
 import { parseM3U } from '@/services/m3uParser';
 import { parseEPG } from '@/services/epgParser';
 import { XtreamClient } from '@/services/xtreamClient';
+
+const { t } = useI18n();
 
 // Emits
 const emit = defineEmits<{
@@ -1105,15 +1108,17 @@ const activatePlaylist = async (playlistId: number) => {
   try {
     await db.setSetting('current_playlist_id', playlistId);
     currentPlaylistId.value = playlistId;
-    successMsg.value = 'Playlist ativada com sucesso!';
+    successMsg.value = t('playlistManager.loading.importedSuccess');
     emit('select-playlist', playlistId);
   } catch (err: any) {
-    errorMsg.value = `Erro ao ativar playlist: ${err.message}`;
+    errorMsg.value = `${t('common.error')}: ${err.message}`;
   }
 };
 
 const deletePlaylist = async (playlistId: number) => {
-  if (confirm('Tem certeza de que deseja excluir esta playlist e todos os canais associados? Esta ação não pode ser desfeita.')) {
+  const pl = playlists.value.find(p => p.id === playlistId);
+  const plName = pl ? pl.name : '';
+  if (confirm(t('playlistManager.myPlaylists.deleteConfirmDesc', { name: plName }))) {
     try {
       await db.deletePlaylist(playlistId);
       
@@ -1122,10 +1127,10 @@ const deletePlaylist = async (playlistId: number) => {
         currentPlaylistId.value = null;
       }
       
-      successMsg.value = 'Playlist excluída com sucesso!';
+      successMsg.value = t('playlistManager.myPlaylists.updating');
       await refreshPlaylists();
     } catch (err: any) {
-      errorMsg.value = `Erro ao excluir playlist: ${err.message}`;
+      errorMsg.value = `${t('common.error')}: ${err.message}`;
     }
   }
 };
@@ -1135,6 +1140,7 @@ const deletePlaylist = async (playlistId: number) => {
 .text-glow {
   background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 30px rgba(255, 193, 7, 0.2);
 }
