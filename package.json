@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "version": "0.42.0",
-  "description": "IPTV Player built with Vue 3 and Electron",
+  "description": "Local IPTV Player built with Vue 3 and Electron",
   "author": "Bruno <dantas.bs@gmail.com>",
   "license": "GPL-3.0-or-later",
   "main": "dist-electron/main.js",
