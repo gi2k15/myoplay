@@ -3,7 +3,7 @@
   "desktopName": "myoplay.desktop",
   "private": true,
   "type": "module",
-  "version": "0.43.0",
+  "version": "0.43.1",
   "description": "Local IPTV Player built with Vue 3 and Electron",
   "author": "Bruno <dantas.bs@gmail.com>",
   "license": "GPL-3.0-or-later",
@@ -67,17 +67,13 @@
         {
           "target": "AppImage",
           "arch": [
-            "x64",
-            "arm64",
-            "armv7l"
+            "x64"
           ]
         },
         {
           "target": "deb",
           "arch": [
-            "x64",
-            "arm64",
-            "armv7l"
+            "x64"
           ]
         }
       ],
@@ -90,17 +86,7 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "ia32",
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
-            "ia32",
-            "arm64"
+            "x64"
           ]
         }
       ]
@@ -109,10 +95,8 @@
       "icon": "public/favicon.png",
       "target": [
         {
-          "target": "zip",
+          "target": "dmg",
           "arch": [
-            "x64",
-            "arm64",
             "universal"
           ]
         }
