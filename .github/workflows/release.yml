@@ -81,6 +81,6 @@ jobs:
     steps:
       - name: Publish GitHub Release
         run: |
-          gh release edit ${{ github.ref_name }} --draft=false --latest
+          gh release edit ${{ github.ref_name }} --draft=false --latest --repo ${{ github.repository }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
