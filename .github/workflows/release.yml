@@ -9,8 +9,38 @@ permissions:
   contents: write
 
 jobs:
+  draft:
+    name: Create Draft Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate Changelog
+        run: node scripts/generate-changelog.js
+
+      - name: Create GitHub Release Draft
+        run: |
+          if gh release view ${{ github.ref_name }} --json name >/dev/null 2>&1; then
+            echo "Release already exists. Updating notes..."
+            gh release edit ${{ github.ref_name }} --notes-file release-notes.md
+          else
+            echo "Release does not exist. Creating draft..."
+            gh release create ${{ github.ref_name }} --draft --title "${{ github.ref_name }}" --notes-file release-notes.md
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   release:
     name: Build & Release Electron App
+    needs: draft
     runs-on: ${{ matrix.os }}
 
     strategy:
