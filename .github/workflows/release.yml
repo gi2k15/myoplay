@@ -73,3 +73,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Disable code signing for macOS and Windows since we don't have certificates in CI
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+  publish:
+    name: Publish Release
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish GitHub Release
+        run: |
+          gh release edit ${{ github.ref_name }} --draft=false --latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
