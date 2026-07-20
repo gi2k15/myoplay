@@ -2,6 +2,7 @@ import esbuild from 'esbuild';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +42,13 @@ async function archiveOldReleases() {
 }
 
 async function buildProduction() {
+  // Generate release changelog
+  try {
+    execSync('node scripts/generate-changelog.js', { stdio: 'inherit' });
+  } catch (err) {
+    console.warn('Warning: Could not generate release changelog:', err.message);
+  }
+
   // Archive old releases before compiler starts
   await archiveOldReleases();
 
