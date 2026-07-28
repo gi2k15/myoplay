@@ -632,6 +632,7 @@ watch(isAnyMenuOpen, (isOpen) => {
 // Reconnection Engine
 const retryCount = ref(0);
 let retryTimeout: number | null = null;
+let connectionTimeout: number | null = null;
 const isHealing = ref(false);
 let isHandlingError = false;
 let lastErrorCode: number | null = null;
@@ -648,18 +649,15 @@ onMounted(async () => {
 
   // Setup ResizeObserver for floating player to save dimensions
   if (props.floating && playerContainerRef.value) {
-    const savedWidth = await db.getSetting("floating_player_width", 480);
-    const savedHeight = await db.getSetting("floating_player_height", 270);
-    playerContainerRef.value.style.width = `${savedWidth}px`;
-    playerContainerRef.value.style.height = `${savedHeight}px`;
-
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        // Don't save if width/height are too small or close to 0 (e.g. hidden/unmounted)
-        if (width > 50 && height > 50) {
-          db.setSetting("floating_player_width", Math.round(width));
-          db.setSetting("floating_player_height", Math.round(height));
+        if (entry.contentRect) {
+          const width = Math.round(entry.contentRect.width);
+          const height = Math.round(entry.contentRect.height);
+          if (width > 200 && height > 150) {
+            db.setSetting("player_float_width", width).catch(() => {});
+            db.setSetting("player_float_height", height).catch(() => {});
+          }
         }
       }
     });
@@ -668,35 +666,27 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  closePip();
   destroyPlayer();
-  removeHotkeys();
-  document.removeEventListener("fullscreenchange", onFullscreenChange);
   if (retryTimeout) clearTimeout(retryTimeout);
-  if (controlsTimeout) clearTimeout(controlsTimeout);
-  if (resizeObserver) {
+  if (connectionTimeout) clearTimeout(connectionTimeout);
+  document.removeEventListener("fullscreenchange", onFullscreenChange);
+
+  if (resizeObserver && playerContainerRef.value) {
+    resizeObserver.unobserve(playerContainerRef.value);
     resizeObserver.disconnect();
     resizeObserver = null;
   }
 });
 
-// Watch for stream URL change
+// Watch channel changes to auto-reload
 watch(
-  () => props.channel.streamUrl,
+  () => props.channel.id,
   async () => {
     if (isHealing.value) {
       isHealing.value = false;
-      // Clear any scheduled retry timeout to avoid double loading
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-        retryTimeout = null;
-      }
-      await loadSettings();
-      initializePlayer();
       return;
     }
 
-    // Normal channel change (user selected a new channel)
     retryCount.value = 0;
     if (retryTimeout) {
       clearTimeout(retryTimeout);
@@ -725,6 +715,10 @@ const aspectRatioClass = computed(() => {
 
 // --- PLAYER INITIALIZATION ENGINE ---
 const destroyPlayer = () => {
+  if (connectionTimeout) {
+    clearTimeout(connectionTimeout);
+    connectionTimeout = null;
+  }
   if (hlsInstance) {
     hlsInstance.destroy();
     hlsInstance = null;
@@ -749,6 +743,16 @@ const initializePlayer = () => {
   errorState.value = null;
   isConnecting.value = true;
   isBuffering.value = true;
+
+  if (connectionTimeout) clearTimeout(connectionTimeout);
+  connectionTimeout = window.setTimeout(() => {
+    if (isConnecting.value) {
+      console.warn(
+        "[VideoPlayer] Conexão expirou (10s) sem carregar metadados. Interrompendo tentativa...",
+      );
+      handlePlaybackError();
+    }
+  }, 10000);
 
   let originalUrl = props.channel.streamUrl;
   const video = videoRef.value;
