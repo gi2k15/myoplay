@@ -20,7 +20,7 @@
               icon="mdi-chevron-left"
               variant="text"
               size="small"
-              @click="categoriesCollapsed = true"
+              @click="collapseCategories"
               :title="$t('streamBrowser.collapseCategories')"
             />
             <!-- Mobile Close Button -->
@@ -185,7 +185,7 @@
                 variant="text"
                 color="primary"
                 class="mr-2"
-                @click="categoriesCollapsed = false"
+                @click="expandCategories"
                 :title="$t('streamBrowser.expandCategories')"
               />
               <div>
@@ -711,15 +711,18 @@ const emit = defineEmits<{
   (e: 'toggle-float'): void;
 }>();
 
+import { useSidebarCascade } from '@/composables/useSidebarCascade';
+
+const {
+  categoriesCollapsed,
+  collapseCategories,
+  expandCategories,
+} = useSidebarCascade();
+
 // UI States
 const searchQuery = ref('');
 const selectedCategory = ref('all');
 const showMobileCategories = ref(false);
-const categoriesCollapsed = ref(localStorage.getItem('categories_collapsed') === 'true');
-
-watch(categoriesCollapsed, (val) => {
-  localStorage.setItem('categories_collapsed', String(val));
-});
 
 // Sorting States
 const sortBy = ref(localStorage.getItem('movie_sort_by') || 'added');

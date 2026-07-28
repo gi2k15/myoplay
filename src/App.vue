@@ -141,11 +141,17 @@ import StreamBrowser from '@/components/StreamBrowser.vue';
 import TVGuide from '@/components/TVGuide.vue';
 import Settings from '@/components/Settings.vue';
 import VideoPlayer from '@/components/VideoPlayer.vue';
+import { useSidebarCascade } from '@/composables/useSidebarCascade';
 
 const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
+const { onPageChange } = useSidebarCascade();
 
 // Application States
 const currentPage = ref('playlists'); // Default view
+
+watch(currentPage, (newPage) => {
+  onPageChange(newPage);
+}, { immediate: true });
 const activePlaylistId = ref<number | null>(null);
 const activePlaylistName = ref<string | null>(null);
 const hasPlaylists = ref(false);

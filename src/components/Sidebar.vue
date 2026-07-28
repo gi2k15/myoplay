@@ -141,7 +141,7 @@
           variant="text"
           block
           class="justify-start mb-2"
-          @click="rail = !rail"
+          @click="toggleMainSidebar"
         >
           <v-icon start>{{ rail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left' }}</v-icon>
           <span v-if="!rail">{{ $t('sidebar.collapse') }}</span>
@@ -177,8 +177,10 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import { useDisplay } from 'vuetify';
 import { useI18n } from 'vue-i18n';
+import { useSidebarCascade } from '@/composables/useSidebarCascade';
 
 const { t } = useI18n();
+const { mainRail: rail, toggleMainSidebar, collapseMainSidebar } = useSidebarCascade();
 
 const props = defineProps<{
   modelValue: string; // Current active page value
@@ -202,20 +204,17 @@ const formatStreamType = (type: string) => {
 
 const { mobile } = useDisplay();
 const drawer = ref(true);
-const rail = ref(false);
 
 // Auto minimize rail on mobile or smaller screens
 onMounted(() => {
   if (mobile.value) {
-    rail.value = true;
+    collapseMainSidebar();
   }
 });
 
 watch(mobile, (isMobile) => {
   if (isMobile) {
-    rail.value = true;
-  } else {
-    rail.value = false;
+    collapseMainSidebar();
   }
 });
 

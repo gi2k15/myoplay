@@ -9,10 +9,19 @@
         md="5" 
         lg="4" 
         class="border-right pa-4 fill-height d-flex flex-column"
+        v-if="(!$vuetify.display.mobile && !tvGuideChannelsCollapsed) || $vuetify.display.mobile"
         style="max-height: 100%; overflow-y: auto;"
       >
         <div class="d-flex align-center justify-space-between mb-4">
           <h3 class="text-subtitle-1 font-weight-bold uppercase-title">{{ $t('tvGuide.title') }}</h3>
+          <v-btn
+            v-if="!$vuetify.display.mobile"
+            icon="mdi-chevron-left"
+            variant="text"
+            size="small"
+            @click="collapseTvGuideChannels"
+            :title="$t('streamBrowser.collapseCategories')"
+          />
         </div>
 
         <!-- Search Bar -->
@@ -73,11 +82,23 @@
       <!-- TV Timeline Program Schedule Column -->
       <v-col 
         cols="12" 
-        md="7" 
-        lg="8" 
+        :md="tvGuideChannelsCollapsed ? 12 : 7" 
+        :lg="tvGuideChannelsCollapsed ? 12 : 8" 
         class="pa-4 fill-height d-flex flex-column bg-dark-glow"
         style="max-height: 100%; overflow-y: auto;"
       >
+        <div class="d-flex align-center mb-2" v-if="!$vuetify.display.mobile && tvGuideChannelsCollapsed">
+          <v-btn
+            icon="mdi-chevron-right"
+            variant="text"
+            color="primary"
+            class="mr-2"
+            @click="expandTvGuideChannels"
+            :title="$t('streamBrowser.expandCategories')"
+          />
+          <span class="text-caption text-medium-emphasis font-weight-bold">{{ $t('tvGuide.title') }}</span>
+        </div>
+
         <div v-if="!selectedChannel" class="fill-height d-flex flex-column align-center justify-center text-center py-12">
           <v-icon size="64" color="medium-emphasis" class="mb-4">mdi-television-guide</v-icon>
           <h3 class="text-h6 font-weight-bold text-medium-emphasis">{{ $t('tvGuide.selectChannelTitle') }}</h3>
@@ -200,8 +221,14 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel, type EPGProgram } from '@/services/db';
+import { useSidebarCascade } from '@/composables/useSidebarCascade';
 
 const { t } = useI18n();
+const {
+  tvGuideChannelsCollapsed,
+  collapseTvGuideChannels,
+  expandTvGuideChannels,
+} = useSidebarCascade();
 
 // Props
 const props = defineProps<{
