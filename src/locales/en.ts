@@ -58,6 +58,25 @@ export default {
         corsproxy: 'CorsProxy.io (Recommended - Excellent for Video)'
       }
     },
+    network: {
+      title: 'Network & VPN Compatibility (Electron)',
+      desc: 'Adjust app network settings to resolve connection issues when streaming behind a VPN or restrictive proxy.',
+      dohLabel: 'DNS over HTTPS (DoH - Cloudflare)',
+      dohHint: 'Resolves domain names via HTTPS to prevent DNS blocks and resolution failures caused by VPNs.',
+      proxyModeLabel: 'Electron Proxy Mode',
+      proxyModes: {
+        system: 'Use System Proxy (VPN/OS Default)',
+        direct: 'Direct Connection (Bypass System Proxy)',
+        custom: 'Custom Proxy (HTTP / SOCKS5)'
+      },
+      customProxyLabel: 'Custom Proxy URL',
+      customProxyPlaceholder: 'e.g. socks5://127.0.0.1:1080 or http://127.0.0.1:8080',
+      sslBypassLabel: 'Ignore SSL/TLS Certificate Errors',
+      sslBypassWarning: 'Enable this option only if your VPN or antivirus performs HTTPS traffic inspection (MitM) causing certificate errors.',
+      saveBtn: 'Save Network Settings',
+      successMsg: 'Network settings updated successfully!',
+      vpnNotice: 'Tip: If streams remain blocked even with these options enabled, your IPTV provider may be directly blocking the VPN IP. Try changing your VPN server location or using Split Tunneling.'
+    },
     playback: {
       title: 'Playback Preferences',
       autoPlay: 'Autoplay (Start channels immediately on click)',

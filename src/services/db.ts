@@ -107,6 +107,7 @@ class IPTVDatabase {
         this.db = request.result;
         try {
           await this.syncWithExternalBackup();
+          await this.syncNetworkSettingsToElectron();
         } catch (err) {
           console.error('[IPTVDatabase] Error during initial sync with backup:', err);
         }
@@ -578,6 +579,28 @@ class IPTVDatabase {
       }
     }
   }
+
+  async syncNetworkSettingsToElectron(): Promise<void> {
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.updateNetworkSettings) {
+      try {
+        const enableDoH = await this.getSetting('network_enable_doh', true);
+        const proxyMode = await this.getSetting('network_proxy_mode', 'system');
+        const customProxyUrl = await this.getSetting('network_custom_proxy_url', '');
+        const ignoreSslErrors = await this.getSetting('network_ignore_ssl_errors', false);
+
+        await (window as any).electronAPI.updateNetworkSettings({
+          enableDoH,
+          proxyMode,
+          customProxyUrl,
+          ignoreSslErrors,
+        });
+        console.log('[IPTVDatabase] Network settings synced to Electron Main process.');
+      } catch (err) {
+        console.error('[IPTVDatabase] Failed to sync network settings to Electron:', err);
+      }
+    }
+  }
+
 
   async addPlaylistDirectly(playlist: Playlist): Promise<void> {
     return new Promise((resolve, reject) => {

@@ -1077,8 +1077,9 @@ const handlePlaybackError = (code?: number) => {
       errorState.value =
         "Acesso negado a este canal (Erro 403 / Proibido). O provedor de IPTV bloqueou a conexão, as credenciais expiraram ou o limite de conexões simultâneas do seu plano foi atingido.";
     } else {
-      errorState.value =
-        "Não foi possível reproduzir este canal. O stream está offline ou bloqueado por políticas de CORS do provedor. Verifique se o link está correto.";
+      errorState.value = isElectron
+        ? "Não foi possível reproduzir este canal. O servidor pode estar offline ou a conexão foi interrompida (verifique se sua VPN ou DNS não está bloqueando o servidor). Acesse as Configurações de Rede & VPN no app."
+        : "Não foi possível reproduzir este canal. O stream está offline ou bloqueado por políticas de CORS do provedor. Verifique se o link está correto.";
     }
   }
 };

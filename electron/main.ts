@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, session } from 'electron';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs/promises';
@@ -7,6 +7,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
+let networkConfig = {
+  ignoreSslErrors: false,
+};
+
+// Enable DNS Over HTTPS (DoH) by default for improved DNS resolution behind VPNs/censorship
+app.commandLine.appendSwitch('enable-features', 'DnsOverHttps');
+app.commandLine.appendSwitch('dns-over-https-templates', 'https://cloudflare-dns.com/dns-query{?dns}');
+
+// Handle SSL/TLS certificate errors if requested by user (e.g. VPN MitM inspection)
+app.on('certificate-error', (event, _webContents, _url, _error, _certificate, callback) => {
+  if (networkConfig.ignoreSslErrors) {
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -66,7 +83,39 @@ ipcMain.handle('read-from-file', async (_, filename: string) => {
   }
 });
 
+// IPC handler for updating proxy and network settings dynamically
+ipcMain.handle('update-network-settings', async (_, settings: { enableDoH?: boolean; proxyMode?: 'system' | 'direct' | 'custom'; customProxyUrl?: string; ignoreSslErrors?: boolean }) => {
+  try {
+    if (settings.ignoreSslErrors !== undefined) {
+      networkConfig.ignoreSslErrors = settings.ignoreSslErrors;
+    }
+
+    if (settings.proxyMode) {
+      if (settings.proxyMode === 'custom' && settings.customProxyUrl) {
+        await session.defaultSession.setProxy({ proxyRules: settings.customProxyUrl });
+      } else if (settings.proxyMode === 'direct') {
+        await session.defaultSession.setProxy({ mode: 'direct' });
+      } else {
+        await session.defaultSession.setProxy({ mode: 'system' });
+      }
+    }
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Electron Main] Error updating network settings:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 app.whenReady().then(() => {
+  // Preserve default User-Agent for streaming requests
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    const requestHeaders = { ...details.requestHeaders };
+    if (!requestHeaders['User-Agent']) {
+      requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    }
+    callback({ requestHeaders });
+  });
+
   createWindow();
 
   app.on('activate', () => {
@@ -81,3 +130,4 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+

@@ -58,6 +58,25 @@ export default {
         corsproxy: 'CorsProxy.io (Recomendado - Excelente para Vídeos)'
       }
     },
+    network: {
+      title: 'Rede & Compatibilidade com VPN (Electron)',
+      desc: 'Ajuste as configurações de rede do aplicativo para resolver problemas de conexão quando estiver navegando através de uma VPN ou proxy restritivo.',
+      dohLabel: 'DNS sobre HTTPS (DoH - Cloudflare)',
+      dohHint: 'Resolve nomes de domínio via HTTPS para evitar bloqueios e falhas de DNS provocados por VPNs.',
+      proxyModeLabel: 'Modo de Proxy do Electron',
+      proxyModes: {
+        system: 'Usar Proxy do Sistema (Padrão da VPN/Windows)',
+        direct: 'Conexão Direta (Ignorar Proxies do Sistema)',
+        custom: 'Proxy Customizado (HTTP / SOCKS5)'
+      },
+      customProxyLabel: 'URL do Proxy Customizado',
+      customProxyPlaceholder: 'ex: socks5://127.0.0.1:1080 ou http://127.0.0.1:8080',
+      sslBypassLabel: 'Ignorar Erros de Certificado SSL/TLS',
+      sslBypassWarning: 'Ative esta opção apenas se sua VPN ou antivírus fizer inspeção de tráfego HTTPS (MitM) causando falhas de certificado.',
+      saveBtn: 'Salvar Configurações de Rede',
+      successMsg: 'Configurações de rede atualizadas com sucesso!',
+      vpnNotice: 'Dica: Se os canais continuarem bloqueados mesmo com estas opções ativas, o servidor da sua lista de IPTV pode estar bloqueando o IP da VPN diretamente. Tente trocar a localização na sua VPN ou usar Split Tunneling.'
+    },
     playback: {
       title: 'Preferências de Reprodução',
       autoPlay: 'Reprodução Automática (Iniciar canais imediatamente ao clicar)',

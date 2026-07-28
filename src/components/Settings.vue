@@ -98,6 +98,83 @@
             </v-card>
           </v-col>
 
+          <!-- Electron Network & VPN Settings -->
+          <v-col cols="12" v-if="isElectron">
+            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+              <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
+                <v-icon start color="primary" class="mr-2">mdi-shield-key-outline</v-icon> 
+                {{ $t('settings.network.title') }}
+              </h3>
+              
+              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
+                {{ $t('settings.network.desc') }}
+              </p>
+
+              <v-switch
+                v-model="enableDoH"
+                :label="$t('settings.network.dohLabel')"
+                :hint="$t('settings.network.dohHint')"
+                persistent-hint
+                color="primary"
+                class="mb-4"
+                @update:model-value="saveNetworkSettings"
+              />
+
+              <v-select
+                v-model="electronProxyMode"
+                :items="electronProxyOptions"
+                :label="$t('settings.network.proxyModeLabel')"
+                variant="outlined"
+                density="comfortable"
+                class="mb-4"
+                @update:model-value="saveNetworkSettings"
+              />
+
+              <v-text-field
+                v-if="electronProxyMode === 'custom'"
+                v-model="customElectronProxyUrl"
+                :label="$t('settings.network.customProxyLabel')"
+                :placeholder="$t('settings.network.customProxyPlaceholder')"
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="mdi-web"
+                class="mb-4"
+                @update:model-value="saveNetworkSettings"
+              />
+
+              <v-divider class="mb-4 opacity-10" />
+
+              <v-switch
+                v-model="ignoreSslErrors"
+                :label="$t('settings.network.sslBypassLabel')"
+                color="error"
+                hide-details
+                class="mb-2"
+                @update:model-value="saveNetworkSettings"
+              />
+
+              <v-alert
+                v-if="ignoreSslErrors"
+                type="warning"
+                variant="tonal"
+                density="compact"
+                class="mb-4 text-caption mt-2"
+              >
+                {{ $t('settings.network.sslBypassWarning') }}
+              </v-alert>
+
+              <v-alert
+                type="info"
+                variant="tonal"
+                density="compact"
+                icon="mdi-information-outline"
+                class="mt-4 text-caption"
+              >
+                {{ $t('settings.network.vpnNotice') }}
+              </v-alert>
+            </v-card>
+          </v-col>
+
           <!-- Playback Preferences -->
           <v-col cols="12">
             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
@@ -534,8 +611,51 @@ const stats = ref({
   favorites: 0
 });
 
+// Network & VPN Settings (Electron)
+const enableDoH = ref(true);
+const electronProxyMode = ref<'system' | 'direct' | 'custom'>('system');
+const customElectronProxyUrl = ref('');
+const ignoreSslErrors = ref(false);
+
+const electronProxyOptions = computed(() => [
+  { title: t('settings.network.proxyModes.system'), value: 'system' },
+  { title: t('settings.network.proxyModes.direct'), value: 'direct' },
+  { title: t('settings.network.proxyModes.custom'), value: 'custom' },
+]);
+
+const loadNetworkSettings = async () => {
+  if (!isElectron) return;
+  try {
+    enableDoH.value = await db.getSetting('network_enable_doh', true);
+    electronProxyMode.value = await db.getSetting('network_proxy_mode', 'system');
+    customElectronProxyUrl.value = await db.getSetting('network_custom_proxy_url', '');
+    ignoreSslErrors.value = await db.getSetting('network_ignore_ssl_errors', false);
+  } catch (err) {
+    console.error('Erro ao carregar configurações de rede:', err);
+  }
+};
+
+const saveNetworkSettings = async () => {
+  if (!isElectron) return;
+  try {
+    await db.setSetting('network_enable_doh', enableDoH.value);
+    await db.setSetting('network_proxy_mode', electronProxyMode.value);
+    await db.setSetting('network_custom_proxy_url', customElectronProxyUrl.value);
+    await db.setSetting('network_ignore_ssl_errors', ignoreSslErrors.value);
+
+    await db.syncNetworkSettingsToElectron();
+
+    alertType.value = 'success';
+    alertMsg.value = t('settings.network.successMsg');
+  } catch (err: any) {
+    alertType.value = 'error';
+    alertMsg.value = err.message || err;
+  }
+};
+
 onMounted(async () => {
   await loadProxySettings();
+  await loadNetworkSettings();
   await loadPlaybackSettings();
   await loadEpgSettings();
   await loadMetadataSettings();
