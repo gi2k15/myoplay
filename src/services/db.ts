@@ -55,10 +55,24 @@ export interface Setting {
   value: any;
 }
 
+export interface GlobalSearchResults {
+  live: IPTVChannel[];
+  movie: IPTVChannel[];
+  series: IPTVChannel[];
+  totalMatches: number;
+  counts: {
+    live: number;
+    movie: number;
+    series: number;
+  };
+}
+
 class IPTVDatabase {
   private dbName = 'iptv_player_db';
   private dbVersion = 2;
   private db: IDBDatabase | null = null;
+  private cachedPlaylistId: number | null = null;
+  private cachedChannels: IPTVChannel[] = [];
 
   init(): Promise<IDBDatabase> {
     if (this.db) return Promise.resolve(this.db);
@@ -185,7 +199,10 @@ class IPTVDatabase {
         }
       };
 
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        this.invalidateChannelsCache(playlistId);
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
     });
 
@@ -226,13 +243,17 @@ class IPTVDatabase {
           cursor.continue();
         }
       };
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        this.invalidateChannelsCache(playlistId);
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
     });
   }
 
   // --- CHANNELS ---
   async addChannelsBatch(channels: IPTVChannel[], onProgress?: (percent: number) => void): Promise<void> {
+    this.invalidateChannelsCache();
     const db = await this.init();
     return new Promise<void>((resolve, reject) => {
       // Use chunks to avoid hitting memory limits or locking the database for too long
@@ -321,6 +342,108 @@ class IPTVDatabase {
       };
       req.onerror = () => reject(req.error);
     });
+  }
+
+  invalidateChannelsCache(playlistId?: number): void {
+    if (!playlistId || this.cachedPlaylistId === playlistId) {
+      this.cachedPlaylistId = null;
+      this.cachedChannels = [];
+    }
+  }
+
+  async getCachedChannels(playlistId: number): Promise<IPTVChannel[]> {
+    if (this.cachedPlaylistId === playlistId && this.cachedChannels.length > 0) {
+      return this.cachedChannels;
+    }
+    const channels = await this.getChannels(playlistId);
+    this.cachedPlaylistId = playlistId;
+    this.cachedChannels = channels;
+    return channels;
+  }
+
+  async searchChannels(
+    playlistId: number,
+    query: string,
+    limitPerType = 50
+  ): Promise<GlobalSearchResults> {
+    const rawQuery = (query || '').trim();
+    if (!rawQuery) {
+      return {
+        live: [],
+        movie: [],
+        series: [],
+        totalMatches: 0,
+        counts: { live: 0, movie: 0, series: 0 }
+      };
+    }
+
+    const channels = await this.getCachedChannels(playlistId);
+
+    const normalize = (str: string) =>
+      (str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+    const normalizedQuery = normalize(rawQuery);
+    const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
+
+    const getScore = (nameNorm: string, catNorm: string): number => {
+      if (nameNorm === normalizedQuery) return 100;
+      if (nameNorm.startsWith(normalizedQuery)) return 80;
+      const matchesAllTokensInName = queryTokens.every(token => nameNorm.includes(token));
+      if (matchesAllTokensInName) return 60;
+      if (nameNorm.includes(normalizedQuery)) return 50;
+      if (catNorm.includes(normalizedQuery)) return 30;
+      const fullText = `${nameNorm} ${catNorm}`;
+      if (queryTokens.every(token => fullText.includes(token))) return 20;
+      return 0;
+    };
+
+    const liveMatches: { channel: IPTVChannel; score: number }[] = [];
+    const movieMatches: { channel: IPTVChannel; score: number }[] = [];
+    const seriesMatches: { channel: IPTVChannel; score: number }[] = [];
+
+    for (let i = 0; i < channels.length; i++) {
+      const ch = channels[i];
+      const nameNorm = normalize(ch.name);
+      const catNorm = normalize(ch.category);
+
+      const score = getScore(nameNorm, catNorm);
+      if (score > 0) {
+        if (ch.type === 'live') {
+          liveMatches.push({ channel: ch, score });
+        } else if (ch.type === 'movie') {
+          movieMatches.push({ channel: ch, score });
+        } else if (ch.type === 'series') {
+          seriesMatches.push({ channel: ch, score });
+        }
+      }
+    }
+
+    const sortFn = (a: { channel: IPTVChannel; score: number }, b: { channel: IPTVChannel; score: number }) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.channel.name.localeCompare(b.channel.name);
+    };
+
+    liveMatches.sort(sortFn);
+    movieMatches.sort(sortFn);
+    seriesMatches.sort(sortFn);
+
+    const counts = {
+      live: liveMatches.length,
+      movie: movieMatches.length,
+      series: seriesMatches.length
+    };
+
+    return {
+      live: liveMatches.slice(0, limitPerType).map(m => m.channel),
+      movie: movieMatches.slice(0, limitPerType).map(m => m.channel),
+      series: seriesMatches.slice(0, limitPerType).map(m => m.channel),
+      totalMatches: counts.live + counts.movie + counts.series,
+      counts
+    };
   }
 
   // --- EPG ---

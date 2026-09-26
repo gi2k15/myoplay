@@ -9,6 +9,7 @@
       :recent-streams="recentStreams"
       @remove-recent="onRemoveRecentStream"
       @play-stream="onPlayStream"
+      @open-global-search="showGlobalSearch = true"
       v-if="hasPlaylists"
     />
 
@@ -18,6 +19,8 @@
       <v-app-bar-title class="font-weight-bold text-caption text-sm-body-1 text-glow-small text-uppercase">
         {{ getPageTitle() }}
       </v-app-bar-title>
+      <v-spacer />
+      <v-btn icon="mdi-magnify" color="secondary" @click="showGlobalSearch = true" />
     </v-app-bar>
 
     <!-- Main Content Area -->
@@ -122,6 +125,13 @@
         @close-player="onClosePlayer"
         @toggle-float="onToggleFloat"
       />
+
+      <!-- Global Search Spotlight Modal -->
+      <GlobalSearchModal
+        v-model="showGlobalSearch"
+        :playlist-id="activePlaylistId"
+        @play-stream="onPlayStream"
+      />
     </v-main>
   </v-app>
 </template>
@@ -141,6 +151,7 @@ import StreamBrowser from '@/components/StreamBrowser.vue';
 import TVGuide from '@/components/TVGuide.vue';
 import Settings from '@/components/Settings.vue';
 import VideoPlayer from '@/components/VideoPlayer.vue';
+import GlobalSearchModal from '@/components/GlobalSearchModal.vue';
 import { useSidebarCascade } from '@/composables/useSidebarCascade';
 
 const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
@@ -156,6 +167,16 @@ const activePlaylistId = ref<number | null>(null);
 const activePlaylistName = ref<string | null>(null);
 const hasPlaylists = ref(false);
 const recentStreams = ref<IPTVChannel[]>([]);
+const showGlobalSearch = ref(false);
+
+const handleGlobalKeydown = (e: KeyboardEvent) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    if (hasPlaylists.value && activePlaylistId.value) {
+      showGlobalSearch.value = !showGlobalSearch.value;
+    }
+  }
+};
 
 // Background playlist update states
 const updatingPlaylistIds = ref<number[]>([]);
@@ -240,7 +261,15 @@ const loadRecentStreams = async () => {
   }
 };
 
+const onOpenGlobalSearchEvent = () => {
+  if (hasPlaylists.value && activePlaylistId.value) {
+    showGlobalSearch.value = true;
+  }
+};
+
 onMounted(async () => {
+  window.addEventListener('keydown', handleGlobalKeydown);
+  window.addEventListener('open-global-search', onOpenGlobalSearchEvent);
   window.addEventListener('playlist-updating', handlePlaylistUpdating);
   window.addEventListener('playlist-updated', handlePlaylistUpdated);
   window.addEventListener('playlist-update-failed', handlePlaylistUpdateFailed);
@@ -294,6 +323,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown);
+  window.removeEventListener('open-global-search', onOpenGlobalSearchEvent);
   window.removeEventListener('playlist-updating', handlePlaylistUpdating);
   window.removeEventListener('playlist-updated', handlePlaylistUpdated);
   window.removeEventListener('playlist-update-failed', handlePlaylistUpdateFailed);
