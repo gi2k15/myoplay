@@ -7,15 +7,32 @@
     class="sidebar-glass"
     elevation="4"
   >
-    <!-- Brand Title -->
-    <v-list-item class="py-4 border-bottom d-flex justify-center justify-start-rail">
-      <template v-slot:prepend>
+    <!-- Brand Header -->
+    <div 
+      class="brand-header border-bottom d-flex align-center"
+      :class="rail ? 'justify-center px-0' : 'px-4'"
+    >
+      <div class="brand-icon-box d-flex align-center justify-center flex-shrink-0">
         <v-icon color="secondary" size="large" class="glow-icon">mdi-television-play</v-icon>
-      </template>
-      <v-list-item-title class="text-h6 font-weight-bold text-glow-small ml-2 text-uppercase letter-spacing-1">
+      </div>
+      <transition name="fade">
+        <span 
+          v-if="!rail" 
+          class="brand-title text-h6 font-weight-bold text-glow-small ml-2 text-uppercase letter-spacing-1 text-truncate"
+        >
+          MyoPlay
+        </span>
+      </transition>
+
+      <v-tooltip
+        v-if="rail"
+        activator="parent"
+        location="right"
+        :open-delay="200"
+      >
         MyoPlay
-      </v-list-item-title>
-    </v-list-item>
+      </v-tooltip>
+    </div>
 
     <v-divider class="opacity-10" />
 
@@ -318,12 +335,37 @@ const navItems = computed(() => [
   }
 }
 
-.justify-start-rail {
-  transition: padding 0.2s ease;
+.brand-header {
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  position: relative;
+  user-select: none;
+  transition: padding 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.v-navigation-drawer--rail .justify-start-rail {
-  padding-left: 8px !important;
+.brand-icon-box {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(-4px);
 }
 
 /* Recent streams custom styling */
