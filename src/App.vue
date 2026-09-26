@@ -268,6 +268,17 @@ onMounted(async () => {
     console.error('Migration error:', err);
   }
 
+  // Migrate default float mode: ensure default is false (main player)
+  try {
+    const defaultFloatMigrated = await db.getSetting('player_default_float_migrated_v2', false);
+    if (!defaultFloatMigrated) {
+      await db.setSetting('player_default_float', false);
+      await db.setSetting('player_default_float_migrated_v2', true);
+    }
+  } catch (err) {
+    console.error('Float migration error:', err);
+  }
+
   await checkActivePlaylist();
   await loadRecentStreams();
 
@@ -348,8 +359,8 @@ const onPlaylistActivated = async (playlistId: number) => {
 const onPlayStream = async (channel: IPTVChannel) => {
   activeChannel.value = channel;
   
-  // Retrieve player float settings
-  const defaultFloat = await db.getSetting('player_default_float', true);
+  // Retrieve player float settings (defaulting to false so videos open in main player)
+  const defaultFloat = await db.getSetting('player_default_float', false);
   playerFloatMode.value = defaultFloat;
 
   // Sync playlist if different

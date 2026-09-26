@@ -193,7 +193,12 @@
           <div
             class="d-flex align-center justify-space-between pa-3 top-gradient"
           >
-            <div class="d-flex align-center gap-2 min-width-0">
+            <div 
+              class="d-flex align-center gap-2 min-width-0"
+              :class="{ 'cursor-pointer': floating }"
+              :title="floating ? $t('videoPlayer.returnToMain') : undefined"
+              @click="floating ? $emit('toggle-float') : undefined"
+            >
               <v-avatar
                 size="32"
                 class="bg-surface-variant flex-shrink-0"
@@ -212,7 +217,7 @@
             <div class="d-flex align-center">
               <!-- Diagnostics -->
               <v-btn
-                icon="mdi-television-guide"
+                icon="mdi-chart-box-outline"
                 variant="text"
                 color="white"
                 size="small"
@@ -234,14 +239,14 @@
                 "
                 @click="togglePip"
               />
-              <!-- Float Mode Toggle (Only if not in PiP) -->
+              <!-- Return to Main Player / Float Mode Toggle -->
               <v-btn
                 v-if="!isPipActive"
-                :icon="floating ? 'mdi-open-in-new' : 'mdi-dock-window'"
+                :icon="floating ? 'mdi-dock-window' : 'mdi-dock-bottom'"
                 variant="text"
                 color="white"
                 size="small"
-                :title="floating ? $t('videoPlayer.fullscreen') : $t('videoPlayer.floatToggle')"
+                :title="floating ? $t('videoPlayer.returnToMain') : $t('videoPlayer.floatToggle')"
                 @click="$emit('toggle-float')"
               />
               <!-- Close / Stop Button -->
@@ -331,7 +336,7 @@
                 <div class="d-flex align-center volume-slider-container">
                   <v-btn
                     :icon="
-                      isMuted
+                      isMuted || volume === 0
                         ? 'mdi-volume-off'
                         : volume > 0.5
                           ? 'mdi-volume-high'
@@ -340,6 +345,7 @@
                     variant="text"
                     color="white"
                     size="small"
+                    :title="$t('videoPlayer.toggleMute')"
                     @click="toggleMute"
                   />
                   <v-slider
@@ -440,14 +446,18 @@
 
                 <!-- Fullscreen (Only if not in PiP) -->
                 <v-btn
-                  v-if="!floating && !isPipActive"
+                  v-if="!isPipActive"
                   :icon="
                     isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'
                   "
                   variant="text"
                   color="white"
                   size="small"
-                  :title="$t('videoPlayer.fullscreen')"
+                  :title="
+                    isFullscreen
+                      ? $t('videoPlayer.exitFullscreen')
+                      : $t('videoPlayer.fullscreen')
+                  "
                   @click="toggleFullscreen"
                 />
               </div>
