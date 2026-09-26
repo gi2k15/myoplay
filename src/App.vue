@@ -40,26 +40,41 @@
               @play-stream="onPlayStream"
               @close-player="onClosePlayer"
               @toggle-float="onToggleFloat"
-              @live-mount-ready="isLiveMountReady = $event"
             />
           </KeepAlive>
         </div>
 
-        <!-- Right/Top Pane: Embedded Player (Active when a channel is playing and not floating) -->
+        <!-- Right/Top Pane: Embedded Player (Active when a channel is playing) -->
         <div 
           v-if="activeChannel"
-          v-show="!playerFloatMode && (currentPage !== 'live' || !isLiveMountReady)" 
           class="embedded-player-container flex-shrink-0"
-          :class="$vuetify.display.mobile ? 'w-100 h-auto border-bottom-glow' : 'embedded-player-desktop border-left-glow'"
+          :class="[
+            $vuetify.display.mobile ? 'w-100 h-auto' : 'embedded-player-desktop',
+            playerFloatMode ? 'embedded-player-collapsed' : ($vuetify.display.mobile ? 'border-bottom-glow' : 'border-left-glow')
+          ]"
         >
-          <div class="pa-4 h-100 d-flex flex-column gap-4">
+          <div 
+            class="pa-4 h-100 d-flex flex-column gap-4"
+            :class="{ 'pa-0': playerFloatMode }"
+          >
             <!-- The Player Rectangle -->
-            <div class="player-wrapper w-100 flex-shrink-0">
-              <div id="embedded-player-mount-point" class="w-100 h-100"></div>
+            <div 
+              class="player-wrapper flex-shrink-0"
+              :class="{ 'player-wrapper-floating': playerFloatMode, 'w-100': !playerFloatMode }"
+            >
+              <VideoPlayer
+                :channel="activeChannel"
+                :floating="playerFloatMode"
+                @close-player="onClosePlayer"
+                @toggle-float="onToggleFloat"
+              />
             </div>
 
             <!-- Active Channel Metadata & EPG Card (Scrollable Container) -->
-            <div class="flex-grow-1 overflow-y-auto pr-1">
+            <div 
+              v-show="!playerFloatMode"
+              class="flex-grow-1 overflow-y-auto pr-1"
+            >
               <v-card class="glass-card pa-4 rounded-xl" variant="flat">
                 <div class="d-flex align-center gap-3 mb-4">
                   <v-avatar size="48" class="bg-surface-variant flex-shrink-0" v-slot:default v-if="activeChannel.logo">
@@ -110,22 +125,6 @@
         </div>
 
       </div>
-
-      <!-- Mount point for Persistent Floating Mini-Player -->
-      <div id="floating-player-mount-point"></div>
-
-      <!-- Single Global Persistent VideoPlayer with Teleport -->
-      <Teleport 
-        v-if="activeChannel && teleportTarget" 
-        :to="teleportTarget"
-      >
-        <VideoPlayer
-          :channel="activeChannel"
-          :floating="playerFloatMode"
-          @close-player="onClosePlayer"
-          @toggle-float="onToggleFloat"
-        />
-      </Teleport>
     </v-main>
   </v-app>
 </template>
@@ -152,17 +151,6 @@ const { onPageChange } = useSidebarCascade();
 
 // Application States
 const currentPage = ref('playlists'); // Default view
-const isLiveMountReady = ref(false);
-
-const teleportTarget = computed(() => {
-  if (playerFloatMode.value) {
-    return '#floating-player-mount-point';
-  }
-  if (currentPage.value === 'live' && isLiveMountReady.value) {
-    return '#live-player-mount-point';
-  }
-  return '#embedded-player-mount-point';
-});
 
 watch(currentPage, (newPage) => {
   onPageChange(newPage);
@@ -529,6 +517,25 @@ html, body {
   animation: slideInLeft 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+.embedded-player-container.embedded-player-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+  pointer-events: none;
+  animation: none !important;
+  transform: none !important;
+}
+
 .border-left-glow {
   border-left: 1px solid rgba(255, 193, 7, 0.15) !important;
   box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
@@ -543,6 +550,17 @@ html, body {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   aspect-ratio: 16/9;
+}
+
+.player-wrapper-floating {
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  aspect-ratio: auto !important;
+  pointer-events: none;
 }
 
 .border-top {

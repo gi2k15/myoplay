@@ -85,82 +85,6 @@
         class="pa-0 d-flex flex-column fill-height overflow-hidden channels-content-area"
         style="max-height: calc(100vh - 64px);"
       >
-        <!-- Live Player Top Section (Active when a live channel is playing and not floating) -->
-        <div 
-          v-if="activeChannel"
-          v-show="type === 'live' && !playerFloatMode" 
-          class="live-player-top-section py-2 px-4 border-bottom-glow flex-shrink-0 position-relative"
-        >
-          <v-row class="ma-0 justify-center">
-            <!-- Player (Aumentado, largura total com limite elegante) -->
-            <v-col cols="12" class="pa-1">
-              <div ref="playerWrapperRef" class="player-wrapper mx-auto player-wrapper-responsive" :style="customPlayerHeightStyle">
-                <div id="live-player-mount-point" class="w-100 h-100"></div>
-              </div>
-            </v-col>
-            
-            <!-- Active Channel EPG / Info Card (Abaixo do player em formato de barra) -->
-            <v-col cols="12" class="pa-1">
-              <v-card class="glass-card py-2 px-4 rounded-xl mx-auto" style="max-width: 960px;" variant="flat">
-                <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between gap-3">
-                  <!-- Channel Logo and Name -->
-                  <div class="d-flex align-center gap-3 flex-shrink-0" style="min-width: 220px; max-width: 300px;">
-                    <v-avatar size="44" class="bg-surface-variant flex-shrink-0" v-slot:default v-if="activeChannel.logo">
-                      <v-img :src="activeChannel.logo" />
-                    </v-avatar>
-                    <div class="min-width-0">
-                      <h3 class="text-subtitle-2 font-weight-bold text-truncate text-glow-small mb-0">{{ activeChannel.name }}</h3>
-                      <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag mt-1">{{ activeChannel.category === 'Sem Categoria' ? $t('common.noCategory') : activeChannel.category }}</v-chip>
-                    </div>
-                  </div>
-
-                  <!-- EPG Current Programme -->
-                  <div v-if="activeChannelEpg?.current" class="flex-grow-1 min-width-0 px-sm-4 border-left-sm">
-                    <div class="text-caption text-secondary font-weight-bold d-flex align-center mb-1">
-                      <span class="mr-1">🔴</span> {{ $t('streamBrowser.onAirNow') }}
-                    </div>
-                    <div class="text-body-2 font-weight-bold text-truncate mb-1">
-                      {{ activeChannelEpg.current.title }}
-                    </div>
-                    <div class="d-flex align-center gap-3">
-                      <v-progress-linear :model-value="getEpgProgress(activeChannelEpg.current)" color="secondary" height="4" rounded class="flex-grow-1" style="max-width: 150px;" />
-                      <span class="text-caption text-medium-emphasis flex-shrink-0">
-                        {{ formatTime(activeChannelEpg.current.start) }} - {{ formatTime(activeChannelEpg.current.stop) }} 
-                        ({{ Math.round(getEpgProgress(activeChannelEpg.current)) }}%)
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- EPG Next Programme -->
-                  <div v-if="activeChannelEpg?.next" class="flex-grow-1 min-width-0 px-sm-4 border-left-sm hidden-xs-only">
-                    <div class="text-caption text-medium-emphasis font-weight-bold mb-1">{{ $t('streamBrowser.nextProg') }}</div>
-                    <div class="text-body-2 font-weight-bold text-truncate mb-1">{{ activeChannelEpg.next.title }}</div>
-                    <div class="text-caption text-medium-emphasis">
-                      {{ $t('streamBrowser.startsAt', { time: formatTime(activeChannelEpg.next.start) }) }}
-                    </div>
-                  </div>
-
-                  <!-- Fallback if no EPG -->
-                  <div v-if="!activeChannelEpg?.current" class="text-caption text-medium-emphasis italic py-2 flex-grow-1 text-center">
-                    {{ $t('streamBrowser.noEpgShort') }}
-                  </div>
-                </div>
-              </v-card>
-            </v-col>
-          </v-row>
-
-          <!-- Draggable Divider Handle (Only visible on desktop) -->
-          <div 
-            v-if="!mobile" 
-            class="player-resize-divider"
-            @mousedown="initResize"
-            @dblclick="resetResize"
-            :title="$t('streamBrowser.resizeTooltip')"
-          >
-            <div class="resize-handle-line"></div>
-          </div>
-        </div>
-
         <!-- Browser Top Toolbar (Fixed/Static) -->
         <div class="pa-4 pb-2 flex-shrink-0">
           <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between gap-3">
@@ -704,7 +628,6 @@ const emit = defineEmits<{
   (e: 'play-stream', ch: IPTVChannel): void;
   (e: 'close-player'): void;
   (e: 'toggle-float'): void;
-  (e: 'live-mount-ready', ready: boolean): void;
 }>();
 
 import { useSidebarCascade } from '@/composables/useSidebarCascade';
@@ -763,80 +686,6 @@ const activeSeason = ref<number>(1);
 const itemsPerPage = 40;
 const pageLimit = ref(1);
 
-// Resizing the live player
-const playerWrapperRef = ref<HTMLElement | null>(null);
-const playerHeight = ref<number | null>(null);
-
-const loadPlayerHeight = async () => {
-  try {
-    const height = await db.getSetting('live_player_height', null);
-    playerHeight.value = height;
-  } catch (err) {
-    console.error('Error loading player height:', err);
-  }
-};
-
-const customPlayerHeightStyle = computed(() => {
-  if (mobile.value || playerHeight.value === null) return {};
-  return {
-    height: `${playerHeight.value}px`,
-    maxHeight: 'none',
-    minHeight: '180px'
-  };
-});
-
-let isResizing = false;
-let startY = 0;
-let startHeight = 0;
-
-const initResize = (e: MouseEvent) => {
-  if (mobile.value) return;
-  e.preventDefault();
-  isResizing = true;
-  startY = e.clientY;
-  
-  if (playerWrapperRef.value) {
-    startHeight = playerWrapperRef.value.clientHeight;
-  } else {
-    startHeight = playerHeight.value || 300;
-  }
-
-  window.addEventListener('mousemove', onResize);
-  window.addEventListener('mouseup', stopResize);
-  document.body.style.cursor = 'ns-resize';
-  document.body.style.userSelect = 'none';
-};
-
-const onResize = (e: MouseEvent) => {
-  if (!isResizing) return;
-  const dy = e.clientY - startY;
-  playerHeight.value = Math.min(600, Math.max(180, startHeight + dy));
-};
-
-const stopResize = async () => {
-  if (!isResizing) return;
-  isResizing = false;
-  window.removeEventListener('mousemove', onResize);
-  window.removeEventListener('mouseup', stopResize);
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
-
-  try {
-    await db.setSetting('live_player_height', playerHeight.value);
-  } catch (err) {
-    console.error('Error saving player height:', err);
-  }
-};
-
-const resetResize = async () => {
-  playerHeight.value = null;
-  try {
-    await db.setSetting('live_player_height', null);
-  } catch (err) {
-    console.error('Error resetting player height:', err);
-  }
-};
-
 const onPlaylistUpdatedEvent = async (e: Event) => {
   const customEv = e as CustomEvent<{ playlistId: number }>;
   if (customEv.detail && customEv.detail.playlistId === props.playlistId) {
@@ -847,37 +696,13 @@ const onPlaylistUpdatedEvent = async (e: Event) => {
 };
 
 onMounted(async () => {
-  if (props.type === 'live') {
-    emit('live-mount-ready', true);
-  }
   await loadFavorites();
   await loadBrowserData();
-  await loadPlayerHeight();
   window.addEventListener('playlist-updated', onPlaylistUpdatedEvent);
 });
 
-onActivated(() => {
-  if (props.type === 'live') {
-    emit('live-mount-ready', true);
-  }
-});
-
-onDeactivated(() => {
-  emit('live-mount-ready', false);
-});
-
 onUnmounted(() => {
-  emit('live-mount-ready', false);
   window.removeEventListener('playlist-updated', onPlaylistUpdatedEvent);
-  window.removeEventListener('mousemove', onResize);
-  window.removeEventListener('mouseup', stopResize);
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
-});
-
-// Watch type change to notify mount point availability
-watch(() => props.type, (newType) => {
-  emit('live-mount-ready', newType === 'live');
 });
 
 // Watch parameters changes (e.g. switching between Live TV and Movies)
@@ -1602,84 +1427,8 @@ const playMovie = (movie: IPTVChannel) => {
   min-width: 0;
 }
 
-.live-player-top-section {
-  background: rgba(18, 18, 18, 0.45);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 193, 7, 0.15) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  z-index: 5;
-}
-
-.player-wrapper-responsive {
-  max-width: 960px;
-  aspect-ratio: 16/9;
-}
-
-@media (min-width: 960px) {
-  .player-wrapper-responsive {
-    max-height: 38vh;
-  }
-}
-
-@media (min-width: 960px) and (min-height: 1080px) {
-  .player-wrapper-responsive {
-    max-height: 480px;
-  }
-}
-
-@media (min-width: 960px) and (max-height: 850px) {
-  .player-wrapper-responsive {
-    max-height: 32vh;
-  }
-}
-
 .border-bottom-glow {
   border-bottom: 1px solid rgba(255, 193, 7, 0.15) !important;
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
-}
-
-.border-left-sm {
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.player-resize-divider {
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  right: 0;
-  height: 8px;
-  z-index: 20;
-  cursor: ns-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.player-resize-divider:hover {
-  background: rgba(255, 193, 7, 0.05);
-}
-
-.resize-handle-line {
-  width: 40px;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  transition: all 0.2s ease;
-}
-
-.player-resize-divider:hover .resize-handle-line {
-  background: rgba(255, 193, 7, 0.7);
-  box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
-  width: 60px;
-}
-
-@media (max-width: 600px) {
-  .border-left-sm {
-    border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 12px;
-    padding-left: 0 !important;
-  }
 }
 </style>

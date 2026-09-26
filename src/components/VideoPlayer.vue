@@ -659,6 +659,15 @@ onMounted(async () => {
 
   // Setup ResizeObserver for floating player to save dimensions
   if (props.floating && playerContainerRef.value) {
+    try {
+      const savedW = await db.getSetting("player_float_width", null);
+      const savedH = await db.getSetting("player_float_height", null);
+      if (savedW && savedH && playerContainerRef.value) {
+        playerContainerRef.value.style.width = `${savedW}px`;
+        playerContainerRef.value.style.height = `${savedH}px`;
+      }
+    } catch (e) {}
+
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.contentRect) {
@@ -711,24 +720,39 @@ watch(
 watch(
   () => props.floating,
   async (isFloating) => {
-    if (isFloating && playerContainerRef.value && !resizeObserver) {
-      resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.contentRect) {
-            const width = Math.round(entry.contentRect.width);
-            const height = Math.round(entry.contentRect.height);
-            if (width > 200 && height > 150) {
-              db.setSetting("player_float_width", width).catch(() => {});
-              db.setSetting("player_float_height", height).catch(() => {});
+    if (isFloating && playerContainerRef.value) {
+      try {
+        const savedW = await db.getSetting("player_float_width", null);
+        const savedH = await db.getSetting("player_float_height", null);
+        if (savedW && savedH && playerContainerRef.value) {
+          playerContainerRef.value.style.width = `${savedW}px`;
+          playerContainerRef.value.style.height = `${savedH}px`;
+        }
+      } catch (e) {}
+
+      if (!resizeObserver) {
+        resizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            if (entry.contentRect) {
+              const width = Math.round(entry.contentRect.width);
+              const height = Math.round(entry.contentRect.height);
+              if (width > 200 && height > 150) {
+                db.setSetting("player_float_width", width).catch(() => {});
+                db.setSetting("player_float_height", height).catch(() => {});
+              }
             }
           }
-        }
-      });
-      resizeObserver.observe(playerContainerRef.value);
-    } else if (!isFloating && resizeObserver && playerContainerRef.value) {
-      resizeObserver.unobserve(playerContainerRef.value);
-      resizeObserver.disconnect();
-      resizeObserver = null;
+        });
+        resizeObserver.observe(playerContainerRef.value);
+      }
+    } else if (!isFloating && playerContainerRef.value) {
+      if (resizeObserver) {
+        resizeObserver.unobserve(playerContainerRef.value);
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+      playerContainerRef.value.style.width = "";
+      playerContainerRef.value.style.height = "";
     }
 
     // Ensure playback does not pause when switching player modes or reparenting
@@ -1497,6 +1521,7 @@ const onClosePlayer = () => {
   border: 1px solid rgba(255, 193, 7, 0.5) !important;
   resize: both;
   overflow: hidden;
+  pointer-events: auto !important;
 }
 
 .video-poster-overlay,
