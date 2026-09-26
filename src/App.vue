@@ -44,86 +44,6 @@
           </KeepAlive>
         </div>
 
-        <!-- Right/Top Pane: Embedded Player (Active when a channel is playing) -->
-        <div 
-          v-if="activeChannel"
-          class="embedded-player-container flex-shrink-0"
-          :class="[
-            $vuetify.display.mobile ? 'w-100 h-auto' : 'embedded-player-desktop',
-            playerFloatMode ? 'embedded-player-collapsed' : ($vuetify.display.mobile ? 'border-bottom-glow' : 'border-left-glow')
-          ]"
-        >
-          <div 
-            class="pa-4 h-100 d-flex flex-column gap-4"
-            :class="{ 'pa-0': playerFloatMode }"
-          >
-            <!-- The Player Rectangle -->
-            <div 
-              class="player-wrapper flex-shrink-0"
-              :class="{ 'player-wrapper-floating': playerFloatMode, 'w-100': !playerFloatMode }"
-            >
-              <VideoPlayer
-                :channel="activeChannel"
-                :floating="playerFloatMode"
-                @close-player="onClosePlayer"
-                @toggle-float="onToggleFloat"
-              />
-            </div>
-
-            <!-- Active Channel Metadata & EPG Card (Scrollable Container) -->
-            <div 
-              v-show="!playerFloatMode"
-              class="flex-grow-1 overflow-y-auto pr-1"
-            >
-              <v-card class="glass-card pa-4 rounded-xl" variant="flat">
-                <div class="d-flex align-center gap-3 mb-4">
-                  <v-avatar size="48" class="bg-surface-variant flex-shrink-0" v-slot:default v-if="activeChannel.logo">
-                    <v-img :src="activeChannel.logo" />
-                  </v-avatar>
-                  <div class="min-width-0">
-                    <h3 class="text-subtitle-2 font-weight-bold text-truncate text-glow-small mb-1">{{ activeChannel.name }}</h3>
-                    <v-chip size="x-small" color="primary" class="font-weight-bold uppercase-tag">{{ activeChannel.category }}</v-chip>
-                  </div>
-                </div>
-
-                <!-- EPG Programme Info -->
-                <div v-if="activeChannelEpg.current" class="mt-2">
-                  <div class="text-caption text-secondary font-weight-bold mb-1">🔴 {{ $t('streamBrowser.onAirNow') }}</div>
-                  <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.current.title }}</div>
-                  <p v-if="activeChannelEpg.current.desc" class="text-caption text-medium-emphasis mb-2 leading-relaxed text-line-clamp">
-                    {{ activeChannelEpg.current.desc }}
-                  </p>
-                  <div class="d-flex align-center justify-space-between text-caption text-medium-emphasis mb-1">
-                    <span>{{ formatEpgTime(activeChannelEpg.current.start) }} - {{ formatEpgTime(activeChannelEpg.current.stop) }}</span>
-                    <span>{{ getEpgProgressPercent(activeChannelEpg.current) }}%</span>
-                  </div>
-                  <v-progress-linear :model-value="getEpgProgressPercent(activeChannelEpg.current)" color="secondary" height="4" rounded class="mb-4" />
-                </div>
-
-                <div v-if="activeChannelEpg.next" class="mt-2 pt-2 border-top">
-                  <div class="text-caption text-medium-emphasis font-weight-bold mb-1">{{ $t('streamBrowser.nextProg') }}</div>
-                  <div class="text-body-2 font-weight-bold mb-1">{{ activeChannelEpg.next.title }}</div>
-                  <div class="text-caption text-medium-emphasis">
-                    {{ $t('streamBrowser.startsAt', { time: formatEpgTime(activeChannelEpg.next.start) }) }}
-                  </div>
-                </div>
-
-                <!-- Description for Movies / Series VOD -->
-                <div v-if="activeChannel.plot" class="mt-2 pt-2 border-top">
-                  <div class="text-caption text-secondary font-weight-bold mb-1">{{ $t('streamBrowser.movieDetails.sinopse') }}</div>
-                  <p class="text-caption text-medium-emphasis leading-relaxed mb-0">
-                    {{ activeChannel.plot }}
-                  </p>
-                </div>
-
-                <div v-if="!activeChannelEpg.current && !activeChannel.plot" class="text-caption text-medium-emphasis italic text-center py-2">
-                  {{ $t('streamBrowser.noEpgShort') }}
-                </div>
-              </v-card>
-            </div>
-          </div>
-        </div>
-
       </div>
     </v-main>
   </v-app>
@@ -143,7 +63,6 @@ import PlaylistManager from '@/components/PlaylistManager.vue';
 import StreamBrowser from '@/components/StreamBrowser.vue';
 import TVGuide from '@/components/TVGuide.vue';
 import Settings from '@/components/Settings.vue';
-import VideoPlayer from '@/components/VideoPlayer.vue';
 import { useSidebarCascade } from '@/composables/useSidebarCascade';
 
 const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
@@ -502,92 +421,7 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Embedded Player layout & separation */
-.embedded-player-container {
-  background: rgba(8, 8, 8, 0.4);
-  backdrop-filter: blur(12px);
-  z-index: 10;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
 
-.embedded-player-desktop {
-  width: 480px;
-  max-width: 40vw;
-  height: 100%;
-  animation: slideInLeft 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.embedded-player-container.embedded-player-collapsed {
-  width: 0 !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
-  height: 0 !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  overflow: visible !important;
-  pointer-events: none;
-  animation: none !important;
-  transform: none !important;
-}
-
-.border-left-glow {
-  border-left: 1px solid rgba(255, 193, 7, 0.15) !important;
-  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
-}
-
-.border-bottom-glow {
-  border-bottom: 1px solid rgba(255, 193, 7, 0.15) !important;
-  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
-}
-
-.player-wrapper {
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-  overflow: hidden;
-  aspect-ratio: 16/9;
-}
-
-.player-wrapper-floating {
-  width: 0 !important;
-  height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-  aspect-ratio: auto !important;
-  pointer-events: none;
-}
-
-.border-top {
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-
-.text-line-clamp {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.uppercase-tag {
-  letter-spacing: 1px;
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
 
 /* Scrollbar Customization for ultra premium look */
 ::-webkit-scrollbar {
