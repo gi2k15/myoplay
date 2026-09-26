@@ -378,10 +378,6 @@
                     <span>{{ $t('playlistManager.myPlaylists.channelsCountLabel') }}</span>
                     <strong class="text-primary">{{ pl.channelCount || 0 }}</strong>
                   </div>
-                  <div class="d-flex justify-space-between mb-1" v-if="pl.epgUrl">
-                    <span class="text-truncate mr-2" style="max-width: 140px;">URL EPG:</span>
-                    <span class="text-truncate text-secondary text-right" style="max-width: 160px;" :title="pl.epgUrl">{{ pl.epgUrl }}</span>
-                  </div>
                   <div class="d-flex justify-space-between mb-1">
                     <span>{{ $t('playlistManager.myPlaylists.createdAtPrefix') }}</span>
                     <span>{{ new Date(pl.createdAt).toLocaleDateString() }}</span>

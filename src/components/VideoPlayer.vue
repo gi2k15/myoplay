@@ -470,7 +470,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import Hls from "hls.js";
 import mpegts from "mpegts.js";
@@ -704,6 +704,42 @@ watch(
     }
     await loadSettings();
     initializePlayer();
+  },
+);
+
+// Watch floating mode changes to manage ResizeObserver and ensure smooth playback
+watch(
+  () => props.floating,
+  async (isFloating) => {
+    if (isFloating && playerContainerRef.value && !resizeObserver) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect) {
+            const width = Math.round(entry.contentRect.width);
+            const height = Math.round(entry.contentRect.height);
+            if (width > 200 && height > 150) {
+              db.setSetting("player_float_width", width).catch(() => {});
+              db.setSetting("player_float_height", height).catch(() => {});
+            }
+          }
+        }
+      });
+      resizeObserver.observe(playerContainerRef.value);
+    } else if (!isFloating && resizeObserver && playerContainerRef.value) {
+      resizeObserver.unobserve(playerContainerRef.value);
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+
+    // Ensure playback does not pause when switching player modes or reparenting
+    await nextTick();
+    if (videoRef.value && !isPaused.value && videoRef.value.paused) {
+      try {
+        await videoRef.value.play();
+      } catch (e) {
+        // Ignored if autoplay prevented or already playing
+      }
+    }
   },
 );
 

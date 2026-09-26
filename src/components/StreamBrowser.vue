@@ -87,19 +87,15 @@
       >
         <!-- Live Player Top Section (Active when a live channel is playing and not floating) -->
         <div 
-          v-if="type === 'live' && activeChannel && !playerFloatMode" 
+          v-if="activeChannel"
+          v-show="type === 'live' && !playerFloatMode" 
           class="live-player-top-section py-2 px-4 border-bottom-glow flex-shrink-0 position-relative"
         >
           <v-row class="ma-0 justify-center">
             <!-- Player (Aumentado, largura total com limite elegante) -->
             <v-col cols="12" class="pa-1">
               <div ref="playerWrapperRef" class="player-wrapper mx-auto player-wrapper-responsive" :style="customPlayerHeightStyle">
-                <VideoPlayer
-                  :channel="activeChannel"
-                  :floating="false"
-                  @close-player="emit('close-player')"
-                  @toggle-float="emit('toggle-float')"
-                />
+                <div id="live-player-mount-point" class="w-100 h-100"></div>
               </div>
             </v-col>
             
@@ -685,11 +681,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
-import VideoPlayer from '@/components/VideoPlayer.vue';
 
 const { t } = useI18n();
 
@@ -709,6 +704,7 @@ const emit = defineEmits<{
   (e: 'play-stream', ch: IPTVChannel): void;
   (e: 'close-player'): void;
   (e: 'toggle-float'): void;
+  (e: 'live-mount-ready', ready: boolean): void;
 }>();
 
 import { useSidebarCascade } from '@/composables/useSidebarCascade';
@@ -851,18 +847,37 @@ const onPlaylistUpdatedEvent = async (e: Event) => {
 };
 
 onMounted(async () => {
+  if (props.type === 'live') {
+    emit('live-mount-ready', true);
+  }
   await loadFavorites();
   await loadBrowserData();
   await loadPlayerHeight();
   window.addEventListener('playlist-updated', onPlaylistUpdatedEvent);
 });
 
+onActivated(() => {
+  if (props.type === 'live') {
+    emit('live-mount-ready', true);
+  }
+});
+
+onDeactivated(() => {
+  emit('live-mount-ready', false);
+});
+
 onUnmounted(() => {
+  emit('live-mount-ready', false);
   window.removeEventListener('playlist-updated', onPlaylistUpdatedEvent);
   window.removeEventListener('mousemove', onResize);
   window.removeEventListener('mouseup', stopResize);
   document.body.style.cursor = '';
   document.body.style.userSelect = '';
+});
+
+// Watch type change to notify mount point availability
+watch(() => props.type, (newType) => {
+  emit('live-mount-ready', newType === 'live');
 });
 
 // Watch parameters changes (e.g. switching between Live TV and Movies)

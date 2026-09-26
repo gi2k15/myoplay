@@ -40,25 +40,22 @@
               @play-stream="onPlayStream"
               @close-player="onClosePlayer"
               @toggle-float="onToggleFloat"
+              @live-mount-ready="isLiveMountReady = $event"
             />
           </KeepAlive>
         </div>
 
         <!-- Right/Top Pane: Embedded Player (Active when a channel is playing and not floating) -->
         <div 
-          v-if="activeChannel && !playerFloatMode && currentPage !== 'live'" 
+          v-if="activeChannel"
+          v-show="!playerFloatMode && (currentPage !== 'live' || !isLiveMountReady)" 
           class="embedded-player-container flex-shrink-0"
           :class="$vuetify.display.mobile ? 'w-100 h-auto border-bottom-glow' : 'embedded-player-desktop border-left-glow'"
         >
           <div class="pa-4 h-100 d-flex flex-column gap-4">
             <!-- The Player Rectangle -->
             <div class="player-wrapper w-100 flex-shrink-0">
-              <VideoPlayer
-                :channel="activeChannel"
-                :floating="false"
-                @close-player="onClosePlayer"
-                @toggle-float="onToggleFloat"
-              />
+              <div id="embedded-player-mount-point" class="w-100 h-100"></div>
             </div>
 
             <!-- Active Channel Metadata & EPG Card (Scrollable Container) -->
@@ -114,14 +111,21 @@
 
       </div>
 
-      <!-- Persistent Floating Mini-Player (PiP) -->
-      <VideoPlayer
-        v-if="activeChannel && playerFloatMode"
-        :channel="activeChannel"
-        :floating="true"
-        @close-player="onClosePlayer"
-        @toggle-float="onToggleFloat"
-      />
+      <!-- Mount point for Persistent Floating Mini-Player -->
+      <div id="floating-player-mount-point"></div>
+
+      <!-- Single Global Persistent VideoPlayer with Teleport -->
+      <Teleport 
+        v-if="activeChannel && teleportTarget" 
+        :to="teleportTarget"
+      >
+        <VideoPlayer
+          :channel="activeChannel"
+          :floating="playerFloatMode"
+          @close-player="onClosePlayer"
+          @toggle-float="onToggleFloat"
+        />
+      </Teleport>
     </v-main>
   </v-app>
 </template>
@@ -148,6 +152,17 @@ const { onPageChange } = useSidebarCascade();
 
 // Application States
 const currentPage = ref('playlists'); // Default view
+const isLiveMountReady = ref(false);
+
+const teleportTarget = computed(() => {
+  if (playerFloatMode.value) {
+    return '#floating-player-mount-point';
+  }
+  if (currentPage.value === 'live' && isLiveMountReady.value) {
+    return '#live-player-mount-point';
+  }
+  return '#embedded-player-mount-point';
+});
 
 watch(currentPage, (newPage) => {
   onPageChange(newPage);
