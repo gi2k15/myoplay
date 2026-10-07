@@ -3,13 +3,57 @@ import http from 'http';
 import https from 'https';
 
 const PORT = process.env.PORT || 8088;
+const HOST = '127.0.0.1';
+
+// Only web pages served from the local machine may use this proxy
+const LOCAL_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+
+function getAllowedOrigin(req) {
+  const origin = req.headers.origin;
+  return origin && LOCAL_ORIGIN_RE.test(origin) ? origin : null;
+}
+
+// Validates a target URL; returns an error message or null when allowed
+function validateTarget(rawUrl) {
+  let u;
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    return 'URL de destino inválida';
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+    return 'Protocolo não permitido (apenas http/https)';
+  }
+  const hostname = u.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  // Link-local (cloud metadata, e.g. 169.254.169.254) and IPv6 link-local
+  if (/^169\.254\./.test(hostname) || /^fe80:/.test(hostname)) {
+    return 'Endereço de destino bloqueado';
+  }
+  // Avoid proxy loops / probing the proxy itself
+  const isLoopback = hostname === 'localhost' || hostname === '::1' || /^127\./.test(hostname);
+  if (isLoopback && String(u.port || (u.protocol === 'https:' ? 443 : 80)) === String(PORT)) {
+    return 'Destino não pode ser o próprio proxy';
+  }
+  return null;
+}
 
 const server = http.createServer((req, res) => {
   // Handle CORS preflight options request
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigin = getAllowedOrigin(req);
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Access-Control-Expose-Headers', '*');
+
+  // Reject cross-site browser requests from non-local origins
+  if (req.headers.origin && !allowedOrigin) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Erro do Proxy CORS local: origem não permitida');
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -40,6 +84,15 @@ const server = http.createServer((req, res) => {
 });
 
 function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
+  const validationError = validateTarget(targetUrl);
+  if (validationError) {
+    if (!res.headersSent) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(`Erro do Proxy CORS local: ${validationError}`);
+    }
+    return;
+  }
+
   if (redirectCount > 5) {
     if (!res.headersSent) {
       res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -82,7 +135,14 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
 
       // Copy headers from target response, inject CORS
       const resHeaders = { ...proxyRes.headers };
-      resHeaders['Access-Control-Allow-Origin'] = '*';
+      const proxyAllowedOrigin = getAllowedOrigin(req);
+      if (proxyAllowedOrigin) {
+        resHeaders['Access-Control-Allow-Origin'] = proxyAllowedOrigin;
+        resHeaders['Vary'] = 'Origin';
+      } else {
+        delete resHeaders['access-control-allow-origin'];
+        delete resHeaders['Access-Control-Allow-Origin'];
+      }
       resHeaders['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, HEAD, PUT, DELETE';
       resHeaders['Access-Control-Allow-Headers'] = '*';
       resHeaders['Access-Control-Expose-Headers'] = '*';
@@ -143,5 +203,5 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
   }
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
 });

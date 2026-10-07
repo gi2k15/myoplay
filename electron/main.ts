@@ -51,11 +51,23 @@ function createWindow() {
   });
 }
 
+// Resolves a filename inside userData, rejecting anything that is not a plain *.json basename
+function resolveUserDataFile(filename: unknown): string {
+  if (typeof filename !== 'string' || !/^[A-Za-z0-9._-]+\.json$/.test(filename) || filename !== path.basename(filename)) {
+    throw new Error('Invalid filename');
+  }
+  const base = path.resolve(app.getPath('userData'));
+  const resolved = path.resolve(base, filename);
+  if (path.dirname(resolved) !== base) {
+    throw new Error('Invalid filename');
+  }
+  return resolved;
+}
+
 // IPC handlers for saving/reading data to/from external JSON files in userData
 ipcMain.handle('save-to-file', async (_, filename: string, data: string) => {
   try {
-    const userDataPath = app.getPath('userData');
-    const filePath = path.join(userDataPath, filename);
+    const filePath = resolveUserDataFile(filename);
     await fs.writeFile(filePath, data, 'utf-8');
     return { success: true };
   } catch (error: any) {
@@ -66,8 +78,7 @@ ipcMain.handle('save-to-file', async (_, filename: string, data: string) => {
 
 ipcMain.handle('read-from-file', async (_, filename: string) => {
   try {
-    const userDataPath = app.getPath('userData');
-    const filePath = path.join(userDataPath, filename);
+    const filePath = resolveUserDataFile(filename);
     
     try {
       await fs.access(filePath);
