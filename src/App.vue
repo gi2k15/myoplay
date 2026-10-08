@@ -54,6 +54,7 @@
         :playlist-id="activePlaylistId"
         @play-stream="onPlayStream"
       />
+      <span class="app-version" aria-hidden="true">v{{ appVersion }}</span>
     </v-main>
   </v-app>
 </template>
@@ -76,6 +77,7 @@ import Settings from '@/components/Settings.vue';
 import GlobalSearchModal from '@/components/GlobalSearchModal.vue';
 import { useSidebarCascade } from '@/composables/useSidebarCascade';
 
+const appVersion = __APP_VERSION__;
 const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
 const { onPageChange } = useSidebarCascade();
 
@@ -414,6 +416,19 @@ const getPageTitle = () => {
 </script>
 
 <style>
+.app-version {
+  position: fixed;
+  right: 8px;
+  bottom: 4px;
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.3;
+  color: rgb(var(--v-theme-on-background));
+  pointer-events: none;
+  user-select: none;
+  z-index: 5;
+}
+
 /* Global App Overrides and Themes */
 html, body {
   height: 100vh !important;

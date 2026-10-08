@@ -3,6 +3,9 @@ import Vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import { readFileSync } from 'node:fs'
+
+const pkg = JSON.parse(readFileSync(new URL('package.json', import.meta.url), 'utf-8'))
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -20,7 +23,7 @@ export default defineConfig({
     }),
     viteSingleFile(),
   ],
-  define: { 'process.env': {} },
+  define: { 'process.env': {}, __APP_VERSION__: JSON.stringify(pkg.version) },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('src', import.meta.url)),
