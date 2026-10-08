@@ -5,7 +5,16 @@
       <v-col cols="12" md="10" lg="8">
         
         <!-- Header -->
-        <div class="text-center mb-8">
+        <div class="position-relative text-center mb-8">
+          <v-btn
+            icon="mdi-cog"
+            variant="tonal"
+            color="secondary"
+            class="position-absolute"
+            style="top: 0; right: 0;"
+            :title="$t('settings.title') || 'Configurações'"
+            @click="emit('open-settings')"
+          />
           <h1 class="text-h3 font-weight-bold mb-2 text-glow">MyoPlay</h1>
           <p class="text-subtitle-1 text-medium-emphasis">{{ $t('playlistManager.wizardSubtitle') }}</p>
         </div>
@@ -155,14 +164,56 @@
                   :rules="[v => !!v || $t('playlistManager.urlTab.validationUrl')]"
                 />
 
-                <v-checkbox
-                  v-if="!isElectron"
-                  v-model="useCorsProxy"
-                  :label="$t('playlistManager.urlTab.useProxy')"
-                  color="secondary"
-                  hide-details
-                  class="mb-6"
-                />
+                <div v-if="!isElectron" class="mb-5">
+                  <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+                    <v-checkbox
+                      v-model="useCorsProxy"
+                      :label="$t('playlistManager.urlTab.useProxy')"
+                      color="secondary"
+                      hide-details
+                      density="compact"
+                    />
+                    <v-btn
+                      v-if="useCorsProxy"
+                      variant="tonal"
+                      size="small"
+                      color="secondary"
+                      prepend-icon="mdi-tune"
+                      @click="showProxyConfig = !showProxyConfig"
+                    >
+                      {{ getProxyPresetBadge() }}
+                    </v-btn>
+                  </div>
+
+                  <v-expand-transition>
+                    <v-card v-if="useCorsProxy && showProxyConfig" variant="outlined" class="pa-3 mt-3 rounded-lg bg-surface-variant-subtle border-subtle">
+                      <v-select
+                        v-model="activeProxyPreset"
+                        :items="proxyPresetOptions"
+                        label="Servidor de Proxy CORS"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mb-2"
+                        @update:model-value="onProxyPresetSelect"
+                      />
+                      <v-text-field
+                        v-if="activeProxyPreset === 'custom'"
+                        v-model="currentProxyUrl"
+                        label="URL do Proxy CORS"
+                        placeholder="http://localhost:8088/?url="
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mb-2"
+                        @update:model-value="onCustomProxyUrlInput"
+                      />
+                      <p class="text-caption text-medium-emphasis mb-0">
+                        💡 <strong>Nota:</strong> Se o seu provedor IPTV bloquear servidores em nuvem, selecione <strong>Proxy Local</strong> e execute <code>pnpm proxy</code> no terminal.
+                      </p>
+                    </v-card>
+                  </v-expand-transition>
+                </div>
 
                 <v-btn
                   color="primary"
@@ -232,14 +283,56 @@
                   </v-col>
                 </v-row>
 
-                <v-checkbox
-                  v-if="!isElectron"
-                  v-model="useCorsProxy"
-                  :label="$t('playlistManager.xtreamTab.useProxy')"
-                  color="secondary"
-                  hide-details
-                  class="mb-6"
-                />
+                <div v-if="!isElectron" class="mb-5">
+                  <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+                    <v-checkbox
+                      v-model="useCorsProxy"
+                      :label="$t('playlistManager.xtreamTab.useProxy')"
+                      color="secondary"
+                      hide-details
+                      density="compact"
+                    />
+                    <v-btn
+                      v-if="useCorsProxy"
+                      variant="tonal"
+                      size="small"
+                      color="secondary"
+                      prepend-icon="mdi-tune"
+                      @click="showProxyConfig = !showProxyConfig"
+                    >
+                      {{ getProxyPresetBadge() }}
+                    </v-btn>
+                  </div>
+
+                  <v-expand-transition>
+                    <v-card v-if="useCorsProxy && showProxyConfig" variant="outlined" class="pa-3 mt-3 rounded-lg bg-surface-variant-subtle border-subtle">
+                      <v-select
+                        v-model="activeProxyPreset"
+                        :items="proxyPresetOptions"
+                        label="Servidor de Proxy CORS"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mb-2"
+                        @update:model-value="onProxyPresetSelect"
+                      />
+                      <v-text-field
+                        v-if="activeProxyPreset === 'custom'"
+                        v-model="currentProxyUrl"
+                        label="URL do Proxy CORS"
+                        placeholder="http://localhost:8088/?url="
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mb-2"
+                        @update:model-value="onCustomProxyUrlInput"
+                      />
+                      <p class="text-caption text-medium-emphasis mb-0">
+                        💡 <strong>Nota:</strong> Se o seu provedor IPTV bloquear servidores em nuvem, selecione <strong>Proxy Local</strong> e execute <code>pnpm proxy</code> no terminal.
+                      </p>
+                    </v-card>
+                  </v-expand-transition>
+                </div>
 
                 <v-btn
                   color="primary"
@@ -314,6 +407,57 @@
                   prepend-inner-icon="mdi-link-variant"
                   class="mb-4"
                 />
+
+                <div v-if="!isElectron" class="mb-5">
+                  <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+                    <v-checkbox
+                      v-model="useCorsProxy"
+                      :label="$t('playlistManager.urlTab.useProxy')"
+                      color="secondary"
+                      hide-details
+                      density="compact"
+                    />
+                    <v-btn
+                      v-if="useCorsProxy"
+                      variant="tonal"
+                      size="small"
+                      color="secondary"
+                      prepend-icon="mdi-tune"
+                      @click="showProxyConfig = !showProxyConfig"
+                    >
+                      {{ getProxyPresetBadge() }}
+                    </v-btn>
+                  </div>
+
+                  <v-expand-transition>
+                    <v-card v-if="useCorsProxy && showProxyConfig" variant="outlined" class="pa-3 mt-3 rounded-lg bg-surface-variant-subtle border-subtle">
+                      <v-select
+                        v-model="activeProxyPreset"
+                        :items="proxyPresetOptions"
+                        label="Servidor de Proxy CORS"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mb-2"
+                        @update:model-value="onProxyPresetSelect"
+                      />
+                      <v-text-field
+                        v-if="activeProxyPreset === 'custom'"
+                        v-model="currentProxyUrl"
+                        label="URL do Proxy CORS"
+                        placeholder="http://localhost:8088/?url="
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mb-2"
+                        @update:model-value="onCustomProxyUrlInput"
+                      />
+                      <p class="text-caption text-medium-emphasis mb-0">
+                        💡 <strong>Nota:</strong> Se o seu provedor IPTV bloquear servidores em nuvem, selecione <strong>Proxy Local</strong> e execute <code>pnpm proxy</code> no terminal.
+                      </p>
+                    </v-card>
+                  </v-expand-transition>
+                </div>
 
                 <v-btn
                   color="primary"
@@ -444,8 +588,15 @@
 </template>
 
 <script lang="ts" setup>
-import { DEFAULT_WEB_PROXY_URL, resolveProxy } from "@/utils/proxy";
-import { ref, onMounted, onUnmounted } from 'vue';
+import {
+  DEFAULT_WEB_PROXY_URL,
+  LOCAL_PROXY_URL,
+  VERCEL_PROXY_URL,
+  isLocalProxyUrl,
+  isVercelProxyUrl,
+  resolveProxy
+} from "@/utils/proxy";
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
 import { db, type Playlist, type IPTVChannel } from '@/services/db';
@@ -458,6 +609,7 @@ const { t } = useI18n();
 // Emits
 const emit = defineEmits<{
   (e: 'select-playlist', id: number): void;
+  (e: 'open-settings'): void;
 }>();
 
 // UI States
@@ -484,6 +636,54 @@ const playlistName = ref('');
 const playlistUrl = ref('');
 const useCorsProxy = ref(!isElectron);
 
+// Quick Proxy Configuration
+const currentProxyUrl = ref(DEFAULT_WEB_PROXY_URL);
+const activeProxyPreset = ref<'local' | 'vercel' | 'custom'>('local');
+const showProxyConfig = ref(false);
+
+const proxyPresetOptions = computed(() => [
+  { title: 'Proxy Local (localhost:8088 - Rápido e Sem Bloqueios)', value: 'local' },
+  { title: 'Proxy Nuvem Vercel (/api/proxy)', value: 'vercel' },
+  { title: 'Personalizado...', value: 'custom' },
+]);
+
+const loadCurrentProxySetting = async () => {
+  try {
+    const saved = await db.getSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL);
+    currentProxyUrl.value = saved || DEFAULT_WEB_PROXY_URL;
+    if (isLocalProxyUrl(currentProxyUrl.value)) {
+      activeProxyPreset.value = 'local';
+    } else if (isVercelProxyUrl(currentProxyUrl.value)) {
+      activeProxyPreset.value = 'vercel';
+    } else {
+      activeProxyPreset.value = 'custom';
+    }
+  } catch (err) {
+    console.error('Failed to load proxy setting:', err);
+  }
+};
+
+const onProxyPresetSelect = async (preset: 'local' | 'vercel' | 'custom') => {
+  activeProxyPreset.value = preset;
+  if (preset === 'local') {
+    currentProxyUrl.value = LOCAL_PROXY_URL;
+  } else if (preset === 'vercel') {
+    currentProxyUrl.value = VERCEL_PROXY_URL;
+  }
+  await db.setSetting('cors_proxy_url', currentProxyUrl.value);
+};
+
+const onCustomProxyUrlInput = async (val: string) => {
+  currentProxyUrl.value = val;
+  await db.setSetting('cors_proxy_url', val);
+};
+
+const getProxyPresetBadge = () => {
+  if (activeProxyPreset.value === 'local') return 'Proxy Local (localhost:8088)';
+  if (activeProxyPreset.value === 'vercel') return 'Proxy Nuvem Vercel';
+  return currentProxyUrl.value || 'Personalizado';
+};
+
 const xtreamHost = ref('');
 const xtreamUser = ref('');
 const xtreamPass = ref('');
@@ -505,6 +705,7 @@ const onPlaylistUpdated = async () => {
 
 // Fetch Initial Data
 onMounted(async () => {
+  await loadCurrentProxySetting();
   await refreshPlaylists();
   await refreshEpgCount();
   window.addEventListener('playlist-updated', onPlaylistUpdated);
@@ -694,7 +895,7 @@ const importM3UUrl = async () => {
     let finalUrl = playlistUrl.value.trim();
     
     // Proxy CORS
-    const proxy = resolveProxy(useCorsProxy.value, await db.getSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL), finalUrl);
+    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value, finalUrl);
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalUrl)}` : finalUrl;
 
     const res = await fetch(fetchUrl);
@@ -794,7 +995,7 @@ const importXtream = async () => {
   loadingSubstatus.value = xtreamHost.value;
 
   try {
-    const proxy = resolveProxy(useCorsProxy.value, await db.getSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL), xtreamHost.value);
+    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value, xtreamHost.value);
     
     const client = new XtreamClient({
       url: xtreamHost.value,
@@ -920,7 +1121,7 @@ const downloadAndSaveEPG = async (urlToFetch: string, showUI: boolean = true) =>
   
   try {
     const finalEpgUrl = urlToFetch.trim();
-    const proxy = resolveProxy(useCorsProxy.value, await db.getSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL), finalEpgUrl);
+    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value, finalEpgUrl);
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalEpgUrl)}` : finalEpgUrl;
 
     const res = await fetch(fetchUrl);

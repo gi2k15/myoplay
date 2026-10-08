@@ -74,7 +74,23 @@ export class XtreamClient {
         return { success: false, message: `Erro do servidor: Código HTTP ${res.status}` };
       }
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('nginx')) {
+          return {
+            success: false,
+            message: 'O servidor retornou uma página HTML em vez de dados da API. Se estiver usando o proxy na nuvem, seu provedor IPTV pode estar bloqueando servidores de datacenter. Use a opção Proxy Local (localhost:8088).'
+          };
+        }
+        return {
+          success: false,
+          message: `Resposta inválida da API: formato não reconhecido (${text.slice(0, 80)})`
+        };
+      }
+
       if (data?.user_info?.auth === 1) {
         const exp = data.user_info.exp_date;
         let expDateStr = 'Ilimitado';

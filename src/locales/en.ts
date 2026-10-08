@@ -51,7 +51,8 @@ export default {
       },
       presets: {
         none: 'No Proxy (Direct Connection)',
-        local: 'Local Proxy (Recommended - Super Fast & Unlimited)',
+        local: 'Local Proxy (localhost:8088 - Super Fast & Unlimited)',
+        vercel: 'Vercel Cloud Proxy (/api/proxy)',
         allorigins: 'AllOrigins (Alternative - Unlimited)',
         corsAnywhere: 'Cors-Anywhere (Requires Demo Activation)',
         thingproxy: 'ThingProxy (Lightweight)',

@@ -119,6 +119,9 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
     delete headers.host;
     delete headers.origin;
     delete headers.referer;
+    if (!headers['user-agent']) {
+      headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+    }
 
     const options = {
       method: req.method,
@@ -164,7 +167,7 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
 
     // Abort backend request immediately if client closes connection to save bandwidth and sockets
     const onClientClose = () => {
-      if (!proxyReq.destroyed) {
+      if (!proxyReq.destroyed && !res.writableEnded) {
         console.log(`[CORS Proxy] Conexão cancelada pelo cliente. Abortando requisição para: ${targetUrl}`);
         proxyReq.destroy();
       }

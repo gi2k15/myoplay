@@ -110,7 +110,7 @@ function forward(target, req, res, redirects = 0) {
   const u = checked.url;
   const mod = u.protocol === 'https:' ? https : http;
   const headers = {
-    'User-Agent': 'Mozilla/5.0 (compatible; MyoPlay)',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
     Accept: req.headers.accept || '*/*',
   };
   if (req.headers.range) headers.Range = req.headers.range;

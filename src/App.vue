@@ -31,6 +31,18 @@
       >
         <!-- Left Pane: Main App Components -->
         <div class="flex-grow-1 min-width-0 h-100 position-relative overflow-y-auto" style="overflow-x: hidden;">
+          <!-- Return to Playlists button when no playlists exist and Settings is open -->
+          <div v-if="!hasPlaylists && currentPage === 'settings'" class="pa-4 border-bottom d-flex align-center">
+            <v-btn
+              prepend-icon="mdi-arrow-left"
+              variant="tonal"
+              color="primary"
+              @click="currentPage = 'playlists'"
+            >
+              {{ $t('sidebar.playlists') || 'Voltar para Listas' }}
+            </v-btn>
+          </div>
+
           <KeepAlive>
             <component 
               :is="activeComponent" 
@@ -43,6 +55,7 @@
               @play-stream="onPlayStream"
               @close-player="onClosePlayer"
               @toggle-float="onToggleFloat"
+              @open-settings="currentPage = 'settings'"
             />
           </KeepAlive>
         </div>
@@ -210,19 +223,13 @@ onMounted(async () => {
     console.error('Error loading language setting:', err);
   }
   
-  // Migrate old AllOrigins proxy setting to local proxy
+  // Migrate proxy settings to local proxy
   try {
     const currentProxy = await db.getSetting('cors_proxy_url');
-    // One-time: undo the short-lived /api/proxy auto-migration (the local proxy was the user's choice)
-    if (!isElectron && !(await db.getSetting('proxy_local_restored_v1', false))) {
-      if (currentProxy === '/api/proxy?url=') {
+    if (!isElectron) {
+      if (!currentProxy || currentProxy === '/api/proxy?url=' || currentProxy === 'https://api.allorigins.win/raw?url=') {
         await db.setSetting('cors_proxy_url', LOCAL_PROXY_URL);
       }
-      await db.setSetting('proxy_local_restored_v1', true);
-    }
-    if (currentProxy === 'https://api.allorigins.win/raw?url=') {
-      const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
-      await db.setSetting('cors_proxy_url', defaultProxyUrl);
     }
   } catch (err) {
     console.error('Migration error:', err);
