@@ -444,6 +444,7 @@
 </template>
 
 <script lang="ts" setup>
+import { DEFAULT_WEB_PROXY_URL } from "@/utils/proxy";
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
@@ -693,7 +694,7 @@ const importM3UUrl = async () => {
     let finalUrl = playlistUrl.value.trim();
     
     // Proxy CORS
-    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
+    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL) : '';
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalUrl)}` : finalUrl;
 
     const res = await fetch(fetchUrl);
@@ -793,7 +794,7 @@ const importXtream = async () => {
   loadingSubstatus.value = xtreamHost.value;
 
   try {
-    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
+    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL) : '';
     
     const client = new XtreamClient({
       url: xtreamHost.value,
@@ -919,7 +920,7 @@ const downloadAndSaveEPG = async (urlToFetch: string, showUI: boolean = true) =>
   
   try {
     const finalEpgUrl = urlToFetch.trim();
-    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', 'http://localhost:8088/?url=') : '';
+    const proxy = useCorsProxy.value ? await db.getSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL) : '';
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalEpgUrl)}` : finalEpgUrl;
 
     const res = await fetch(fetchUrl);

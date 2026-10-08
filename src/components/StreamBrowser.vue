@@ -699,6 +699,7 @@
 </template>
 
 <script lang="ts" setup>
+import { DEFAULT_WEB_PROXY_URL } from "@/utils/proxy";
 import { ref, computed, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
@@ -1187,7 +1188,7 @@ const openSeriesDetails = async (series: IPTVChannel) => {
     const pl = (await db.getPlaylists()).find(p => p.id === props.playlistId);
     
     if (pl && pl.type === 'xtream' && series.xtreamId) {
-      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+      const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
       const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
       
       const client = new XtreamClient({

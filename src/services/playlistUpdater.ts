@@ -1,3 +1,4 @@
+import { DEFAULT_WEB_PROXY_URL } from "@/utils/proxy";
 // src/services/playlistUpdater.ts
 import { db, type Playlist } from './db';
 
@@ -58,7 +59,7 @@ export class PlaylistUpdater {
         if (!pl.url) throw new Error('Playlist has no URL');
         onProgress?.('Baixando arquivo M3U...', 0);
         
-        const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+        const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
         const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
         const fetchUrl = proxy ? `${proxy}${encodeURIComponent(pl.url)}` : pl.url;
 
@@ -110,7 +111,7 @@ export class PlaylistUpdater {
         if (!pl.url || !pl.username || !pl.password) throw new Error('Credenciais do Xtream incompletas');
         onProgress?.('Conectando ao servidor Xtream...', 10);
 
-        const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+        const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
         const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
         const client = new XtreamClient({
           url: pl.url,
@@ -176,7 +177,7 @@ export class PlaylistUpdater {
 
   // Helper to fetch and parse EPG
   private static async updateEpg(epgUrl: string): Promise<void> {
-    const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+    const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
     const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(epgUrl)}` : epgUrl;
 

@@ -447,6 +447,7 @@
 </template>
 
 <script lang="ts" setup>
+import { DEFAULT_WEB_PROXY_URL, isLocalProxyUrl } from "@/utils/proxy";
 import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db } from '@/services/db';
@@ -743,13 +744,13 @@ const syncAllPlaylists = async () => {
 const loadProxySettings = async () => {
   try {
     // 1. Data Proxy
-    const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+    const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
     const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
     customProxyUrl.value = proxy;
 
     if (proxy === '') {
       selectedProxyPreset.value = 'none';
-    } else if (proxy.includes('localhost:8088') || proxy.includes('127.0.0.1:8088')) {
+    } else if (isLocalProxyUrl(proxy) || proxy === DEFAULT_WEB_PROXY_URL) {
       selectedProxyPreset.value = 'local';
     } else if (proxy.includes('allorigins.win')) {
       selectedProxyPreset.value = 'allorigins';
@@ -770,7 +771,7 @@ const loadProxySettings = async () => {
       selectedPlayerProxyPreset.value = 'none';
     } else if (playerProxy.includes('corsproxy.io')) {
       selectedPlayerProxyPreset.value = 'corsproxy';
-    } else if (playerProxy.includes('localhost:8088') || playerProxy.includes('127.0.0.1:8088')) {
+    } else if (isLocalProxyUrl(playerProxy) || playerProxy === DEFAULT_WEB_PROXY_URL) {
       selectedPlayerProxyPreset.value = 'local';
     } else if (playerProxy.includes('allorigins.win')) {
       selectedPlayerProxyPreset.value = 'allorigins';
@@ -793,7 +794,7 @@ const onProxyPresetChange = (preset: string) => {
   if (preset === 'none') {
     customProxyUrl.value = '';
   } else if (preset === 'local') {
-    customProxyUrl.value = 'http://localhost:8088/?url=';
+    customProxyUrl.value = DEFAULT_WEB_PROXY_URL;
   } else if (preset === 'allorigins') {
     customProxyUrl.value = 'https://api.allorigins.win/raw?url=';
   } else if (preset === 'cors-anywhere') {
@@ -809,7 +810,7 @@ const onPlayerProxyPresetChange = (preset: string) => {
   if (preset === 'none') {
     customPlayerProxyUrl.value = '';
   } else if (preset === 'local') {
-    customPlayerProxyUrl.value = 'http://localhost:8088/?url=';
+    customPlayerProxyUrl.value = DEFAULT_WEB_PROXY_URL;
   } else if (preset === 'corsproxy') {
     customPlayerProxyUrl.value = 'https://corsproxy.io/?';
   } else if (preset === 'allorigins') {
@@ -937,7 +938,7 @@ const wipeDatabase = async () => {
 
       tx.oncomplete = async () => {
         // Restore default settings
-        const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+        const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
         const defaultPlayerProxyUrl = isElectron ? '' : 'https://corsproxy.io/?';
         const defaultPlayerProxyStreams = isElectron ? 'never' : 'auto';
 
@@ -971,7 +972,7 @@ const wipeDatabase = async () => {
 const resetToDefaults = async () => {
   if (confirm(t('settings.maintenance.resetConfirm'))) {
     try {
-      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
+      const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
       const defaultPlayerProxyUrl = isElectron ? '' : 'https://corsproxy.io/?';
       const defaultPlayerProxyStreams = isElectron ? 'never' : 'auto';
 
