@@ -60,7 +60,7 @@
 </template>
 
 <script lang="ts" setup>
-import { DEFAULT_WEB_PROXY_URL } from "@/utils/proxy";
+import { DEFAULT_WEB_PROXY_URL, LOCAL_PROXY_URL } from "@/utils/proxy";
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
@@ -213,6 +213,13 @@ onMounted(async () => {
   // Migrate old AllOrigins proxy setting to local proxy
   try {
     const currentProxy = await db.getSetting('cors_proxy_url');
+    // One-time: undo the short-lived /api/proxy auto-migration (the local proxy was the user's choice)
+    if (!isElectron && !(await db.getSetting('proxy_local_restored_v1', false))) {
+      if (currentProxy === '/api/proxy?url=') {
+        await db.setSetting('cors_proxy_url', LOCAL_PROXY_URL);
+      }
+      await db.setSetting('proxy_local_restored_v1', true);
+    }
     if (currentProxy === 'https://api.allorigins.win/raw?url=') {
       const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
       await db.setSetting('cors_proxy_url', defaultProxyUrl);
