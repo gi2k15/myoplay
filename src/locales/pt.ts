@@ -20,6 +20,7 @@ export default {
     managePlaylists: 'Gerenciar Listas',
     settings: 'Configurações',
     recent: 'Recentes',
+    globalSearch: 'Busca Global',
     collapse: 'Recolher',
     activePlaylist: 'Lista Ativa',
     updatingBackground: 'Atualizando em segundo plano...',
@@ -393,5 +394,28 @@ export default {
     play: 'Reproduzir',
     pause: 'Pausar',
     volume: 'Volume'
+  },
+  globalSearch: {
+    title: 'Busca Global',
+    placeholder: 'Buscar em tudo: canais, filmes, séries...',
+    all: 'Todos',
+    live: 'Ao Vivo',
+    movies: 'Filmes',
+    series: 'Séries',
+    noResults: 'Nenhum resultado encontrado para "{query}"',
+    noResultsDesc: 'Tente buscar com palavras-chave diferentes ou termos mais curtos.',
+    typeToSearch: 'Pesquisar em todo o catálogo',
+    typeToSearchDesc: 'Digite o nome de qualquer canal ao vivo, filme ou série para buscar instantaneamente.',
+    recentSearches: 'Buscas Recentes',
+    clearRecent: 'Limpar',
+    watchNow: 'Assistir',
+    viewEpisodes: 'Episódios',
+    viewDetails: 'Ver Detalhes',
+    viewAll: 'Ver todos ({count})',
+    pressEsc: 'ESC para fechar',
+    shortcut: 'Ctrl + K',
+    resultsCount: '{count} resultado(s) encontrado(s)',
+    episodesCount: '{count} episódios',
+    seasonsCount: '{count} temporada(s)'
   }
 };

@@ -36,6 +36,38 @@
 
     <v-divider class="opacity-10" />
 
+    <!-- Global Search Quick Trigger -->
+    <div v-if="!rail" class="px-2 pt-3 pb-1">
+      <v-btn
+        block
+        variant="tonal"
+        color="secondary"
+        class="global-search-btn justify-space-between text-none rounded-lg"
+        @click="$emit('open-global-search')"
+      >
+        <template v-slot:prepend>
+          <v-icon size="small" color="secondary">mdi-magnify</v-icon>
+        </template>
+        <span class="text-caption font-weight-medium text-truncate mr-auto ml-1">{{ $t('sidebar.globalSearch') }}</span>
+        <kbd class="sidebar-kbd">Ctrl+K</kbd>
+      </v-btn>
+    </div>
+    <div v-else class="px-2 pt-3 pb-1 text-center">
+      <v-btn
+        icon="mdi-magnify"
+        variant="tonal"
+        color="secondary"
+        size="small"
+        class="rounded-lg"
+        @click="$emit('open-global-search')"
+      >
+        <v-icon size="small">mdi-magnify</v-icon>
+        <v-tooltip activator="parent" location="right">
+          {{ $t('sidebar.globalSearch') }} (Ctrl+K)
+        </v-tooltip>
+      </v-btn>
+    </div>
+
     <!-- Navigation Items -->
     <v-list density="comfortable" nav class="px-2 py-4">
       <v-list-item
@@ -210,6 +242,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', val: string): void;
   (e: 'remove-recent', channelId: string): void;
   (e: 'play-stream', channel: any): void;
+  (e: 'open-global-search'): void;
 }>();
 
 const formatStreamType = (type: string) => {
@@ -290,6 +323,29 @@ const navItems = computed(() => [
   background: linear-gradient(90deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 213, 79, 0.05) 100%) !important;
   border-left: 3px solid #FFD54F;
   box-shadow: 0 4px 15px rgba(255, 193, 7, 0.1);
+}
+
+.global-search-btn {
+  background: rgba(255, 193, 7, 0.06) !important;
+  border: 1px solid rgba(255, 193, 7, 0.2) !important;
+  transition: all 0.2s ease;
+}
+
+.global-search-btn:hover {
+  background: rgba(255, 193, 7, 0.15) !important;
+  border-color: rgba(255, 193, 7, 0.4) !important;
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.15);
+}
+
+.sidebar-kbd {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.65rem;
+  font-family: inherit;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .playlist-info-card {

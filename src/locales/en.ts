@@ -20,6 +20,7 @@ export default {
     managePlaylists: 'Manage Playlists',
     settings: 'Settings',
     recent: 'Recent',
+    globalSearch: 'Global Search',
     collapse: 'Collapse',
     activePlaylist: 'Active Playlist',
     updatingBackground: 'Updating in background...',
@@ -393,5 +394,28 @@ export default {
     play: 'Play',
     pause: 'Pause',
     volume: 'Volume'
+  },
+  globalSearch: {
+    title: 'Global Search',
+    placeholder: 'Search everything: channels, movies, series...',
+    all: 'All',
+    live: 'Live TV',
+    movies: 'Movies',
+    series: 'Series',
+    noResults: 'No results found for "{query}"',
+    noResultsDesc: 'Try searching with different keywords or shorter terms.',
+    typeToSearch: 'Search the entire catalog',
+    typeToSearchDesc: 'Type the name of any live channel, movie, or series to search instantly.',
+    recentSearches: 'Recent Searches',
+    clearRecent: 'Clear',
+    watchNow: 'Watch',
+    viewEpisodes: 'Episodes',
+    viewDetails: 'View Details',
+    viewAll: 'View all ({count})',
+    pressEsc: 'ESC to close',
+    shortcut: 'Ctrl + K',
+    resultsCount: '{count} result(s) found',
+    episodesCount: '{count} episodes',
+    seasonsCount: '{count} season(s)'
   }
 };

@@ -240,7 +240,24 @@
                 clearable
                 width="280px"
                 @update:model-value="resetPagination"
-              />
+              >
+                <template v-slot:append-inner>
+                  <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-btn
+                        v-bind="tooltipProps"
+                        icon="mdi-earth"
+                        variant="text"
+                        size="x-small"
+                        color="secondary"
+                        class="opacity-70 hover-opacity-100"
+                        @click.stop="triggerGlobalSearch"
+                      />
+                    </template>
+                    {{ $t('sidebar.globalSearch') }} (Ctrl+K)
+                  </v-tooltip>
+                </template>
+              </v-text-field>
             </div>
           </div>
         </div>
@@ -738,6 +755,10 @@ const {
 const searchQuery = ref('');
 const selectedCategory = ref('all');
 const showMobileCategories = ref(false);
+
+const triggerGlobalSearch = () => {
+  window.dispatchEvent(new CustomEvent('open-global-search'));
+};
 
 // Sorting States
 const sortBy = ref(localStorage.getItem('movie_sort_by') || 'added');
