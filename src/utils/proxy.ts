@@ -10,3 +10,21 @@ export const DEFAULT_WEB_PROXY_URL = isLocalHost
 
 export const isLocalProxyUrl = (url: string): boolean =>
   url.includes('localhost:8088') || url.includes('127.0.0.1:8088');
+
+// An http:// target requested from an https:// page is blocked as mixed content,
+// so it must go through the proxy even if the user left "Use CORS proxy" unchecked.
+export const isMixedContent = (targetUrl: string): boolean =>
+  typeof window !== 'undefined' &&
+  window.location.protocol === 'https:' &&
+  /^http:\/\//i.test(targetUrl.trim());
+
+export const resolveProxy = (useProxy: boolean, storedProxy: string, targetUrl: string): string => {
+  const forced = needsForcedProxy(useProxy, targetUrl);
+  if (!useProxy && !forced) return '';
+  const onHosted = DEFAULT_WEB_PROXY_URL.startsWith('/api/');
+  if (!storedProxy || (onHosted && isLocalProxyUrl(storedProxy))) return DEFAULT_WEB_PROXY_URL;
+  return storedProxy;
+};
+
+const needsForcedProxy = (useProxy: boolean, targetUrl: string): boolean =>
+  !useProxy && isMixedContent(targetUrl);
