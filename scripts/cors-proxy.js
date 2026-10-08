@@ -5,12 +5,18 @@ import https from 'https';
 const PORT = process.env.PORT || 8088;
 const HOST = '127.0.0.1';
 
-// Only web pages served from the local machine may use this proxy
+// Only local pages and explicitly trusted origins may use this proxy
 const LOCAL_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+
+// Extra trusted origins (comma-separated), e.g. the hosted web app
+const EXTRA_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://myoplay.vercel.app')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 function getAllowedOrigin(req) {
   const origin = req.headers.origin;
-  return origin && LOCAL_ORIGIN_RE.test(origin) ? origin : null;
+  return origin && (LOCAL_ORIGIN_RE.test(origin) || EXTRA_ORIGINS.includes(origin)) ? origin : null;
 }
 
 // Validates a target URL; returns an error message or null when allowed
@@ -47,6 +53,8 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Access-Control-Expose-Headers', '*');
+  // Chrome Private Network Access: allow HTTPS sites to reach this local proxy
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
 
   // Reject cross-site browser requests from non-local origins
   if (req.headers.origin && !allowedOrigin) {

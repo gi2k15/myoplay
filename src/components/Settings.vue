@@ -447,7 +447,7 @@
 </template>
 
 <script lang="ts" setup>
-import { DEFAULT_WEB_PROXY_URL, isLocalProxyUrl } from "@/utils/proxy";
+import { DEFAULT_WEB_PROXY_URL, LOCAL_PROXY_URL, isLocalProxyUrl } from "@/utils/proxy";
 import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db } from '@/services/db';
@@ -750,7 +750,7 @@ const loadProxySettings = async () => {
 
     if (proxy === '') {
       selectedProxyPreset.value = 'none';
-    } else if (isLocalProxyUrl(proxy) || proxy === DEFAULT_WEB_PROXY_URL) {
+    } else if (isLocalProxyUrl(proxy)) {
       selectedProxyPreset.value = 'local';
     } else if (proxy.includes('allorigins.win')) {
       selectedProxyPreset.value = 'allorigins';
@@ -771,7 +771,7 @@ const loadProxySettings = async () => {
       selectedPlayerProxyPreset.value = 'none';
     } else if (playerProxy.includes('corsproxy.io')) {
       selectedPlayerProxyPreset.value = 'corsproxy';
-    } else if (isLocalProxyUrl(playerProxy) || playerProxy === DEFAULT_WEB_PROXY_URL) {
+    } else if (isLocalProxyUrl(playerProxy)) {
       selectedPlayerProxyPreset.value = 'local';
     } else if (playerProxy.includes('allorigins.win')) {
       selectedPlayerProxyPreset.value = 'allorigins';
@@ -794,7 +794,7 @@ const onProxyPresetChange = (preset: string) => {
   if (preset === 'none') {
     customProxyUrl.value = '';
   } else if (preset === 'local') {
-    customProxyUrl.value = DEFAULT_WEB_PROXY_URL;
+    customProxyUrl.value = LOCAL_PROXY_URL;
   } else if (preset === 'allorigins') {
     customProxyUrl.value = 'https://api.allorigins.win/raw?url=';
   } else if (preset === 'cors-anywhere') {
@@ -810,7 +810,7 @@ const onPlayerProxyPresetChange = (preset: string) => {
   if (preset === 'none') {
     customPlayerProxyUrl.value = '';
   } else if (preset === 'local') {
-    customPlayerProxyUrl.value = DEFAULT_WEB_PROXY_URL;
+    customPlayerProxyUrl.value = LOCAL_PROXY_URL;
   } else if (preset === 'corsproxy') {
     customPlayerProxyUrl.value = 'https://corsproxy.io/?';
   } else if (preset === 'allorigins') {

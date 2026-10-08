@@ -216,13 +216,6 @@ onMounted(async () => {
     if (currentProxy === 'https://api.allorigins.win/raw?url=') {
       const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
       await db.setSetting('cors_proxy_url', defaultProxyUrl);
-    } else if (
-      !isElectron &&
-      DEFAULT_WEB_PROXY_URL.startsWith('/api/') &&
-      typeof currentProxy === 'string' &&
-      (currentProxy.includes('localhost:8088') || currentProxy.includes('127.0.0.1:8088'))
-    ) {
-      await db.setSetting('cors_proxy_url', DEFAULT_WEB_PROXY_URL);
     }
   } catch (err) {
     console.error('Migration error:', err);
