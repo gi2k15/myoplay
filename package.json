@@ -3,7 +3,7 @@
   "desktopName": "myoplay.desktop",
   "private": true,
   "type": "module",
-  "version": "0.50.0",
+  "version": "0.51.0",
   "description": "Local IPTV Player built with Vue 3 and Electron",
   "author": "Bruno <dantas.bs@gmail.com>",
   "license": "GPL-3.0-or-later",
@@ -21,6 +21,7 @@
     "electron:build:all": "pnpm build && node scripts/build-electron.js && electron-builder -wml",
     "electron:build:win-linux": "pnpm build && node scripts/build-electron.js && electron-builder -wl",
     "electron:build:win": "pnpm build && node scripts/build-electron.js && electron-builder --win",
+    "electron:build:linux": "pnpm build && node scripts/build-electron.js && electron-builder --linux",
     "electron:release": "pnpm build && node scripts/build-electron.js && electron-builder --publish always"
   },
   "dependencies": {
@@ -64,6 +65,12 @@
     "linux": {
       "icon": "public/favicon.png",
       "target": [
+        {
+          "target": "pacman",
+          "arch": [
+            "x64"
+          ]
+        },
         {
           "target": "AppImage",
           "arch": [

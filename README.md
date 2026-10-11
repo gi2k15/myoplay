@@ -154,6 +154,7 @@ pnpm electron:build
 ```
 
 You can target specific platforms:
+- **Linux (pacman, AppImage, deb)**: `pnpm electron:build:linux`
 - **Windows**: `pnpm electron:build:win`
 - **Windows & Linux**: `pnpm electron:build:win-linux`
 - **All Platforms (Win/Mac/Linux)**: `pnpm electron:build:all`
@@ -178,6 +179,7 @@ pnpm build
 | `pnpm proxy`                | Launches only the custom Node.js CORS proxy server on port `8088`                              |
 | `pnpm electron:dev`         | Compiles, watches, and runs the Electron application in development mode with live rebuilds   |
 | `pnpm electron:build`       | Compiles web files and builds the Electron desktop app packages for the current platform      |
+| `pnpm electron:build:linux` | Compiles and builds the desktop app for Linux (pacman `.pkg.tar.zst`, AppImage, deb)          |
 | `pnpm electron:build:win`   | Compiles and builds the desktop app specifically for Windows (NSIS Installer & ZIP)           |
 | `pnpm electron:build:win-l` | Compiles and builds the desktop app for Windows and Linux                                     |
 | `pnpm electron:build:all`   | Compiles and builds the desktop app for Windows, Linux, and macOS                             |
