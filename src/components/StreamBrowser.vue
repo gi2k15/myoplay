@@ -716,7 +716,7 @@
 </template>
 
 <script lang="ts" setup>
-import { DEFAULT_WEB_PROXY_URL } from "@/utils/proxy";
+import { getDataProxy } from "@/utils/proxy";
 import { ref, computed, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
@@ -725,7 +725,6 @@ import VideoPlayer from '@/components/VideoPlayer.vue';
 
 const { t } = useI18n();
 
-const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
 
 // Props
 const props = defineProps<{
@@ -772,12 +771,6 @@ const sortOptions = computed(() => [
   { title: t('streamBrowser.sortOptions.rating'), value: 'rating' },
   { title: t('streamBrowser.sortOptions.nameAsc'), value: 'name' }
 ]);
-
-const getM3uIndex = (id: string) => {
-  const parts = id.split('_');
-  const lastPart = parts[parts.length - 1];
-  return parseInt(lastPart, 10);
-};
 
 const categories = ref<{ name: string; count: number }[]>([]);
 const allChannels = ref<IPTVChannel[]>([]);
@@ -1059,10 +1052,8 @@ const filteredChannels = computed(() => {
         if (a.xtreamId && b.xtreamId) {
           return b.xtreamId - a.xtreamId; // Newest provider ID first
         }
-        const indexA = getM3uIndex(a.id);
-        const indexB = getM3uIndex(b.id);
-        if (!isNaN(indexA) && !isNaN(indexB)) {
-          return indexA - indexB; // M3U playlist order
+        if (a.index !== undefined && b.index !== undefined) {
+          return a.index - b.index; // M3U playlist order
         }
         return a.name.localeCompare(b.name);
       });
@@ -1209,8 +1200,7 @@ const openSeriesDetails = async (series: IPTVChannel) => {
     const pl = (await db.getPlaylists()).find(p => p.id === props.playlistId);
     
     if (pl && pl.type === 'xtream' && series.xtreamId) {
-      const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
-      const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+      const proxy = await getDataProxy();
       
       const client = new XtreamClient({
         url: pl.url!,

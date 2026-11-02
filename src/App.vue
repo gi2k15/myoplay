@@ -73,7 +73,7 @@
 </template>
 
 <script lang="ts" setup>
-import { DEFAULT_WEB_PROXY_URL, LOCAL_PROXY_URL } from "@/utils/proxy";
+import { LOCAL_PROXY_URL } from "@/utils/proxy";
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
@@ -227,9 +227,12 @@ onMounted(async () => {
   try {
     const currentProxy = await db.getSetting('cors_proxy_url');
     if (!isElectron) {
-      if (!currentProxy || currentProxy === '/api/proxy?url=' || currentProxy === 'https://api.allorigins.win/raw?url=') {
+      // Old defaults move once so later user choices stick; /api/proxy always moves because it was removed
+      const migrated = await db.getSetting('proxy_migrated_v3', false);
+      if (currentProxy === '/api/proxy?url=' || (!migrated && (!currentProxy || currentProxy === 'https://api.allorigins.win/raw?url='))) {
         await db.setSetting('cors_proxy_url', LOCAL_PROXY_URL);
       }
+      if (!migrated) await db.setSetting('proxy_migrated_v3', true);
     }
   } catch (err) {
     console.error('Migration error:', err);

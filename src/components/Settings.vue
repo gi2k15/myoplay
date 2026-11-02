@@ -447,7 +447,7 @@
 </template>
 
 <script lang="ts" setup>
-import { DEFAULT_WEB_PROXY_URL, LOCAL_PROXY_URL, VERCEL_PROXY_URL, isLocalProxyUrl, isVercelProxyUrl } from "@/utils/proxy";
+import { DEFAULT_WEB_PROXY_URL, LOCAL_PROXY_URL, isLocalProxyUrl, getDataProxy } from "@/utils/proxy";
 import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db } from '@/services/db';
@@ -511,7 +511,6 @@ const streamProxyOptions = computed(() => [
 const proxyPresets = computed(() => [
   { title: t('settings.proxy.presets.none'), value: 'none' },
   { title: t('settings.proxy.presets.local'), value: 'local' },
-  { title: t('settings.proxy.presets.vercel'), value: 'vercel' },
   { title: t('settings.proxy.presets.allorigins'), value: 'allorigins' },
   { title: t('settings.proxy.presets.corsAnywhere'), value: 'cors-anywhere' },
   { title: t('settings.proxy.presets.thingproxy'), value: 'thingproxy' },
@@ -745,16 +744,13 @@ const syncAllPlaylists = async () => {
 const loadProxySettings = async () => {
   try {
     // 1. Data Proxy
-    const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
-    const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+    const proxy = await getDataProxy();
     customProxyUrl.value = proxy;
 
     if (proxy === '') {
       selectedProxyPreset.value = 'none';
     } else if (isLocalProxyUrl(proxy)) {
       selectedProxyPreset.value = 'local';
-    } else if (isVercelProxyUrl(proxy)) {
-      selectedProxyPreset.value = 'vercel';
     } else if (proxy.includes('allorigins.win')) {
       selectedProxyPreset.value = 'allorigins';
     } else if (proxy.includes('cors-anywhere.herokuapp.com')) {
@@ -798,8 +794,6 @@ const onProxyPresetChange = (preset: string) => {
     customProxyUrl.value = '';
   } else if (preset === 'local') {
     customProxyUrl.value = LOCAL_PROXY_URL;
-  } else if (preset === 'vercel') {
-    customProxyUrl.value = VERCEL_PROXY_URL;
   } else if (preset === 'allorigins') {
     customProxyUrl.value = 'https://api.allorigins.win/raw?url=';
   } else if (preset === 'cors-anywhere') {

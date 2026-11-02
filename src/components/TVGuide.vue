@@ -273,16 +273,9 @@ const loadGuideData = async () => {
     // Filter channels that have a valid tvgId mapped and are live streams
     const channels = list.filter(ch => !!ch.tvgId && ch.type === 'live');
     
-    const activeChannels: IPTVChannel[] = [];
-
-    for (const ch of channels) {
-      const { current } = await db.getCurrentAndNextProgramme(ch.tvgId!);
-      if (current) {
-        currentShows.value[ch.tvgId!] = current;
-      }
-      // Show all channels that have tvgId mapped, not only those with cached events
-      activeChannels.push(ch);
-    }
+    // Show all channels that have tvgId mapped, not only those with cached events
+    const activeChannels = channels;
+    currentShows.value = await db.getCurrentProgrammes();
 
     // Sort: channels with live show first, then alphabetically
     activeChannels.sort((a, b) => {

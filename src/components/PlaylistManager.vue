@@ -591,9 +591,7 @@
 import {
   DEFAULT_WEB_PROXY_URL,
   LOCAL_PROXY_URL,
-  VERCEL_PROXY_URL,
   isLocalProxyUrl,
-  isVercelProxyUrl,
   resolveProxy
 } from "@/utils/proxy";
 import { ref, computed, onMounted, onUnmounted } from 'vue';
@@ -638,12 +636,11 @@ const useCorsProxy = ref(!isElectron);
 
 // Quick Proxy Configuration
 const currentProxyUrl = ref(DEFAULT_WEB_PROXY_URL);
-const activeProxyPreset = ref<'local' | 'vercel' | 'custom'>('local');
+const activeProxyPreset = ref<'local' | 'custom'>('local');
 const showProxyConfig = ref(false);
 
 const proxyPresetOptions = computed(() => [
   { title: 'Proxy Local (localhost:8088 - Rápido e Sem Bloqueios)', value: 'local' },
-  { title: 'Proxy Nuvem Vercel (/api/proxy)', value: 'vercel' },
   { title: 'Personalizado...', value: 'custom' },
 ]);
 
@@ -653,8 +650,6 @@ const loadCurrentProxySetting = async () => {
     currentProxyUrl.value = saved || DEFAULT_WEB_PROXY_URL;
     if (isLocalProxyUrl(currentProxyUrl.value)) {
       activeProxyPreset.value = 'local';
-    } else if (isVercelProxyUrl(currentProxyUrl.value)) {
-      activeProxyPreset.value = 'vercel';
     } else {
       activeProxyPreset.value = 'custom';
     }
@@ -663,12 +658,10 @@ const loadCurrentProxySetting = async () => {
   }
 };
 
-const onProxyPresetSelect = async (preset: 'local' | 'vercel' | 'custom') => {
+const onProxyPresetSelect = async (preset: 'local' | 'custom') => {
   activeProxyPreset.value = preset;
   if (preset === 'local') {
     currentProxyUrl.value = LOCAL_PROXY_URL;
-  } else if (preset === 'vercel') {
-    currentProxyUrl.value = VERCEL_PROXY_URL;
   }
   await db.setSetting('cors_proxy_url', currentProxyUrl.value);
 };
@@ -680,7 +673,6 @@ const onCustomProxyUrlInput = async (val: string) => {
 
 const getProxyPresetBadge = () => {
   if (activeProxyPreset.value === 'local') return 'Proxy Local (localhost:8088)';
-  if (activeProxyPreset.value === 'vercel') return 'Proxy Nuvem Vercel';
   return currentProxyUrl.value || 'Personalizado';
 };
 
@@ -895,7 +887,7 @@ const importM3UUrl = async () => {
     let finalUrl = playlistUrl.value.trim();
     
     // Proxy CORS
-    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value, finalUrl);
+    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value);
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalUrl)}` : finalUrl;
 
     const res = await fetch(fetchUrl);
@@ -995,7 +987,7 @@ const importXtream = async () => {
   loadingSubstatus.value = xtreamHost.value;
 
   try {
-    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value, xtreamHost.value);
+    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value);
     
     const client = new XtreamClient({
       url: xtreamHost.value,
@@ -1036,7 +1028,7 @@ const importXtream = async () => {
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.slice(0, -1);
     }
-    const autoEpg = `${baseUrl}/xmltv.php?username=${xtreamUser.value.trim()}&password=${xtreamPass.value.trim()}`;
+    const autoEpg = `${baseUrl}/xmltv.php?${new URLSearchParams({ username: xtreamUser.value.trim(), password: xtreamPass.value.trim() })}`;
 
     const plId = await savePlaylistToDb(
       playlistName.value, 
@@ -1121,7 +1113,7 @@ const downloadAndSaveEPG = async (urlToFetch: string, showUI: boolean = true) =>
   
   try {
     const finalEpgUrl = urlToFetch.trim();
-    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value, finalEpgUrl);
+    const proxy = resolveProxy(useCorsProxy.value, currentProxyUrl.value);
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(finalEpgUrl)}` : finalEpgUrl;
 
     const res = await fetch(fetchUrl);

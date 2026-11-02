@@ -1,13 +1,13 @@
-import { DEFAULT_WEB_PROXY_URL } from "@/utils/proxy";
+import { getDataProxy } from "@/utils/proxy";
 // src/services/playlistUpdater.ts
-import { db, type Playlist } from './db';
-
-const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
+import { db, type Playlist, type IPTVChannel } from './db';
 import { parseM3U } from './m3uParser';
 import { parseEPG } from './epgParser';
 import { XtreamClient } from './xtreamClient';
 
 export class PlaylistUpdater {
+  private static updating = new Set<number>();
+
   // Silent background update check
   static async checkAndRunAutoUpdates(): Promise<void> {
     try {
@@ -50,7 +50,8 @@ export class PlaylistUpdater {
 
   // Update a specific playlist
   static async updatePlaylist(pl: Playlist, onProgress?: (msg: string, percent?: number) => void): Promise<void> {
-    if (!pl.id) return;
+    if (!pl.id || this.updating.has(pl.id)) return;
+    this.updating.add(pl.id);
 
     window.dispatchEvent(new CustomEvent('playlist-updating', { detail: { playlistId: pl.id } }));
 
@@ -59,8 +60,7 @@ export class PlaylistUpdater {
         if (!pl.url) throw new Error('Playlist has no URL');
         onProgress?.('Baixando arquivo M3U...', 0);
         
-        const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
-        const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+        const proxy = await getDataProxy();
         const fetchUrl = proxy ? `${proxy}${encodeURIComponent(pl.url)}` : pl.url;
 
         const res = await fetch(fetchUrl);
@@ -76,16 +76,8 @@ export class PlaylistUpdater {
           throw new Error('Nenhum canal encontrado na lista');
         }
 
-        onProgress?.('Limpando canais antigos...', 70);
-        await db.clearPlaylistChannels(pl.id);
-
-        onProgress?.('Salvando novos canais...', 80);
-        const mappedChannels = channels.map(c => ({
-          ...c,
-          id: c.id.includes('_') ? `${pl.id}_${c.id.split('_').slice(1).join('_')}` : `${pl.id}_${c.id}`,
-          playlistId: pl.id as number
-        }));
-        await db.addChannelsBatch(mappedChannels);
+        onProgress?.('Salvando novos canais...', 70);
+        await this.replaceChannels(pl.id, channels);
 
         // Auto update EPG if epgUrl exists
         const finalEpgUrl = pl.epgUrl || autoEpg;
@@ -111,8 +103,7 @@ export class PlaylistUpdater {
         if (!pl.url || !pl.username || !pl.password) throw new Error('Credenciais do Xtream incompletas');
         onProgress?.('Conectando ao servidor Xtream...', 10);
 
-        const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
-        const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+        const proxy = await getDataProxy();
         const client = new XtreamClient({
           url: pl.url,
           username: pl.username,
@@ -134,16 +125,8 @@ export class PlaylistUpdater {
           throw new Error('Nenhum canal encontrado no Xtream');
         }
 
-        onProgress?.('Limpando canais antigos...', 70);
-        await db.clearPlaylistChannels(pl.id);
-
-        onProgress?.('Salvando novos canais...', 80);
-        const mappedChannels = channels.map(c => ({
-          ...c,
-          id: c.id.includes('_') ? `${pl.id}_${c.id.split('_').slice(1).join('_')}` : `${pl.id}_${c.id}`,
-          playlistId: pl.id as number
-        }));
-        await db.addChannelsBatch(mappedChannels);
+        onProgress?.('Salvando novos canais...', 70);
+        await this.replaceChannels(pl.id, channels);
 
         // Xtream standard EPG url
         let baseUrl = pl.url.trim();
@@ -153,7 +136,7 @@ export class PlaylistUpdater {
         if (baseUrl.endsWith('/')) {
           baseUrl = baseUrl.slice(0, -1);
         }
-        const autoEpg = `${baseUrl}/xmltv.php?username=${pl.username.trim()}&password=${pl.password.trim()}`;
+        const autoEpg = `${baseUrl}/xmltv.php?${new URLSearchParams({ username: pl.username.trim(), password: pl.password.trim() })}`;
         
         onProgress?.('Atualizando guia EPG...', 90);
         try {
@@ -172,13 +155,23 @@ export class PlaylistUpdater {
     } catch (err) {
       window.dispatchEvent(new CustomEvent('playlist-update-failed', { detail: { playlistId: pl.id, error: err } }));
       throw err;
+    } finally {
+      this.updating.delete(pl.id);
     }
+  }
+
+  // Swaps the stored channels and carries favorites over by stream URL (survives id format changes)
+  private static async replaceChannels(playlistId: number, channels: IPTVChannel[]): Promise<void> {
+    const oldUrls = new Map((await db.getChannels(playlistId)).map(c => [c.id, c.streamUrl]));
+    await db.clearPlaylistChannels(playlistId);
+    await db.addChannelsBatch(channels);
+    const newIds = new Map(channels.map(c => [c.streamUrl, c.id]));
+    await db.remapFavorites(playlistId, oldId => newIds.get(oldUrls.get(oldId) ?? ''));
   }
 
   // Helper to fetch and parse EPG
   private static async updateEpg(epgUrl: string): Promise<void> {
-    const defaultProxyUrl = isElectron ? '' : DEFAULT_WEB_PROXY_URL;
-    const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+    const proxy = await getDataProxy();
     const fetchUrl = proxy ? `${proxy}${encodeURIComponent(epgUrl)}` : epgUrl;
 
     const res = await fetch(fetchUrl);
@@ -190,5 +183,6 @@ export class PlaylistUpdater {
     if (programs.length > 0) {
       await db.addEpgBatch(programs);
     }
+    await db.cleanOldEpg();
   }
 }

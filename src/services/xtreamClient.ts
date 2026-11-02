@@ -144,103 +144,89 @@ export class XtreamClient {
     ]);
 
     // 2. Fetch Live Streams
-    try {
-      onProgress?.('Buscando canais ao vivo...', 30);
-      const liveRes = await fetch(this.buildUrl('get_live_streams'));
-      if (liveRes.ok) {
-        const liveStreams = await liveRes.json();
-        if (Array.isArray(liveStreams)) {
-          for (let i = 0; i < liveStreams.length; i++) {
-            const stream = liveStreams[i];
-            const catName = liveCats[stream.category_id] || 'Canais ao Vivo';
-            // Live stream url: http://host:port/live/username/password/stream_id.ts
-            const streamUrl = `${this.url}/live/${this.username}/${this.password}/${stream.stream_id}.ts`;
-            channels.push({
-              id: `${playlistId}_live_${stream.stream_id}`,
-              playlistId,
-              name: stream.name || 'Canal sem nome',
-              logo: stream.stream_icon || '',
-              streamUrl,
-              category: catName,
-              type: 'live',
-              tvgId: stream.epg_channel_id || '',
-              groupTitle: catName,
-              xtreamId: stream.stream_id
-            });
-          }
-        }
+    onProgress?.('Buscando canais ao vivo...', 30);
+    const liveRes = await fetch(this.buildUrl('get_live_streams'));
+    // A failed list must abort the update, or the old channels get replaced by a partial set
+    if (!liveRes.ok) throw new Error(`Xtream live streams: HTTP ${liveRes.status}`);
+    const liveStreams = await liveRes.json();
+    if (Array.isArray(liveStreams)) {
+      for (let i = 0; i < liveStreams.length; i++) {
+        const stream = liveStreams[i];
+        const catName = liveCats[stream.category_id] || 'Canais ao Vivo';
+        // Live stream url: http://host:port/live/username/password/stream_id.ts
+        const streamUrl = `${this.url}/live/${this.username}/${this.password}/${stream.stream_id}.ts`;
+        channels.push({
+          id: `${playlistId}_live_${stream.stream_id}`,
+          playlistId,
+          name: stream.name || 'Canal sem nome',
+          logo: stream.stream_icon || '',
+          streamUrl,
+          category: catName,
+          type: 'live',
+          tvgId: stream.epg_channel_id || '',
+          groupTitle: catName,
+          xtreamId: stream.stream_id
+        });
       }
-    } catch (err) {
-      console.error('Error fetching live streams', err);
     }
 
     // 3. Fetch VOD Movies
-    try {
-      onProgress?.('Buscando filmes sob demanda (VOD)...', 60);
-      const vodRes = await fetch(this.buildUrl('get_vod_streams'));
-      if (vodRes.ok) {
-        const vodStreams = await vodRes.json();
-        if (Array.isArray(vodStreams)) {
-          for (let i = 0; i < vodStreams.length; i++) {
-            const stream = vodStreams[i];
-            const catName = vodCats[stream.category_id] || 'Filmes VOD';
-            const ext = stream.container_extension || 'mp4';
-            const streamUrl = `${this.url}/movie/${this.username}/${this.password}/${stream.stream_id}.${ext}`;
-            channels.push({
-              id: `${playlistId}_movie_${stream.stream_id}`,
-              playlistId,
-              name: stream.name || 'Filme sem nome',
-              logo: stream.stream_icon || '',
-              streamUrl,
-              category: catName,
-              type: 'movie',
-              groupTitle: catName,
-              xtreamId: stream.stream_id,
-              rating: stream.rating || undefined,
-              plot: stream.plot || undefined,
-              duration: stream.duration || undefined,
-              year: stream.year || undefined,
-              added: stream.added ? String(stream.added) : undefined
-            });
-          }
-        }
+    onProgress?.('Buscando filmes sob demanda (VOD)...', 60);
+    const vodRes = await fetch(this.buildUrl('get_vod_streams'));
+    if (!vodRes.ok) throw new Error(`Xtream VOD streams: HTTP ${vodRes.status}`);
+    const vodStreams = await vodRes.json();
+    if (Array.isArray(vodStreams)) {
+      for (let i = 0; i < vodStreams.length; i++) {
+        const stream = vodStreams[i];
+        const catName = vodCats[stream.category_id] || 'Filmes VOD';
+        const ext = stream.container_extension || 'mp4';
+        const streamUrl = `${this.url}/movie/${this.username}/${this.password}/${stream.stream_id}.${ext}`;
+        channels.push({
+          id: `${playlistId}_movie_${stream.stream_id}`,
+          playlistId,
+          name: stream.name || 'Filme sem nome',
+          logo: stream.stream_icon || '',
+          streamUrl,
+          category: catName,
+          type: 'movie',
+          groupTitle: catName,
+          xtreamId: stream.stream_id,
+          rating: stream.rating || undefined,
+          plot: stream.plot || undefined,
+          duration: stream.duration || undefined,
+          year: stream.year || undefined,
+          added: stream.added ? String(stream.added) : undefined
+        });
       }
-    } catch (err) {
-      console.error('Error fetching VOD streams', err);
     }
 
     // 4. Fetch Series metadata lists
-    try {
-      onProgress?.('Buscando séries...', 85);
-      const seriesRes = await fetch(this.buildUrl('get_series'));
-      if (seriesRes.ok) {
-        const seriesList = await seriesRes.json();
-        if (Array.isArray(seriesList)) {
-          for (let i = 0; i < seriesList.length; i++) {
-            const series = seriesList[i];
-            const catName = seriesCats[series.category_id] || 'Séries TV';
-            // We save the series as a "channel" in channels DB so that the UI can browse it.
-            // The streaming URL for a series will point to series info (we will fetch episodes details dynamically)
-            channels.push({
-              id: `${playlistId}_series_${series.series_id}`,
-              playlistId,
-              name: series.name || 'Série sem nome',
-              logo: series.cover || '',
-              streamUrl: `series_info://${series.series_id}`, // Special internal protocol to denote series info
-              category: catName,
-              type: 'series',
-              groupTitle: catName,
-              xtreamId: series.series_id,
-              rating: series.rating || undefined,
-              plot: series.plot || undefined,
-              year: series.releaseDate || undefined,
-              added: series.last_modified ? String(series.last_modified) : undefined
-            });
-          }
-        }
+    onProgress?.('Buscando séries...', 85);
+    const seriesRes = await fetch(this.buildUrl('get_series'));
+    if (!seriesRes.ok) throw new Error(`Xtream series list: HTTP ${seriesRes.status}`);
+    const seriesList = await seriesRes.json();
+    if (Array.isArray(seriesList)) {
+      for (let i = 0; i < seriesList.length; i++) {
+        const series = seriesList[i];
+        const catName = seriesCats[series.category_id] || 'Séries TV';
+        // We save the series as a "channel" in channels DB so that the UI can browse it.
+        // The streaming URL for a series will point to series info (we will fetch episodes details dynamically)
+        channels.push({
+          id: `${playlistId}_series_${series.series_id}`,
+          playlistId,
+          name: series.name || 'Série sem nome',
+          logo: series.cover || '',
+          streamUrl: `series_info://${series.series_id}`, // Special internal protocol to denote series info
+          category: catName,
+          type: 'series',
+          groupTitle: catName,
+          xtreamId: series.series_id,
+          rating: series.rating || undefined,
+          plot: series.plot || undefined,
+          year: series.releaseDate || undefined,
+          added: series.last_modified ? String(series.last_modified) : undefined
+        });
       }
-    } catch (err) {
-      console.error('Error fetching series list', err);
     }
 
     onProgress?.('Concluindo carregamento...', 95);

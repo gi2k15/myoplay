@@ -132,6 +132,7 @@ function performProxyRequest(targetUrl, req, res, redirectCount = 0) {
     const proxyReq = requestModule.request(targetUrl, options, (proxyRes) => {
       // Check for redirects
       if ([301, 302, 303, 307, 308].includes(proxyRes.statusCode) && proxyRes.headers.location) {
+        proxyRes.resume(); // drain the redirect body so its socket is released
         let redirectUrl = proxyRes.headers.location;
         
         // Handle relative redirect URL

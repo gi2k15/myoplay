@@ -678,8 +678,8 @@
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { db, type IPTVChannel, type GlobalSearchResults } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
+import { getDataProxy } from '@/utils/proxy';
 
-const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
 
 const props = defineProps<{
   modelValue: boolean;
@@ -901,8 +901,7 @@ const openSeriesHub = async (series: IPTVChannel) => {
     if (!props.playlistId) return;
     const pl = (await db.getPlaylists()).find(p => p.id === props.playlistId);
     if (pl && pl.type === 'xtream' && series.xtreamId) {
-      const defaultProxyUrl = isElectron ? '' : 'http://localhost:8088/?url=';
-      const proxy = await db.getSetting('cors_proxy_url', defaultProxyUrl);
+      const proxy = await getDataProxy();
 
       const client = new XtreamClient({
         url: pl.url!,

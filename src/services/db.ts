@@ -14,8 +14,9 @@ export interface Playlist {
 
 
 export interface IPTVChannel {
-  id: string; // generated as `playlistId_index`
+  id: string; // `playlistId_streamUrl` for M3U, `playlistId_type_streamId` for Xtream
   playlistId: number;
+  index?: number; // position in the source M3U file
   name: string;
   logo: string;
   streamUrl: string;
@@ -71,13 +72,15 @@ class IPTVDatabase {
   private dbName = 'iptv_player_db';
   private dbVersion = 2;
   private db: IDBDatabase | null = null;
+  private initPromise: Promise<IDBDatabase> | null = null;
   private cachedPlaylistId: number | null = null;
   private cachedChannels: IPTVChannel[] = [];
 
   init(): Promise<IDBDatabase> {
+    // this.db is set before the backup restore finishes, so the restore's own db calls don't wait on initPromise
     if (this.db) return Promise.resolve(this.db);
 
-    return new Promise((resolve, reject) => {
+    return this.initPromise ??= new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onupgradeneeded = (event) => {
@@ -129,6 +132,7 @@ class IPTVDatabase {
       };
 
       request.onerror = () => {
+        this.initPromise = null;
         reject(request.error);
       };
     });
@@ -527,6 +531,31 @@ class IPTVDatabase {
     return { current, next };
   }
 
+  // Current programme of every channel in one read (the guide needs it for thousands of channels)
+  async getCurrentProgrammes(): Promise<Record<string, EPGProgram>> {
+    const db = await this.init();
+    const shiftHours = await this.getSetting('epg_time_shift', 0);
+    const shiftMs = shiftHours * 60 * 60 * 1000;
+    const now = Date.now() - shiftMs; // stored times are unshifted
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('epg', 'readonly');
+      const index = tx.objectStore('epg').index('stop');
+      // shortcut: programmes longer than 24h are not found, widen the bound if a provider has them
+      const req = index.getAll(IDBKeyRange.bound(now, now + 24 * 60 * 60 * 1000));
+      req.onsuccess = () => {
+        const current: Record<string, EPGProgram> = {};
+        for (const prog of req.result || []) {
+          if (prog.start <= now) {
+            current[prog.channelTvgId] = { ...prog, start: prog.start + shiftMs, stop: prog.stop + shiftMs };
+          }
+        }
+        resolve(current);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   async clearEpg(): Promise<void> {
     const db = await this.init();
     return new Promise((resolve, reject) => {
@@ -589,6 +618,28 @@ class IPTVDatabase {
       const req = store.delete(id);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
+    });
+
+    await this.triggerFavoritesBackup();
+  }
+
+  // Moves favorites to new channel ids after a playlist refresh; unmapped ones are kept as they are
+  async remapFavorites(playlistId: number, newIdFor: (oldId: string) => string | undefined): Promise<void> {
+    const db = await this.init();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('favorites', 'readwrite');
+      const store = tx.objectStore('favorites');
+      const req = store.index('playlistId').getAll(IDBKeyRange.only(playlistId));
+      req.onsuccess = () => {
+        for (const fav of req.result || []) {
+          const channelId = newIdFor(fav.channelId);
+          if (!channelId || channelId === fav.channelId) continue;
+          store.delete(fav.id);
+          store.put({ id: `${playlistId}_${channelId}`, playlistId, channelId });
+        }
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
     });
 
     await this.triggerFavoritesBackup();

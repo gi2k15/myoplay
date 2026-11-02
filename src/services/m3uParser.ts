@@ -15,6 +15,7 @@ export function parseM3U(m3uText: string, playlistId: number): ParsedPlaylist {
   
   let currentChannel: Partial<IPTVChannel> = {};
   let channelIndex = 0;
+  const urlCounts = new Map<string, number>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -39,12 +40,17 @@ export function parseM3U(m3uText: string, playlistId: number): ParsedPlaylist {
       // Parse metadata from EXTINF
       // Syntax: #EXTINF:<duration> tvg-id="..." tvg-logo="..." group-title="..." ,<channel name>
       const infoPart = line.substring(8);
+      // The name starts after the first comma outside quoted attributes (names may contain commas)
+      const split = infoPart.match(/^((?:[^",]|"[^"]*")*),(.*)$/);
       const commaIndex = infoPart.lastIndexOf(',');
-      
+
       let attrsPart = infoPart;
       let name = '';
 
-      if (commaIndex !== -1) {
+      if (split) {
+        attrsPart = split[1];
+        name = split[2].trim();
+      } else if (commaIndex !== -1) {
         attrsPart = infoPart.substring(0, commaIndex);
         name = infoPart.substring(commaIndex + 1).trim();
       } else {
@@ -87,8 +93,7 @@ export function parseM3U(m3uText: string, playlistId: number): ParsedPlaylist {
           groupLower.includes('filme') || 
           groupLower.includes('movie') || 
           groupLower.includes('vod') || 
-          groupLower.includes('cinema') ||
-          (groupLower.includes('filmes') && !groupLower.includes('canais'))
+          groupLower.includes('cinema')
         ) {
           type = 'movie';
         } else if (
@@ -104,8 +109,13 @@ export function parseM3U(m3uText: string, playlistId: number): ParsedPlaylist {
           type = 'series';
         }
 
+        // Keyed by URL so ids (and favorites) survive provider reordering; repeated URLs get a counter
+        const urlCount = (urlCounts.get(streamUrl) ?? 0) + 1;
+        urlCounts.set(streamUrl, urlCount);
+
         channels.push({
-          id: `${playlistId}_${channelIndex++}`,
+          id: `${playlistId}_${urlCount > 1 ? `${streamUrl}#${urlCount}` : streamUrl}`,
+          index: channelIndex++,
           playlistId,
           name: currentChannel.name,
           logo: currentChannel.logo || '',
