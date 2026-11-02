@@ -305,6 +305,9 @@ export default {
     }
   },
   streamBrowser: {
+    expand: 'Expand catalog',
+    collapse: 'Back to player',
+    categorySearch: 'Search categories',
     loadMore: 'Load more',
     categoriesTitle: 'Categories',
     allCategories: 'All Categories',

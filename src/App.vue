@@ -19,7 +19,10 @@
     </v-app-bar>
 
     <v-main class="fill-height">
-      <div class="app-shell" :class="{ 'app-shell--mobile': $vuetify.display.mobile }">
+      <div
+        class="app-shell"
+        :class="{ 'app-shell--mobile': $vuetify.display.mobile, 'app-shell--expanded': catalogExpanded }"
+      >
         <!-- Stage: the player always comes first -->
         <main class="stage" :class="{ 'stage--guide': currentPage === 'epg', 'stage--page': !isStagePage }">
           <div v-if="!hasPlaylists && currentPage === 'settings'" class="mb-4">
@@ -116,7 +119,9 @@
             :playlist-id="activePlaylistId"
             :type="browserType"
             :active-channel-id="activeChannel?.id"
+            :expanded="catalogExpanded"
             @play-stream="onPlayStream"
+            @toggle-expand="panelExpanded = !panelExpanded"
           />
         </aside>
       </div>
@@ -136,10 +141,12 @@
 import { LOCAL_PROXY_URL } from "@/utils/proxy";
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 import { db, type IPTVChannel, type EPGProgram } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
 
 const { t, locale } = useI18n();
+const { mobile } = useDisplay();
 
 // Import UI components
 import Sidebar from '@/components/Sidebar.vue';
@@ -217,8 +224,12 @@ const handlePlaylistUpdateFailed = (e: Event) => {
 
 // Global Video Player States
 const activeChannel = ref<IPTVChannel | null>(null);
-// Outside the stage pages (settings, playlists) the player keeps playing as a mini player
-const playerFloating = computed(() => !isStagePage.value);
+// The catalog can take over the screen while browsing; the video keeps going as a mini player
+const panelExpanded = ref(false);
+const catalogExpanded = computed(() => panelExpanded.value && isBrowsePage.value && !mobile.value);
+
+// Outside the stage pages (settings, playlists) and while the catalog is expanded the player floats
+const playerFloating = computed(() => !isStagePage.value || catalogExpanded.value);
 const activeChannelEpg = ref<{ current?: any; next?: any }>({});
 
 const loadActiveChannelEpg = async () => {
@@ -382,6 +393,7 @@ const onPlaylistActivated = async (playlistId: number) => {
 
 const onPlayStream = async (channel: IPTVChannel) => {
   activeChannel.value = channel;
+  panelExpanded.value = false;
   if (!isStagePage.value) currentPage.value = browserType.value;
 
   // Sync playlist if different
@@ -430,6 +442,7 @@ const onClosePlayer = () => {
 };
 
 const onReturnToStage = () => {
+  panelExpanded.value = false;
   currentPage.value = browserType.value;
 };
 
@@ -577,6 +590,23 @@ html, body {
   flex-direction: column;
   background: rgb(var(--v-theme-surface));
   border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* Expanded catalog: the panel takes the stage; only the floating player stays visible */
+.app-shell--expanded .stage {
+  flex: 0 0 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.app-shell--expanded .stage > :not(.stage-top),
+.app-shell--expanded .stage-empty {
+  display: none;
+}
+
+.app-shell--expanded .panel {
+  flex: 1 1 0;
+  border-left: 0;
 }
 
 /* Mobile: player pinned on top, panel scrolls below */

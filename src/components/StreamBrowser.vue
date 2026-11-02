@@ -1,70 +1,124 @@
 <!-- src/components/StreamBrowser.vue -->
 <template>
-  <div class="browser">
+  <div class="browser" :class="{ 'browser--expanded': expanded }">
+    <!-- Expanded: categories as a searchable column -->
+    <aside v-if="expanded" class="cat-col">
+      <v-text-field
+        v-model="categoryQuery"
+        :placeholder="$t('streamBrowser.categorySearch')"
+        :aria-label="$t('streamBrowser.categorySearch')"
+        prepend-inner-icon="mdi-magnify"
+        density="compact"
+        hide-details
+        clearable
+        class="cat-search"
+      />
+      <v-list class="cat-list" density="compact">
+        <v-list-item
+          v-for="cat in filteredCategoryChips"
+          :key="cat.value"
+          :active="selectedCategory === cat.value"
+          class="cat-item"
+          @click="selectCategory(cat.value)"
+        >
+          <v-list-item-title>{{ cat.label }}</v-list-item-title>
+          <template v-slot:append>
+            <span class="cat-count tabular">{{ cat.count.toLocaleString() }}</span>
+          </template>
+        </v-list-item>
+      </v-list>
+    </aside>
+
+    <div class="browser-main">
     <div class="browser-head">
-      <div class="d-flex align-center justify-space-between">
+      <div class="d-flex align-center ga-2">
         <h2 class="browser-title">{{ getBrowserTitle() }}</h2>
         <span class="text-body-2 text-medium-emphasis tabular">{{ filteredChannels.length.toLocaleString() }}</span>
+        <v-spacer />
+        <v-btn
+          v-if="!mobile"
+          :icon="expanded ? 'mdi-arrow-collapse-right' : 'mdi-arrow-expand-left'"
+          variant="text"
+          size="small"
+          :aria-label="expanded ? $t('streamBrowser.collapse') : $t('streamBrowser.expand')"
+          @click="emit('toggle-expand')"
+        >
+          <v-icon>{{ expanded ? 'mdi-arrow-collapse-right' : 'mdi-arrow-expand-left' }}</v-icon>
+          <v-tooltip activator="parent" location="bottom">
+            {{ expanded ? $t('streamBrowser.collapse') : $t('streamBrowser.expand') }}
+          </v-tooltip>
+        </v-btn>
       </div>
 
-      <div class="d-flex ga-2">
-        <v-text-field
-          v-model="searchQuery"
-          :placeholder="$t('streamBrowser.searchPlaceholder')"
-          :aria-label="$t('streamBrowser.searchPlaceholder')"
-          prepend-inner-icon="mdi-magnify"
+      <div class="head-controls">
+        <v-autocomplete
+          v-if="!expanded"
+          :model-value="selectedCategory"
+          :items="categoryChips"
+          item-title="label"
+          item-value="value"
+          :aria-label="$t('common.category')"
+          prepend-inner-icon="mdi-shape-outline"
           density="compact"
           hide-details
-          clearable
-          @update:model-value="resetPagination"
+          auto-select-first
+          class="cat-select"
+          @update:model-value="(v: string | null) => selectCategory(v || 'all')"
         >
-          <template v-slot:append-inner>
-            <v-btn
-              icon="mdi-earth"
-              variant="text"
-              size="small"
-              density="comfortable"
-              :aria-label="$t('sidebar.globalSearch')"
-              @click.stop="triggerGlobalSearch"
-            >
-              <v-icon size="18">mdi-earth</v-icon>
-              <v-tooltip activator="parent" location="bottom">{{ $t('sidebar.globalSearch') }} (Ctrl+K)</v-tooltip>
-            </v-btn>
+          <template v-slot:item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps">
+              <template v-slot:append>
+                <span class="cat-count tabular">{{ item.count.toLocaleString() }}</span>
+              </template>
+            </v-list-item>
           </template>
-        </v-text-field>
+        </v-autocomplete>
 
-        <v-menu v-if="type === 'movie' || type === 'series'" location="bottom end">
-          <template v-slot:activator="{ props: menuProps }">
-            <v-btn v-bind="menuProps" variant="outlined" height="40" min-width="40" class="px-0" :aria-label="$t('streamBrowser.sortOptions.label')">
-              <v-icon>mdi-sort</v-icon>
-            </v-btn>
-          </template>
-          <v-list density="compact" bg-color="surface" class="border rounded-lg">
-            <v-list-subheader>{{ $t('streamBrowser.sortOptions.label') }}</v-list-subheader>
-            <v-list-item
-              v-for="opt in sortOptions"
-              :key="opt.value"
-              :title="opt.title"
-              :active="sortBy === opt.value"
-              @click="sortBy = opt.value; resetPagination()"
-            />
-          </v-list>
-        </v-menu>
-      </div>
-
-      <v-slide-group class="category-chips" :show-arrows="!mobile">
-        <v-slide-group-item v-for="cat in categoryChips" :key="cat.value">
-          <v-chip
-            class="mr-2"
-            :variant="selectedCategory === cat.value ? 'flat' : 'outlined'"
-            :color="selectedCategory === cat.value ? 'primary' : undefined"
-            @click="selectCategory(cat.value)"
+        <div class="d-flex ga-2 search-row">
+          <v-text-field
+            v-model="searchQuery"
+            :placeholder="$t('streamBrowser.searchPlaceholder')"
+            :aria-label="$t('streamBrowser.searchPlaceholder')"
+            prepend-inner-icon="mdi-magnify"
+            density="compact"
+            hide-details
+            clearable
+            @update:model-value="resetPagination"
           >
-            {{ cat.label }}
-            <span class="chip-count tabular">{{ cat.count }}</span>
-          </v-chip>
-        </v-slide-group-item>
-      </v-slide-group>
+            <template v-slot:append-inner>
+              <v-btn
+                icon="mdi-earth"
+                variant="text"
+                size="small"
+                density="comfortable"
+                :aria-label="$t('sidebar.globalSearch')"
+                @click.stop="triggerGlobalSearch"
+              >
+                <v-icon size="18">mdi-earth</v-icon>
+                <v-tooltip activator="parent" location="bottom">{{ $t('sidebar.globalSearch') }} (Ctrl+K)</v-tooltip>
+              </v-btn>
+            </template>
+          </v-text-field>
+
+          <v-menu v-if="type === 'movie' || type === 'series'" location="bottom end">
+            <template v-slot:activator="{ props: menuProps }">
+              <v-btn v-bind="menuProps" variant="outlined" height="40" min-width="40" class="px-0" :aria-label="$t('streamBrowser.sortOptions.label')">
+                <v-icon>mdi-sort</v-icon>
+              </v-btn>
+            </template>
+            <v-list density="compact" bg-color="surface" class="border rounded-lg">
+              <v-list-subheader>{{ $t('streamBrowser.sortOptions.label') }}</v-list-subheader>
+              <v-list-item
+                v-for="opt in sortOptions"
+                :key="opt.value"
+                :title="opt.title"
+                :active="sortBy === opt.value"
+                @click="sortBy = opt.value; resetPagination()"
+              />
+            </v-list>
+          </v-menu>
+        </div>
+      </div>
     </div>
 
     <!-- Scrollable list -->
@@ -76,7 +130,7 @@
       </div>
 
       <!-- Live / Favorites: compact rows -->
-      <v-list v-else-if="type === 'live' || type === 'favorites'" class="pa-0" density="comfortable">
+      <v-list v-else-if="type === 'live' || type === 'favorites'" class="pa-0 channel-list" density="comfortable">
         <v-list-item
           v-for="ch in paginatedChannels"
           :key="ch.id"
@@ -162,6 +216,8 @@
       </div>
     </div>
 
+    </div>
+
     <MediaDetails
       v-model="seriesDialog"
       kind="series"
@@ -202,16 +258,19 @@ const props = defineProps<{
   playlistId: number;
   type: 'live' | 'movie' | 'series' | 'favorites';
   activeChannelId?: string;
+  expanded?: boolean;
 }>();
 
 // Emits
 const emit = defineEmits<{
   (e: 'play-stream', ch: IPTVChannel): void;
+  (e: 'toggle-expand'): void;
 }>();
 
 // UI States
 const searchQuery = ref('');
 const selectedCategory = ref('all');
+const categoryQuery = ref('');
 
 const triggerGlobalSearch = () => {
   window.dispatchEvent(new CustomEvent('open-global-search'));
@@ -250,7 +309,7 @@ const loadingEpisodes = ref(false);
 const seasonsData = ref<Record<number, XtreamEpisode[]>>({});
 
 // Pagination / Sliced Lazy Loading
-const itemsPerPage = 40;
+const itemsPerPage = 60;
 const pageLimit = ref(1);
 
 const onPlaylistUpdatedEvent = async (e: Event) => {
@@ -382,6 +441,11 @@ const categoryChips = computed(() => [
     count: c.count,
   })),
 ]);
+
+const filteredCategoryChips = computed(() => {
+  const q = categoryQuery.value?.toLowerCase().trim();
+  return q ? categoryChips.value.filter(c => c.label.toLowerCase().includes(q)) : categoryChips.value;
+});
 
 // Filtered Channels logic
 const filteredChannels = computed(() => {
@@ -764,9 +828,15 @@ const playMovie = (movie: IPTVChannel) => {
 <style scoped>
 .browser {
   display: flex;
-  flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+.browser-main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .browser-head {
@@ -782,10 +852,69 @@ const playMovie = (movie: IPTVChannel) => {
   letter-spacing: -0.01em;
 }
 
-.chip-count {
-  margin-left: 6px;
-  opacity: 0.7;
+.head-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cat-count {
   font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+/* Expanded catalog */
+.cat-col {
+  flex: 0 0 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.cat-search {
+  flex: 0 0 auto;
+  margin: 20px 16px 8px;
+}
+
+.cat-list {
+  flex: 1 1 0;
+  overflow-y: auto;
+  padding: 0 8px 16px;
+}
+
+.cat-item {
+  border-radius: 8px !important;
+  min-height: 40px !important;
+}
+
+.browser--expanded .browser-head {
+  padding: 20px 24px 12px;
+}
+
+.browser--expanded .head-controls .search-row {
+  max-width: 560px;
+}
+
+.browser--expanded .browser-body {
+  /* Room below the last row so the mini player never hides it */
+  padding: 4px 24px 300px;
+}
+
+.browser--expanded .channel-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 4px 8px;
+}
+
+.browser--expanded .channel-list .channel-row {
+  margin-bottom: 0 !important;
+}
+
+.browser--expanded .poster-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 24px 16px;
+  padding: 0;
 }
 
 .browser-body {
