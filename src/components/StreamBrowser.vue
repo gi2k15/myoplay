@@ -368,18 +368,6 @@
                   {{ isFavorite(selectedMovie.id) ? $t('streamBrowser.movieDetails.favorited') : $t('streamBrowser.movieDetails.favorite') }}
                 </v-btn>
               </div>
-
-              <!-- Botão Busca Manual -->
-              <v-btn
-                prepend-icon="mdi-movie-search-outline"
-                variant="text"
-                color="secondary"
-                size="small"
-                :loading="loadingMovieInfo"
-                @click="forceSearchMetadata"
-              >
-                {{ $t('streamBrowser.movieDetails.fetchMetadata') }}
-              </v-btn>
             </div>
           </v-col>
         </v-row>
@@ -966,24 +954,6 @@ const fetchOnlineMetadata = async (movie: IPTVChannel, source: string, apiKey: s
   } finally {
     loadingMovieInfo.value = false;
   }
-};
-
-const forceSearchMetadata = async () => {
-  if (!selectedMovie.value) return;
-  const source = await db.getSetting('movie_metadata_source', 'tmdb');
-  let apiKey = await db.getSetting('movie_metadata_api_key', '');
-  const lang = await db.getSetting('movie_metadata_language', 'pt-BR');
-
-  if (!apiKey && source === 'tmdb') {
-    apiKey = DEFAULT_TMDB_API_KEY;
-  }
-
-  if (source === 'none' || (source === 'omdb' && !apiKey)) {
-    movieErrorMsg.value = 'Por favor, configure o provedor de metadados e a chave de API nas configurações.';
-    return;
-  }
-
-  await fetchOnlineMetadata(selectedMovie.value, source, apiKey, lang);
 };
 
 const playMovie = (movie: IPTVChannel) => {

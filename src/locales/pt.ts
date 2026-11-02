@@ -348,8 +348,7 @@ export default {
       noSynopsis: 'Nenhuma sinopse disponível para este filme.',
       watchBtn: 'Assistir',
       favorite: 'Favoritar',
-      favorited: 'Favoritado',
-      fetchMetadata: 'Buscar Metadados'
+      favorited: 'Favoritado'
     },
     seriesDetails: {
       seasons: 'Temporadas',

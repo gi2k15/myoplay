@@ -348,8 +348,7 @@ export default {
       noSynopsis: 'No synopsis available for this movie.',
       watchBtn: 'Watch',
       favorite: 'Favorite',
-      favorited: 'Favorited',
-      fetchMetadata: 'Fetch Metadata'
+      favorited: 'Favorited'
     },
     seriesDetails: {
       seasons: 'Seasons',
