@@ -46,7 +46,7 @@
         class="video-element"
         :class="aspectRatioClass"
         @play="isPaused = false"
-        @pause="isPaused = true"
+        @pause="if (!rebufferTimer) isPaused = true"
         @timeupdate="onTimeUpdate"
         @volumechange="onVolumeChange"
         @waiting="isBuffering = true"
@@ -794,13 +794,39 @@ const destroyPlayer = () => {
     mpegtsInstance.destroy();
     mpegtsInstance = null;
   }
+  stopRebuffer();
   if (videoRef.value) {
+    videoRef.value.onwaiting = null;
     videoRef.value.src = "";
     videoRef.value.load();
   }
   isBuffering.value = false;
   isConnecting.value = false;
   showPoster.value = true;
+};
+
+// mpegts.js resumes on the first frame after a stall, so jittery streams stall again right away;
+// hold playback until this many seconds are buffered (per buffer mode)
+const REBUFFER_CUSHION: Record<string, number> = { stable: 6, balanced: 3 };
+let rebufferTimer: number | null = null;
+
+const stopRebuffer = () => {
+  if (rebufferTimer) clearInterval(rebufferTimer);
+  rebufferTimer = null;
+};
+
+const holdUntilBuffered = (video: HTMLVideoElement, seconds: number) => {
+  if (rebufferTimer || !seconds) return;
+  rebufferTimer = window.setInterval(() => {
+    const ahead = video.buffered.length
+      ? video.buffered.end(video.buffered.length - 1) - video.currentTime
+      : 0;
+    if (ahead >= seconds) {
+      stopRebuffer();
+      video.play().catch(() => {});
+    }
+  }, 250);
+  video.pause();
 };
 
 const initializePlayer = () => {
@@ -1026,6 +1052,9 @@ const initializePlayer = () => {
     } else if (playerBufferMode.value === "balanced") {
       mpegtsOptionalConfig.enableStashBuffer = true;
       mpegtsOptionalConfig.liveBufferLatencyChasing = true;
+      // Defaults (1.5s / 0.5s) keep almost no buffer; stay above the rebuffer cushion
+      mpegtsOptionalConfig.liveBufferLatencyMaxLatency = 8;
+      mpegtsOptionalConfig.liveBufferLatencyMinRemain = 3;
     } else {
       // low-latency (default)
       mpegtsOptionalConfig.enableStashBuffer = false;
@@ -1043,6 +1072,8 @@ const initializePlayer = () => {
 
     mpegtsInstance.attachMediaElement(video);
     mpegtsInstance.load();
+    video.onwaiting = () =>
+      holdUntilBuffered(video, REBUFFER_CUSHION[playerBufferMode.value] ?? 0);
 
     mpegtsInstance.on(mpegts.Events.ERROR, (type, detail, info) => {
       console.error(
