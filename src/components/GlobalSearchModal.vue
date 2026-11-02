@@ -7,11 +7,11 @@
     transition="dialog-top-transition"
     class="global-search-dialog"
   >
-    <v-card class="search-modal-card rounded-xl border-glass">
+    <v-card class="search-modal-card">
       <!-- Search Input Header -->
       <div class="search-header px-4 pt-4 pb-2 border-bottom">
-        <div class="d-flex align-center gap-3">
-          <v-icon color="secondary" size="28" >mdi-magnify</v-icon>
+        <div class="d-flex align-center ga-3">
+          <v-icon color="medium-emphasis" size="24">mdi-magnify</v-icon>
           <input
             ref="searchInputRef"
             v-model="searchQuery"
@@ -30,7 +30,6 @@
             indeterminate
             size="20"
             width="2"
-            color="secondary"
             class="flex-shrink-0"
           />
 
@@ -59,66 +58,17 @@
           />
         </div>
 
-        <!-- Filter Chips / Tabs -->
-        <div class="d-flex align-center gap-2 pt-3 pb-1 overflow-x-auto no-scrollbar">
+        <!-- Filter Chips -->
+        <div class="d-flex align-center ga-2 pt-3 pb-1 overflow-x-auto no-scrollbar">
           <v-chip
-            filter
-            variant="tonal"
-            size="small"
-            :color="activeFilter === 'all' ? 'secondary' : 'default'"
-            :class="{ 'chip-active': activeFilter === 'all' }"
-            @click="activeFilter = 'all'"
+            v-for="f in filters"
+            :key="f.value"
+            :variant="activeFilter === f.value ? 'flat' : 'outlined'"
+            :color="activeFilter === f.value ? 'primary' : undefined"
+            @click="activeFilter = f.value"
           >
-            <v-icon start size="16">mdi-view-grid-outline</v-icon>
-            {{ $t('globalSearch.all') }}
-            <span v-if="searchResults.totalMatches > 0" class="ml-1 text-caption opacity-80">
-              ({{ searchResults.totalMatches }})
-            </span>
-          </v-chip>
-
-          <v-chip
-            filter
-            variant="tonal"
-            size="small"
-            :color="activeFilter === 'live' ? 'primary' : 'default'"
-            :class="{ 'chip-active': activeFilter === 'live' }"
-            @click="activeFilter = 'live'"
-          >
-            <v-icon start size="16">mdi-television-classic</v-icon>
-            {{ $t('globalSearch.live') }}
-            <span v-if="searchResults.counts.live > 0" class="ml-1 text-caption opacity-80">
-              ({{ searchResults.counts.live }})
-            </span>
-          </v-chip>
-
-          <v-chip
-            filter
-            variant="tonal"
-            size="small"
-            :color="activeFilter === 'movie' ? 'amber-accent-3' : 'default'"
-            :class="{ 'chip-active': activeFilter === 'movie' }"
-            @click="activeFilter = 'movie'"
-          >
-            <v-icon start size="16">mdi-movie-roll</v-icon>
-            {{ $t('globalSearch.movies') }}
-            <span v-if="searchResults.counts.movie > 0" class="ml-1 text-caption opacity-80">
-              ({{ searchResults.counts.movie }})
-            </span>
-          </v-chip>
-
-          <v-chip
-            filter
-            variant="tonal"
-            size="small"
-            :color="activeFilter === 'series' ? 'deep-purple-accent-2' : 'default'"
-            :class="{ 'chip-active': activeFilter === 'series' }"
-            @click="activeFilter = 'series'"
-          >
-            <v-icon start size="16">mdi-youtube-subscription</v-icon>
-            {{ $t('globalSearch.series') }}
-            <span v-if="searchResults.counts.series > 0" class="ml-1 text-caption opacity-80">
-              ({{ searchResults.counts.series }})
-            </span>
+            {{ f.label }}
+            <span v-if="f.count > 0" class="chip-count tabular">{{ f.count }}</span>
           </v-chip>
         </div>
       </div>
@@ -129,7 +79,7 @@
         <div v-if="!searchQuery.trim()" class="py-6">
           <div v-if="recentSearches.length > 0" class="mb-6">
             <div class="d-flex align-center justify-space-between mb-3">
-              <span class="text-caption font-weight-bold text-uppercase letter-spacing-1 text-medium-emphasis">
+              <span class="section-label d-flex align-center">
                 <v-icon size="16" class="mr-1">mdi-history</v-icon>
                 {{ $t('globalSearch.recentSearches') }}
               </span>
@@ -142,7 +92,7 @@
                 {{ $t('globalSearch.clearRecent') }}
               </v-btn>
             </div>
-            <div class="d-flex flex-wrap gap-2">
+            <div class="d-flex flex-wrap ga-2">
               <v-chip
                 v-for="item in recentSearches"
                 :key="item"
@@ -161,10 +111,10 @@
           <!-- Empty search guide banner -->
           <div class="text-center py-8">
             <v-avatar size="64" color="surface-variant" class="mb-3 border-glass">
-              <v-icon size="32" color="secondary">mdi-text-search</v-icon>
+              <v-icon size="32" color="medium-emphasis">mdi-text-search</v-icon>
             </v-avatar>
             <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ $t('globalSearch.typeToSearch') }}</h3>
-            <p class="text-caption text-medium-emphasis max-w-md mx-auto">
+            <p class="text-caption text-medium-emphasis mx-auto search-hint">
               {{ $t('globalSearch.typeToSearchDesc') }}
             </p>
           </div>
@@ -176,362 +126,80 @@
           <h3 class="text-subtitle-1 font-weight-bold mb-1">
             {{ $t('globalSearch.noResults', { query: searchQuery }) }}
           </h3>
-          <p class="text-caption text-medium-emphasis max-w-md mx-auto">
+          <p class="text-caption text-medium-emphasis mx-auto search-hint">
             {{ $t('globalSearch.noResultsDesc') }}
           </p>
         </div>
 
         <!-- 3. RESULTS DISPLAY -->
-        <div v-else class="results-container">
-          <!-- VIEW: ALL (GROUPED) -->
-          <template v-if="activeFilter === 'all'">
-            <!-- Live Channels Section -->
-            <div v-if="searchResults.live.length > 0" class="mb-6">
-              <div class="d-flex align-center justify-space-between mb-3">
-                <div class="d-flex align-center gap-2">
-                  <v-icon size="small" color="primary">mdi-television-classic</v-icon>
-                  <span class="text-subtitle-2 font-weight-bold">{{ $t('globalSearch.live') }}</span>
-                  <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">
-                    {{ searchResults.counts.live }}
-                  </v-chip>
-                </div>
-                <v-btn
-                  v-if="searchResults.counts.live > 4"
-                  variant="text"
-                  size="x-small"
-                  color="secondary"
-                  @click="activeFilter = 'live'"
-                >
-                  {{ $t('globalSearch.viewAll', { count: searchResults.counts.live }) }}
-                </v-btn>
-              </div>
-
-              <div class="live-grid">
-                <v-card
-                  v-for="ch in searchResults.live.slice(0, 4)"
-                  :key="ch.id"
-                  class="live-result-card rounded-lg pa-2 border-glass"
-                  variant="flat"
-                  @click="playChannel(ch)"
-                >
-                  <div class="d-flex align-center gap-3">
-                    <v-avatar size="44" rounded="md" class="bg-surface-variant flex-shrink-0">
-                      <v-img v-if="ch.logo" :src="ch.logo" cover />
-                      <v-icon v-else size="24" color="medium-emphasis">mdi-television-box</v-icon>
-                    </v-avatar>
-                    <div class="flex-grow-1 min-width-0">
-                      <div class="text-body-2 font-weight-bold text-truncate" :title="ch.name">
-                        {{ ch.name }}
-                      </div>
-                      <div class="text-caption text-medium-emphasis text-truncate">
-                        {{ ch.category }}
-                      </div>
-                    </div>
-                    <v-btn
-                      icon="mdi-play"
-                      color="primary"
-                      size="small"
-                      variant="flat"
-                      class="flex-shrink-0"
-                      @click.stop="playChannel(ch)"
-                    />
-                  </div>
-                </v-card>
-              </div>
+        <div v-else class="d-flex flex-column ga-6">
+          <!-- Live channels -->
+          <section v-if="shown.live.length > 0">
+            <div class="section-head">
+              <h3 class="section-label">{{ $t('globalSearch.live') }} · {{ searchResults.counts.live }}</h3>
+              <v-btn v-if="activeFilter === 'all' && searchResults.counts.live > shown.live.length" variant="text" size="small" @click="activeFilter = 'live'">
+                {{ $t('globalSearch.viewAll', { count: searchResults.counts.live }) }}
+              </v-btn>
             </div>
-
-            <!-- Movies Section -->
-            <div v-if="searchResults.movie.length > 0" class="mb-6">
-              <div class="d-flex align-center justify-space-between mb-3">
-                <div class="d-flex align-center gap-2">
-                  <v-icon size="small" color="amber-accent-3">mdi-movie-roll</v-icon>
-                  <span class="text-subtitle-2 font-weight-bold">{{ $t('globalSearch.movies') }}</span>
-                  <v-chip size="x-small" color="amber-accent-3" variant="tonal" class="font-weight-bold">
-                    {{ searchResults.counts.movie }}
-                  </v-chip>
-                </div>
-                <v-btn
-                  v-if="searchResults.counts.movie > 6"
-                  variant="text"
-                  size="x-small"
-                  color="secondary"
-                  @click="activeFilter = 'movie'"
-                >
-                  {{ $t('globalSearch.viewAll', { count: searchResults.counts.movie }) }}
-                </v-btn>
-              </div>
-
-              <v-row class="ma-0 gap-y-3">
-                <v-col
-                  v-for="movie in searchResults.movie.slice(0, 6)"
-                  :key="movie.id"
-                  cols="6"
-                  sm="4"
-                  md="2"
-                  class="pa-1"
-                >
-                  <v-card
-                    class="movie-poster-card fill-height rounded-lg border-glass"
-                    variant="flat"
-                    @click="openMoviePreview(movie)"
-                  >
-                    <div class="poster-wrapper position-relative">
-                      <v-img
-                        v-if="movie.logo"
-                        :src="movie.logo"
-                        cover
-                        aspect-ratio="0.67"
-                        class="rounded-t-lg bg-surface-variant"
-                      />
-                      <div v-else class="poster-placeholder rounded-t-lg d-flex align-center justify-center">
-                        <v-icon size="32" color="medium-emphasis">mdi-movie-open</v-icon>
-                      </div>
-
-                      <v-chip v-if="movie.rating" size="x-small" color="secondary" class="rating-badge font-weight-bold">
-                        ★ {{ movie.rating }}
-                      </v-chip>
-                      <v-chip v-if="movie.year" size="x-small" color="black" class="year-badge font-weight-bold">
-                        {{ movie.year }}
-                      </v-chip>
-
-                      <div class="play-hover-overlay d-flex align-center justify-center">
-                        <v-btn
-                          icon="mdi-play"
-                          color="primary"
-                          size="small"
-                          
-                          @click.stop="playChannel(movie)"
-                        />
-                      </div>
-                    </div>
-                    <div class="pa-2">
-                      <div class="text-caption font-weight-bold text-truncate" :title="movie.name">
-                        {{ movie.name }}
-                      </div>
-                      <div class="text-caption text-medium-emphasis text-truncate">
-                        {{ movie.category }}
-                      </div>
-                    </div>
-                  </v-card>
-                </v-col>
-              </v-row>
-            </div>
-
-            <!-- Series Section -->
-            <div v-if="searchResults.series.length > 0" class="mb-4">
-              <div class="d-flex align-center justify-space-between mb-3">
-                <div class="d-flex align-center gap-2">
-                  <v-icon size="small" color="deep-purple-accent-2">mdi-youtube-subscription</v-icon>
-                  <span class="text-subtitle-2 font-weight-bold">{{ $t('globalSearch.series') }}</span>
-                  <v-chip size="x-small" color="deep-purple-accent-2" variant="tonal" class="font-weight-bold">
-                    {{ searchResults.counts.series }}
-                  </v-chip>
-                </div>
-                <v-btn
-                  v-if="searchResults.counts.series > 6"
-                  variant="text"
-                  size="x-small"
-                  color="secondary"
-                  @click="activeFilter = 'series'"
-                >
-                  {{ $t('globalSearch.viewAll', { count: searchResults.counts.series }) }}
-                </v-btn>
-              </div>
-
-              <v-row class="ma-0 gap-y-3">
-                <v-col
-                  v-for="series in searchResults.series.slice(0, 6)"
-                  :key="series.id"
-                  cols="6"
-                  sm="4"
-                  md="2"
-                  class="pa-1"
-                >
-                  <v-card
-                    class="movie-poster-card fill-height rounded-lg border-glass"
-                    variant="flat"
-                    @click="openSeriesHub(series)"
-                  >
-                    <div class="poster-wrapper position-relative">
-                      <v-img
-                        v-if="series.logo"
-                        :src="series.logo"
-                        cover
-                        aspect-ratio="0.67"
-                        class="rounded-t-lg bg-surface-variant"
-                      />
-                      <div v-else class="poster-placeholder rounded-t-lg d-flex align-center justify-center">
-                        <v-icon size="32" color="medium-emphasis">mdi-youtube-subscription</v-icon>
-                      </div>
-
-                      <v-chip v-if="series.rating" size="x-small" color="secondary" class="rating-badge font-weight-bold">
-                        ★ {{ series.rating }}
-                      </v-chip>
-
-                      <div class="play-hover-overlay d-flex align-center justify-center">
-                        <v-btn icon="mdi-folder-play" color="secondary" size="small" />
-                      </div>
-                    </div>
-                    <div class="pa-2">
-                      <div class="text-caption font-weight-bold text-truncate" :title="series.name">
-                        {{ series.name }}
-                      </div>
-                      <div class="text-caption text-medium-emphasis text-truncate">
-                        {{ series.category }}
-                      </div>
-                    </div>
-                  </v-card>
-                </v-col>
-              </v-row>
-            </div>
-          </template>
-
-          <!-- VIEW: LIVE CHANNELS ONLY -->
-          <template v-else-if="activeFilter === 'live'">
-            <div class="live-grid-full">
-              <v-card
-                v-for="ch in searchResults.live"
+            <v-list class="live-grid pa-0" density="comfortable">
+              <v-list-item
+                v-for="ch in shown.live"
                 :key="ch.id"
-                class="live-result-card rounded-lg pa-2 border-glass mb-2"
-                variant="flat"
+                class="live-row"
+                :title="ch.name"
+                :subtitle="ch.category"
                 @click="playChannel(ch)"
               >
-                <div class="d-flex align-center gap-3">
-                  <v-avatar size="48" rounded="md" class="bg-surface-variant flex-shrink-0">
-                    <v-img v-if="ch.logo" :src="ch.logo" cover />
-                    <v-icon v-else size="28" color="medium-emphasis">mdi-television-box</v-icon>
+                <template v-slot:prepend>
+                  <v-avatar size="40" rounded="lg" color="surface-light" class="border">
+                    <v-img v-if="ch.logo" :src="ch.logo" />
+                    <v-icon v-else size="20" color="medium-emphasis">mdi-television-classic</v-icon>
                   </v-avatar>
-                  <div class="flex-grow-1 min-width-0">
-                    <div class="text-subtitle-2 font-weight-bold text-truncate">{{ ch.name }}</div>
-                    <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold mt-1">
-                      {{ ch.category }}
-                    </v-chip>
-                  </div>
-                  <v-btn
-                    icon="mdi-play"
-                    color="primary"
-                    size="small"
-                    variant="flat"
-                    class="flex-shrink-0"
-                    @click.stop="playChannel(ch)"
-                  />
-                </div>
-              </v-card>
+                </template>
+              </v-list-item>
+            </v-list>
+          </section>
+
+          <!-- Movies and series share the poster grid -->
+          <section v-for="group in posterGroups" :key="group.type">
+            <div class="section-head">
+              <h3 class="section-label">{{ group.label }} · {{ group.count }}</h3>
+              <v-btn v-if="activeFilter === 'all' && group.count > group.items.length" variant="text" size="small" @click="activeFilter = group.type">
+                {{ $t('globalSearch.viewAll', { count: group.count }) }}
+              </v-btn>
             </div>
-          </template>
-
-          <!-- VIEW: MOVIES ONLY -->
-          <template v-else-if="activeFilter === 'movie'">
-            <v-row class="ma-0 gap-y-3">
-              <v-col
-                v-for="movie in searchResults.movie"
-                :key="movie.id"
-                cols="6"
-                sm="4"
-                md="2"
-                class="pa-1"
+            <div class="poster-grid">
+              <div
+                v-for="item in group.items"
+                :key="item.id"
+                class="poster"
+                role="button"
+                tabindex="0"
+                @click="group.type === 'movie' ? openMoviePreview(item) : openSeriesHub(item)"
+                @keydown.enter="group.type === 'movie' ? openMoviePreview(item) : openSeriesHub(item)"
               >
-                <v-card
-                  class="movie-poster-card fill-height rounded-lg border-glass"
-                  variant="flat"
-                  @click="openMoviePreview(movie)"
-                >
-                  <div class="poster-wrapper position-relative">
-                    <v-img
-                      v-if="movie.logo"
-                      :src="movie.logo"
-                      cover
-                      aspect-ratio="0.67"
-                      class="rounded-t-lg bg-surface-variant"
-                    />
-                    <div v-else class="poster-placeholder rounded-t-lg d-flex align-center justify-center">
-                      <v-icon size="32" color="medium-emphasis">mdi-movie-open</v-icon>
-                    </div>
-
-                    <v-chip v-if="movie.rating" size="x-small" color="secondary" class="rating-badge font-weight-bold">
-                      ★ {{ movie.rating }}
-                    </v-chip>
-                    <v-chip v-if="movie.year" size="x-small" color="black" class="year-badge font-weight-bold">
-                      {{ movie.year }}
-                    </v-chip>
-
-                    <div class="play-hover-overlay d-flex align-center justify-center">
-                      <v-btn
-                        icon="mdi-play"
-                        color="primary"
-                        size="small"
-                        
-                        @click.stop="playChannel(movie)"
-                      />
-                    </div>
+                <div class="poster-img">
+                  <v-img v-if="item.logo" :src="item.logo" cover aspect-ratio="0.667" />
+                  <div v-else class="poster-placeholder">
+                    <v-icon size="32" color="medium-emphasis">{{ group.type === 'movie' ? 'mdi-movie-open-outline' : 'mdi-layers-outline' }}</v-icon>
                   </div>
-                  <div class="pa-2">
-                    <div class="text-caption font-weight-bold text-truncate" :title="movie.name">
-                      {{ movie.name }}
-                    </div>
-                    <div class="text-caption text-medium-emphasis text-truncate">
-                      {{ movie.category }}
-                    </div>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </template>
-
-          <!-- VIEW: SERIES ONLY -->
-          <template v-else-if="activeFilter === 'series'">
-            <v-row class="ma-0 gap-y-3">
-              <v-col
-                v-for="series in searchResults.series"
-                :key="series.id"
-                cols="6"
-                sm="4"
-                md="2"
-                class="pa-1"
-              >
-                <v-card
-                  class="movie-poster-card fill-height rounded-lg border-glass"
-                  variant="flat"
-                  @click="openSeriesHub(series)"
-                >
-                  <div class="poster-wrapper position-relative">
-                    <v-img
-                      v-if="series.logo"
-                      :src="series.logo"
-                      cover
-                      aspect-ratio="0.67"
-                      class="rounded-t-lg bg-surface-variant"
-                    />
-                    <div v-else class="poster-placeholder rounded-t-lg d-flex align-center justify-center">
-                      <v-icon size="32" color="medium-emphasis">mdi-youtube-subscription</v-icon>
-                    </div>
-
-                    <v-chip v-if="series.rating" size="x-small" color="secondary" class="rating-badge font-weight-bold">
-                      ★ {{ series.rating }}
-                    </v-chip>
-
-                    <div class="play-hover-overlay d-flex align-center justify-center">
-                      <v-btn icon="mdi-folder-play" color="secondary" size="small" />
-                    </div>
-                  </div>
-                  <div class="pa-2">
-                    <div class="text-caption font-weight-bold text-truncate" :title="series.name">
-                      {{ series.name }}
-                    </div>
-                    <div class="text-caption text-medium-emphasis text-truncate">
-                      {{ series.category }}
-                    </div>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </template>
+                </div>
+                <div class="poster-title" :title="item.name">{{ item.name }}</div>
+                <div class="poster-meta">
+                  <template v-if="item.year">{{ item.year }}</template>
+                  <template v-if="item.year && Number(item.rating) > 0"> · </template>
+                  <template v-if="Number(item.rating) > 0">★ {{ item.rating }}</template>
+                  <template v-if="!item.year && !(Number(item.rating) > 0)">{{ item.category }}</template>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </v-card-text>
 
       <!-- Footer Info -->
       <div class="search-footer px-4 py-2 border-top d-flex align-center justify-space-between text-caption text-medium-emphasis">
-        <div class="d-flex align-center gap-2">
+        <div class="d-flex align-center ga-2">
           <span v-if="searchResults.totalMatches > 0">
             {{ $t('globalSearch.resultsCount', { count: searchResults.totalMatches }) }}
           </span>
@@ -539,7 +207,7 @@
             {{ $t('globalSearch.shortcut') }}
           </span>
         </div>
-        <div class="d-flex align-center gap-3">
+        <div class="d-flex align-center ga-3">
           <span>{{ $t('globalSearch.pressEsc') }}</span>
         </div>
       </div>
@@ -566,15 +234,15 @@
           </v-col>
           <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start">
             <h2 class="text-h5 font-weight-bold mb-2 text-glow-small">{{ selectedMovie.name }}</h2>
-            <div class="d-flex align-center gap-2 flex-wrap mb-3">
-              <v-chip size="small" color="primary" class="font-weight-bold">{{ selectedMovie.category }}</v-chip>
-              <v-chip v-if="selectedMovie.rating" size="small" color="secondary" class="font-weight-bold">
+            <div class="d-flex align-center ga-2 flex-wrap mb-3">
+              <v-chip size="small" color="primary">{{ selectedMovie.category }}</v-chip>
+              <v-chip v-if="selectedMovie.rating" size="small">
                 ★ {{ selectedMovie.rating }}
               </v-chip>
-              <v-chip v-if="selectedMovie.year" size="small" color="secondary" variant="tonal" class="font-weight-bold">
+              <v-chip v-if="selectedMovie.year" size="small">
                 {{ selectedMovie.year }}
               </v-chip>
-              <v-chip v-if="selectedMovie.duration" size="small" color="secondary" variant="tonal" class="font-weight-bold">
+              <v-chip v-if="selectedMovie.duration" size="small">
                 {{ selectedMovie.duration }} min
               </v-chip>
             </div>
@@ -586,7 +254,7 @@
               {{ $t('streamBrowser.movieDetails.noSynopsis') }}
             </p>
 
-            <div class="mt-auto d-flex align-center gap-3 pt-3 border-top">
+            <div class="mt-auto d-flex align-center ga-3 pt-3 border-top">
               <v-btn
                 prepend-icon="mdi-play"
                 color="primary"
@@ -616,14 +284,14 @@
         <div class="d-flex align-end justify-end mb-2">
           <v-btn icon="mdi-close" variant="text" size="small" @click="seriesHubDialog = false" />
         </div>
-        <div class="d-flex align-center gap-4 mb-4">
+        <div class="d-flex align-center ga-4 mb-4">
           <v-avatar size="56" rounded="lg" class="bg-surface-variant flex-shrink-0">
             <v-img v-if="selectedSeries.logo" :src="selectedSeries.logo" cover />
             <v-icon v-else size="32" color="medium-emphasis">mdi-youtube-subscription</v-icon>
           </v-avatar>
-          <div class="min-width-0">
+          <div class="min-w-0">
             <h3 class="text-h6 font-weight-bold text-truncate text-glow-small mb-1">{{ selectedSeries.name }}</h3>
-            <v-chip size="x-small" color="primary" class="font-weight-bold">{{ selectedSeries.category }}</v-chip>
+            <v-chip size="x-small" color="primary">{{ selectedSeries.category }}</v-chip>
           </div>
         </div>
 
@@ -637,7 +305,7 @@
         </div>
 
         <div v-else>
-          <v-tabs v-model="activeSeason" color="secondary" density="compact" class="border-bottom mb-3">
+          <v-tabs v-model="activeSeason" density="compact" class="border-bottom mb-3">
             <v-tab v-for="season in sortedSeasons" :key="season" :value="season">
               {{ $t('streamBrowser.seriesDetails.seasonLabel', { season }) }}
             </v-tab>
@@ -679,6 +347,9 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { db, type IPTVChannel, type GlobalSearchResults } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
 import { getDataProxy } from '@/utils/proxy';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 
 const props = defineProps<{
@@ -710,6 +381,27 @@ const searchResults = ref<GlobalSearchResults>({
   totalMatches: 0,
   counts: { live: 0, movie: 0, series: 0 }
 });
+
+// "All" shows a preview of each group; a type filter shows its full list
+const shown = computed(() => {
+  const all = activeFilter.value === 'all';
+  const pick = <T,>(type: 'live' | 'movie' | 'series', list: T[], preview: number) =>
+    all ? list.slice(0, preview) : activeFilter.value === type ? list : [];
+  const r = searchResults.value;
+  return { live: pick('live', r.live, 6), movie: pick('movie', r.movie, 12), series: pick('series', r.series, 12) };
+});
+
+const posterGroups = computed(() => ([
+  { type: 'movie' as const, label: t('globalSearch.movies'), count: searchResults.value.counts.movie, items: shown.value.movie },
+  { type: 'series' as const, label: t('globalSearch.series'), count: searchResults.value.counts.series, items: shown.value.series },
+]).filter(g => g.items.length > 0));
+
+const filters = computed(() => [
+  { value: 'all' as const, label: t('globalSearch.all'), count: searchResults.value.totalMatches },
+  { value: 'live' as const, label: t('globalSearch.live'), count: searchResults.value.counts.live },
+  { value: 'movie' as const, label: t('globalSearch.movies'), count: searchResults.value.counts.movie },
+  { value: 'series' as const, label: t('globalSearch.series'), count: searchResults.value.counts.series },
+]);
 
 // Movie details sub-modal
 const moviePreviewDialog = ref(false);
@@ -964,143 +656,127 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.search-modal-card {
-  background: rgba(12, 12, 16, 0.94) !important;
-  border: 1px solid rgba(255, 215, 64, 0.15) !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(var(--v-theme-primary), 0.08) !important;
-}
-
 .search-native-input {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 1.15rem;
-  color: #fff;
+  font-size: 18px;
+  color: rgb(var(--v-theme-on-surface));
   font-weight: 500;
   width: 100%;
+  min-width: 0;
 }
 
 .search-native-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--v-theme-on-surface), 0.45);
 }
 
-
 .border-bottom {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
 }
 
 .border-top {
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
 }
-
 
 .kbd-key {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgb(var(--v-theme-surface-light));
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 6px;
   padding: 2px 7px;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-family: inherit;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
 }
 
-.chip-active {
-  box-shadow: 0 0 12px rgba(var(--v-theme-primary), 0.25);
-  font-weight: bold;
+.chip-count {
+  margin-left: 6px;
+  opacity: 0.7;
+  font-size: 12px;
 }
 
-.recent-chip {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-}
-
-.recent-chip:hover {
-  background: rgba(var(--v-theme-primary), 0.1);
-  border-color: rgba(var(--v-theme-primary), 0.4);
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  margin-bottom: 8px;
 }
 
 .live-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  gap: 4px 8px;
 }
 
-.live-grid-full {
+.live-row {
+  border-radius: 12px !important;
+  min-width: 0;
+}
+
+.live-row :deep(.v-list-item-title) {
+  font-weight: 600;
+}
+
+.poster-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 16px 12px;
 }
 
-.live-result-card {
-  background: rgba(255, 255, 255, 0.03);
+.poster {
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  outline: none;
 }
 
-.live-result-card:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-  border-color: rgba(var(--v-theme-primary), 0.3) !important;
-  transform: translateY(-2px);
-}
-
-.movie-poster-card {
-  background: rgba(255, 255, 255, 0.03);
-  cursor: pointer;
+.poster-img {
+  border-radius: 12px;
   overflow: hidden;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgb(var(--v-theme-surface-light));
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  transition: border-color 0.15s ease;
 }
 
-.movie-poster-card:hover {
-  background: rgba(var(--v-theme-primary), 0.06);
-  border-color: rgba(var(--v-theme-primary), 0.4) !important;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+.poster:hover .poster-img,
+.poster:focus-visible .poster-img {
+  border-color: rgba(var(--v-theme-on-surface), 0.4);
 }
 
 .poster-placeholder {
-  aspect-ratio: 0.67;
-  background: rgba(255, 255, 255, 0.04);
+  aspect-ratio: 0.667;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.rating-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.75) !important;
-  z-index: 2;
+.poster-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.year-badge {
-  position: absolute;
-  bottom: 6px;
-  left: 6px;
-  background: rgba(0, 0, 0, 0.75) !important;
-  z-index: 2;
+.poster-meta {
+  margin-top: -4px;
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.play-hover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 3;
+.search-hint {
+  max-width: 420px;
 }
 
-.poster-wrapper:hover .play-hover-overlay {
-  opacity: 1;
-}
-
-
-
-
-.letter-spacing-1 {
-  letter-spacing: 1px;
+.recent-chip:hover {
+  border-color: rgba(var(--v-theme-on-surface), 0.4);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -1110,5 +786,4 @@ onMounted(() => {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 </style>
