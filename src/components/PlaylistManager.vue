@@ -1,590 +1,292 @@
 <!-- src/components/PlaylistManager.vue -->
 <template>
-  <v-container class="py-8 fill-height align-start">
-    <v-row class="justify-center w-100">
-      <v-col cols="12" md="10" lg="8">
-        
-        <!-- Header -->
-        <div class="position-relative text-center mb-8">
-          <v-btn
-            icon="mdi-cog"
-            variant="tonal"
-            color="secondary"
-            class="position-absolute"
-            style="top: 0; right: 0;"
-            :title="$t('settings.title') || 'Configurações'"
-            @click="emit('open-settings')"
-          />
-          <h1 class="text-h3 font-weight-bold mb-2 text-glow">MyoPlay</h1>
-          <p class="text-subtitle-1 text-medium-emphasis">{{ $t('playlistManager.wizardSubtitle') }}</p>
+  <div class="lists">
+    <!-- First run: welcome header -->
+    <header v-if="playlists.length === 0" class="welcome">
+      <div class="brand-mark" role="img" aria-label="MyoPlay">
+        <v-icon size="28">mdi-play</v-icon>
+      </div>
+      <h1 class="page-title welcome-title">MyoPlay</h1>
+      <p class="text-medium-emphasis mb-4">{{ $t('playlistManager.wizardSubtitle') }}</p>
+      <v-btn variant="outlined" prepend-icon="mdi-tune-variant" @click="emit('open-settings')">
+        {{ $t('nav.settings') }}
+      </v-btn>
+    </header>
+    <h1 v-else class="page-title">{{ $t('playlistManager.title') }}</h1>
+
+    <div class="d-flex flex-column ga-6">
+      <v-alert v-if="errorMsg" type="error" closable density="compact" @click:close="errorMsg = ''">
+        {{ errorMsg }}
+      </v-alert>
+      <v-alert v-if="successMsg" type="success" closable density="compact" @click:close="successMsg = ''">
+        {{ successMsg }}
+      </v-alert>
+
+      <!-- Saved playlists -->
+      <v-card v-if="playlists.length > 0">
+        <div class="group-head">
+          <h2 class="group-title">{{ $t('playlistManager.myPlaylists.title') }}</h2>
         </div>
-
-        <!-- Progress Overlay -->
-        <v-card v-if="loading" class="pa-8 text-center glass-card mb-8">
-          <v-progress-circular
-            :size="80"
-            :width="8"
-            color="primary"
-            :indeterminate="progressIndeterminate"
-            :model-value="progressValue"
-            class="mb-4"
-          >
-            <span v-if="!progressIndeterminate" class="text-caption font-weight-bold">
-              {{ progressValue }}%
-            </span>
-          </v-progress-circular>
-          <h3 class="text-h6 mb-2">{{ loadingStatus }}</h3>
-          <p class="text-body-2 text-medium-emphasis mb-4 text-truncate w-100 px-4">{{ loadingSubstatus }}</p>
-          <v-progress-linear
-            color="secondary"
-            :indeterminate="progressIndeterminate"
-            :model-value="progressValue"
-            rounded
-            height="8"
-          />
-        </v-card>
-
-        <!-- Main Configuration Panel -->
-        <v-card v-else class="glass-card mb-8">
-          <v-tabs v-model="tab" color="primary" align-tabs="center" class="border-bottom">
-            <v-tab value="m3u-file">
-              <v-icon start>mdi-file-code</v-icon> {{ $t('playlistManager.tabs.m3uFile') }}
-            </v-tab>
-            <v-tab value="m3u-url">
-              <v-icon start>mdi-link</v-icon> {{ $t('playlistManager.tabs.m3uUrl') }}
-            </v-tab>
-            <v-tab value="xtream">
-              <v-icon start>mdi-server</v-icon> {{ $t('playlistManager.tabs.xtream') }}
-            </v-tab>
-            <v-tab value="epg">
-              <v-icon start>mdi-television-guide</v-icon> {{ $t('playlistManager.tabs.epg') }}
-            </v-tab>
-          </v-tabs>
-
-          <v-card-text class="pa-6">
-            <v-alert
-              v-if="errorMsg"
-              type="error"
-              variant="tonal"
-              closable
-              class="mb-6"
-              @click:close="errorMsg = ''"
+        <div v-for="pl in playlists" :key="pl.id" class="pl-row">
+          <v-avatar size="40" rounded="lg" color="surface-light" class="border flex-shrink-0">
+            <v-icon size="20" color="medium-emphasis">{{ typeIcon(pl.type) }}</v-icon>
+          </v-avatar>
+          <div class="pl-text">
+            <div class="pl-name">
+              <span class="text-truncate">{{ pl.name }}</span>
+              <span v-if="pl.id === currentPlaylistId" class="active-badge">{{ $t('playlistManager.myPlaylists.active') }}</span>
+            </div>
+            <div class="pl-meta">
+              {{ typeLabel(pl.type) }} · {{ $t('playlistManager.channelsCount', { count: (pl.channelCount || 0).toLocaleString() }) }}
+              <template v-if="pl.type !== 'file'">
+                · {{ $t('playlistManager.myPlaylists.updatedAtPrefix') }}
+                {{ pl.lastUpdatedAt ? new Date(pl.lastUpdatedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : $t('playlistManager.myPlaylists.never') }}
+              </template>
+            </div>
+          </div>
+          <div class="pl-actions">
+            <v-btn
+              v-if="pl.id !== currentPlaylistId"
+              variant="outlined"
+              @click="activatePlaylist(pl.id!)"
             >
-              {{ errorMsg }}
-            </v-alert>
-
-            <v-alert
-              v-if="successMsg"
-              type="success"
-              variant="tonal"
-              closable
-              class="mb-6"
-              @click:close="successMsg = ''"
+              {{ $t('playlistManager.myPlaylists.activate') }}
+            </v-btn>
+            <v-btn
+              v-if="pl.type !== 'file'"
+              icon="mdi-refresh"
+              variant="text"
+              :aria-label="$t('playlistManager.myPlaylists.syncPlaylist')"
+              :loading="loading && syncingPlaylistId === pl.id"
+              :disabled="loading"
+              @click="syncPlaylist(pl)"
             >
-              {{ successMsg }}
-            </v-alert>
+              <v-icon>mdi-refresh</v-icon>
+              <v-tooltip activator="parent" location="top">{{ $t('playlistManager.myPlaylists.syncPlaylist') }}</v-tooltip>
+            </v-btn>
+            <v-btn
+              v-if="pl.epgUrl"
+              icon="mdi-calendar-sync-outline"
+              variant="text"
+              :aria-label="$t('playlistManager.myPlaylists.syncEpg')"
+              :disabled="loading"
+              @click="syncEPG(pl)"
+            >
+              <v-icon>mdi-calendar-sync-outline</v-icon>
+              <v-tooltip activator="parent" location="top">{{ $t('playlistManager.myPlaylists.syncEpg') }}</v-tooltip>
+            </v-btn>
+            <v-btn
+              icon="mdi-delete-outline"
+              variant="text"
+              class="delete-btn"
+              :aria-label="$t('common.delete')"
+              @click="deletePlaylist(pl.id!)"
+            >
+              <v-icon>mdi-delete-outline</v-icon>
+              <v-tooltip activator="parent" location="top">{{ $t('common.delete') }}</v-tooltip>
+            </v-btn>
+          </div>
+        </div>
+      </v-card>
 
-            <v-window v-model="tab">
-              <!-- M3U Local File Tab -->
-              <v-window-item value="m3u-file">
-                <p class="text-body-2 text-medium-emphasis mb-6">
-                  {{ $t('playlistManager.fileTab.desc') }}
-                </p>
+      <!-- Import progress -->
+      <v-card v-if="loading" class="pa-8 text-center">
+        <v-progress-circular
+          :size="64"
+          :width="6"
+          :indeterminate="progressIndeterminate"
+          :model-value="progressValue"
+          class="mb-4"
+        >
+          <span v-if="!progressIndeterminate" class="text-body-2 font-weight-bold tabular">{{ progressValue }}%</span>
+        </v-progress-circular>
+        <div class="text-h6 font-weight-bold mb-1">{{ loadingStatus }}</div>
+        <p class="text-body-2 text-medium-emphasis text-truncate mb-0">{{ loadingSubstatus }}</p>
+      </v-card>
 
-                <div 
-                  class="dropzone mb-6"
-                  :class="{ 'dropzone-active': isDragging }"
-                  @dragover.prevent="isDragging = true"
-                  @dragleave.prevent="isDragging = false"
-                  @drop.prevent="onFileDrop"
-                  @click="triggerFileInput"
-                >
-                  <input 
-                    type="file" 
-                    ref="fileInput" 
-                    class="d-none" 
-                    accept=".m3u,.m3u8,.txt" 
-                    @change="onFileSelected"
-                  />
-                  <v-icon size="48" color="primary" class="mb-2">mdi-cloud-upload</v-icon>
-                  <div class="text-subtitle-1 font-weight-bold">
-                    {{ selectedFile ? selectedFile.name : $t('playlistManager.fileTab.dragPlaceholder') }}
-                  </div>
-                  <div class="text-caption text-medium-emphasis mt-1">
-                    {{ selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : $t('playlistManager.fileTab.clickPlaceholder') }}
-                  </div>
+      <!-- Add playlist -->
+      <v-card v-else>
+        <div class="group-head pb-0">
+          <h2 class="group-title">{{ $t('playlistManager.addTitle') }}</h2>
+        </div>
+        <v-tabs v-model="tab" class="add-tabs" density="comfortable">
+          <v-tab value="m3u-file">{{ $t('playlistManager.tabs.m3uFile') }}</v-tab>
+          <v-tab value="m3u-url">{{ $t('playlistManager.tabs.m3uUrl') }}</v-tab>
+          <v-tab value="xtream">{{ $t('playlistManager.tabs.xtream') }}</v-tab>
+          <v-tab value="epg">{{ $t('playlistManager.tabs.epg') }}</v-tab>
+        </v-tabs>
+
+        <div class="form-body">
+          <v-window v-model="tab">
+            <!-- Local M3U file -->
+            <v-window-item value="m3u-file">
+              <p class="group-desc tab-desc">{{ $t('playlistManager.fileTab.desc') }}</p>
+              <div
+                class="dropzone mb-4"
+                :class="{ 'dropzone-active': isDragging }"
+                role="button"
+                tabindex="0"
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                @drop.prevent="onFileDrop"
+                @click="triggerFileInput"
+                @keydown.enter="triggerFileInput"
+              >
+                <input type="file" ref="fileInput" class="d-none" accept=".m3u,.m3u8,.txt" @change="onFileSelected" />
+                <v-icon size="32" color="medium-emphasis" class="mb-2">mdi-tray-arrow-up</v-icon>
+                <div class="font-weight-semibold">
+                  {{ selectedFile ? selectedFile.name : $t('playlistManager.fileTab.dragPlaceholder') }}
                 </div>
+                <div class="text-body-2 text-medium-emphasis">
+                  {{ selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : $t('playlistManager.fileTab.clickPlaceholder') }}
+                </div>
+              </div>
+              <v-text-field
+                v-model="playlistName"
+                :label="$t('playlistManager.fileTab.playlistNameLabel')"
+                :placeholder="$t('playlistManager.fileTab.playlistNamePlaceholder')"
+                density="compact"
+                hide-details
+              />
+            </v-window-item>
 
-                <v-text-field
-                  v-model="playlistName"
-                  :label="$t('playlistManager.fileTab.playlistNameLabel')"
-                  :placeholder="$t('playlistManager.fileTab.playlistNamePlaceholder')"
-                  variant="outlined"
-                  density="comfortable"
-                  prepend-inner-icon="mdi-format-title"
-                  class="mb-6"
-                />
-
-                <v-btn
-                  color="primary"
-                  block
-                  size="large"
-                  :disabled="!selectedFile"
-                  @click="importM3UFile"
-                >
-                  <v-icon start>mdi-import</v-icon> {{ $t('playlistManager.fileTab.importBtn') }}
-                </v-btn>
-              </v-window-item>
-
-              <!-- M3U URL Tab -->
-              <v-window-item value="m3u-url">
-                <p class="text-body-2 text-medium-emphasis mb-6">
-                  {{ $t('playlistManager.urlTab.desc') }}
-                </p>
-
+            <!-- M3U link -->
+            <v-window-item value="m3u-url">
+              <p class="group-desc tab-desc">{{ $t('playlistManager.urlTab.desc') }}</p>
+              <div class="d-flex flex-column ga-4">
                 <v-text-field
                   v-model="playlistName"
                   :label="$t('playlistManager.urlTab.playlistNameLabel')"
                   :placeholder="$t('playlistManager.urlTab.playlistNamePlaceholder')"
-                  variant="outlined"
-                  density="comfortable"
-                  prepend-inner-icon="mdi-format-title"
-                  class="mb-4"
-                  :rules="[v => !!v || $t('playlistManager.urlTab.validationName')]"
+                  density="compact"
+                  hide-details
                 />
-
                 <v-text-field
                   v-model="playlistUrl"
                   :label="$t('playlistManager.urlTab.playlistUrlLabel')"
                   :placeholder="$t('playlistManager.urlTab.playlistUrlPlaceholder')"
-                  variant="outlined"
-                  density="comfortable"
-                  prepend-inner-icon="mdi-link-variant"
-                  class="mb-4"
-                  :rules="[v => !!v || $t('playlistManager.urlTab.validationUrl')]"
+                  density="compact"
+                  hide-details
                 />
+              </div>
+            </v-window-item>
 
-                <div v-if="!isElectron" class="mb-5">
-                  <div class="d-flex align-center justify-space-between flex-wrap gap-2">
-                    <v-checkbox
-                      v-model="useCorsProxy"
-                      :label="$t('playlistManager.urlTab.useProxy')"
-                      color="secondary"
-                      hide-details
-                      density="compact"
-                    />
-                    <v-btn
-                      v-if="useCorsProxy"
-                      variant="tonal"
-                      size="small"
-                      color="secondary"
-                      prepend-icon="mdi-tune"
-                      @click="showProxyConfig = !showProxyConfig"
-                    >
-                      {{ getProxyPresetBadge() }}
-                    </v-btn>
+            <!-- Xtream Codes -->
+            <v-window-item value="xtream">
+              <p class="group-desc tab-desc">{{ $t('playlistManager.xtreamTab.desc') }}</p>
+              <div class="form-grid">
+                <v-text-field
+                  v-model="playlistName"
+                  :label="$t('playlistManager.xtreamTab.nameLabel')"
+                  :placeholder="$t('playlistManager.xtreamTab.namePlaceholder')"
+                  density="compact"
+                  hide-details
+                  class="span-2"
+                />
+                <v-text-field
+                  v-model="xtreamHost"
+                  :label="$t('playlistManager.xtreamTab.hostLabel')"
+                  :placeholder="$t('playlistManager.xtreamTab.hostPlaceholder')"
+                  density="compact"
+                  hide-details
+                  class="span-2"
+                />
+                <v-text-field
+                  v-model="xtreamUser"
+                  :label="$t('playlistManager.xtreamTab.usernameLabel')"
+                  autocomplete="username"
+                  density="compact"
+                  hide-details
+                />
+                <v-text-field
+                  v-model="xtreamPass"
+                  :label="$t('playlistManager.xtreamTab.passwordLabel')"
+                  type="password"
+                  autocomplete="current-password"
+                  density="compact"
+                  hide-details
+                />
+              </div>
+            </v-window-item>
+
+            <!-- EPG guide -->
+            <v-window-item value="epg">
+              <p class="group-desc tab-desc">{{ $t('playlistManager.epgTab.desc') }}</p>
+              <div class="epg-status mb-4">
+                <div class="min-w-0">
+                  <div class="font-weight-semibold">{{ $t('playlistManager.epgTab.statusLabel') }}</div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    {{ epgCount > 0 ? $t('playlistManager.epgTab.cacheLabel', { count: epgCount.toLocaleString() }) : $t('playlistManager.epgTab.statusNone') }}
                   </div>
-
-                  <v-expand-transition>
-                    <v-card v-if="useCorsProxy && showProxyConfig" variant="outlined" class="pa-3 mt-3 rounded-lg bg-surface-variant-subtle border-subtle">
-                      <v-select
-                        v-model="activeProxyPreset"
-                        :items="proxyPresetOptions"
-                        label="Servidor de Proxy CORS"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="mb-2"
-                        @update:model-value="onProxyPresetSelect"
-                      />
-                      <v-text-field
-                        v-if="activeProxyPreset === 'custom'"
-                        v-model="currentProxyUrl"
-                        label="URL do Proxy CORS"
-                        placeholder="http://localhost:8088/?url="
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="mb-2"
-                        @update:model-value="onCustomProxyUrlInput"
-                      />
-                      <p class="text-caption text-medium-emphasis mb-0">
-                        💡 <strong>Nota:</strong> Se o seu provedor IPTV bloquear servidores em nuvem, selecione <strong>Proxy Local</strong> e execute <code>pnpm proxy</code> no terminal.
-                      </p>
-                    </v-card>
-                  </v-expand-transition>
                 </div>
-
-                <v-btn
-                  color="primary"
-                  block
-                  size="large"
-                  :disabled="!playlistUrl || !playlistName"
-                  @click="importM3UUrl"
-                >
-                  <v-icon start>mdi-cloud-download</v-icon> {{ $t('playlistManager.urlTab.loadBtn') }}
+                <v-btn v-if="epgCount > 0" variant="outlined" size="small" @click="clearEPGCache">
+                  {{ $t('playlistManager.epgTab.clearCacheBtn') }}
                 </v-btn>
-              </v-window-item>
+              </div>
 
-              <!-- Xtream Codes API Tab -->
-              <v-window-item value="xtream">
-                <p class="text-body-2 text-medium-emphasis mb-6">
-                  {{ $t('playlistManager.xtreamTab.desc') }}
-                </p>
-
-                <v-row>
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="playlistName"
-                      :label="$t('playlistManager.xtreamTab.nameLabel')"
-                      :placeholder="$t('playlistManager.xtreamTab.namePlaceholder')"
-                      variant="outlined"
-                      density="comfortable"
-                      prepend-inner-icon="mdi-format-title"
-                      :rules="[v => !!v || $t('playlistManager.urlTab.validationName')]"
-                    />
-                  </v-col>
-
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="xtreamHost"
-                      :label="$t('playlistManager.xtreamTab.hostLabel')"
-                      :placeholder="$t('playlistManager.xtreamTab.hostPlaceholder')"
-                      variant="outlined"
-                      density="comfortable"
-                      prepend-inner-icon="mdi-server"
-                      :rules="[v => !!v || $t('playlistManager.xtreamTab.validationHost')]"
-                    />
-                  </v-col>
-
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="xtreamUser"
-                      :label="$t('playlistManager.xtreamTab.usernameLabel')"
-                      :placeholder="$t('playlistManager.xtreamTab.usernamePlaceholder')"
-                      variant="outlined"
-                      density="comfortable"
-                      prepend-inner-icon="mdi-account"
-                      :rules="[v => !!v || $t('playlistManager.xtreamTab.validationUser')]"
-                    />
-                  </v-col>
-
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="xtreamPass"
-                      :label="$t('playlistManager.xtreamTab.passwordLabel')"
-                      type="password"
-                      :placeholder="$t('playlistManager.xtreamTab.passwordPlaceholder')"
-                      variant="outlined"
-                      density="comfortable"
-                      prepend-inner-icon="mdi-lock"
-                      :rules="[v => !!v || $t('playlistManager.xtreamTab.validationPass')]"
-                    />
-                  </v-col>
-                </v-row>
-
-                <div v-if="!isElectron" class="mb-5">
-                  <div class="d-flex align-center justify-space-between flex-wrap gap-2">
-                    <v-checkbox
-                      v-model="useCorsProxy"
-                      :label="$t('playlistManager.xtreamTab.useProxy')"
-                      color="secondary"
-                      hide-details
-                      density="compact"
-                    />
-                    <v-btn
-                      v-if="useCorsProxy"
-                      variant="tonal"
-                      size="small"
-                      color="secondary"
-                      prepend-icon="mdi-tune"
-                      @click="showProxyConfig = !showProxyConfig"
-                    >
-                      {{ getProxyPresetBadge() }}
-                    </v-btn>
-                  </div>
-
-                  <v-expand-transition>
-                    <v-card v-if="useCorsProxy && showProxyConfig" variant="outlined" class="pa-3 mt-3 rounded-lg bg-surface-variant-subtle border-subtle">
-                      <v-select
-                        v-model="activeProxyPreset"
-                        :items="proxyPresetOptions"
-                        label="Servidor de Proxy CORS"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="mb-2"
-                        @update:model-value="onProxyPresetSelect"
-                      />
-                      <v-text-field
-                        v-if="activeProxyPreset === 'custom'"
-                        v-model="currentProxyUrl"
-                        label="URL do Proxy CORS"
-                        placeholder="http://localhost:8088/?url="
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="mb-2"
-                        @update:model-value="onCustomProxyUrlInput"
-                      />
-                      <p class="text-caption text-medium-emphasis mb-0">
-                        💡 <strong>Nota:</strong> Se o seu provedor IPTV bloquear servidores em nuvem, selecione <strong>Proxy Local</strong> e execute <code>pnpm proxy</code> no terminal.
-                      </p>
-                    </v-card>
-                  </v-expand-transition>
-                </div>
-
-                <v-btn
-                  color="primary"
-                  block
-                  size="large"
-                  :disabled="!playlistName || !xtreamHost || !xtreamUser || !xtreamPass"
-                  @click="importXtream"
-                >
-                  <v-icon start>mdi-server-plus</v-icon> {{ $t('playlistManager.xtreamTab.connectBtn') }}
-                </v-btn>
-              </v-window-item>
-
-              <!-- EPG Tab -->
-              <v-window-item value="epg">
-                <p class="text-body-2 text-medium-emphasis mb-6">
-                  {{ $t('playlistManager.epgTab.desc') }}
-                </p>
-
-                <!-- EPG Status -->
-                <v-card class="pa-4 mb-6 bg-surface-variant rounded-lg" variant="flat">
-                  <div class="d-flex align-center justify-between mb-2">
-                    <span class="text-subtitle-2 font-weight-bold">{{ $t('playlistManager.epgTab.statusLabel') }}</span>
-                    <v-chip size="small" :color="epgCount > 0 ? 'success' : 'warning'">
-                      {{ epgCount > 0 ? $t('playlistManager.epgTab.statusActive') : $t('playlistManager.epgTab.statusNone') }}
-                    </v-chip>
-                  </div>
-                  <div class="text-body-2 mb-3">
-                    {{ $t('playlistManager.epgTab.cacheLabel') }} <strong>{{ epgCount.toLocaleString() }}</strong>
-                  </div>
-                  <v-btn
-                    v-if="epgCount > 0"
-                    color="error"
-                    size="small"
-                    variant="tonal"
-                    prepend-icon="mdi-trash-can"
-                    @click="clearEPGCache"
-                  >
-                    {{ $t('playlistManager.epgTab.clearCacheBtn') }}
-                  </v-btn>
-                </v-card>
-
-                <v-divider class="mb-6" />
-
-                <div class="text-subtitle-2 font-weight-bold mb-3">{{ $t('playlistManager.epgTab.method1') }}</div>
+              <div class="field-label">{{ $t('playlistManager.epgTab.method1') }}</div>
+              <div class="d-flex ga-2 align-center mb-4">
                 <v-file-input
                   v-model="epgFile"
                   :label="$t('playlistManager.epgTab.selectEpgFile')"
-                  variant="outlined"
-                  density="comfortable"
                   accept=".xml,.xmltv"
-                  prepend-icon="mdi-file-xml"
-                  class="mb-6"
+                  prepend-icon=""
+                  prepend-inner-icon="mdi-file-xml-box"
+                  density="compact"
+                  hide-details
                 />
-
-                <v-btn
-                  color="primary"
-                  block
-                  size="large"
-                  :disabled="!epgFile"
-                  @click="importEPGFile"
-                >
-                  <v-icon start>mdi-import</v-icon> {{ $t('playlistManager.epgTab.importLocalBtn') }}
+                <v-btn variant="outlined" height="40" :disabled="!epgFile" @click="importEPGFile">
+                  {{ $t('playlistManager.epgTab.importLocalBtn') }}
                 </v-btn>
+              </div>
 
-                <div class="text-subtitle-2 font-weight-bold mb-3 mt-6">{{ $t('playlistManager.epgTab.method2') }}</div>
+              <div class="field-label">{{ $t('playlistManager.epgTab.method2') }}</div>
+              <v-text-field
+                v-model="epgUrl"
+                :label="$t('playlistManager.epgTab.epgUrlLabel')"
+                :placeholder="$t('playlistManager.epgTab.epgUrlPlaceholder')"
+                density="compact"
+                hide-details
+              />
+            </v-window-item>
+          </v-window>
+
+          <!-- CORS proxy for downloads (web only) -->
+          <div v-if="!isElectron && tab !== 'm3u-file'" class="proxy-box mt-4">
+            <v-checkbox v-model="useCorsProxy" :label="proxyCheckboxLabel" hide-details density="compact" />
+            <template v-if="useCorsProxy">
+              <div class="d-flex flex-column ga-3 mt-2">
+                <v-select
+                  v-model="activeProxyPreset"
+                  :items="proxyPresetOptions"
+                  :label="$t('playlistManager.proxyServer')"
+                  density="compact"
+                  hide-details
+                  @update:model-value="onProxyPresetSelect"
+                />
                 <v-text-field
-                  v-model="epgUrl"
-                  :label="$t('playlistManager.epgTab.epgUrlLabel')"
-                  :placeholder="$t('playlistManager.epgTab.epgUrlPlaceholder')"
-                  variant="outlined"
-                  density="comfortable"
-                  prepend-inner-icon="mdi-link-variant"
-                  class="mb-4"
+                  v-if="activeProxyPreset === 'custom'"
+                  v-model="currentProxyUrl"
+                  :label="$t('settings.proxy.preset1Url')"
+                  placeholder="http://localhost:8088/?url="
+                  density="compact"
+                  hide-details
+                  @update:model-value="onCustomProxyUrlInput"
                 />
+                <p class="text-body-2 text-medium-emphasis mb-0">{{ $t('playlistManager.proxyNote') }}</p>
+              </div>
+            </template>
+          </div>
+        </div>
 
-                <div v-if="!isElectron" class="mb-5">
-                  <div class="d-flex align-center justify-space-between flex-wrap gap-2">
-                    <v-checkbox
-                      v-model="useCorsProxy"
-                      :label="$t('playlistManager.urlTab.useProxy')"
-                      color="secondary"
-                      hide-details
-                      density="compact"
-                    />
-                    <v-btn
-                      v-if="useCorsProxy"
-                      variant="tonal"
-                      size="small"
-                      color="secondary"
-                      prepend-icon="mdi-tune"
-                      @click="showProxyConfig = !showProxyConfig"
-                    >
-                      {{ getProxyPresetBadge() }}
-                    </v-btn>
-                  </div>
-
-                  <v-expand-transition>
-                    <v-card v-if="useCorsProxy && showProxyConfig" variant="outlined" class="pa-3 mt-3 rounded-lg bg-surface-variant-subtle border-subtle">
-                      <v-select
-                        v-model="activeProxyPreset"
-                        :items="proxyPresetOptions"
-                        label="Servidor de Proxy CORS"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="mb-2"
-                        @update:model-value="onProxyPresetSelect"
-                      />
-                      <v-text-field
-                        v-if="activeProxyPreset === 'custom'"
-                        v-model="currentProxyUrl"
-                        label="URL do Proxy CORS"
-                        placeholder="http://localhost:8088/?url="
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="mb-2"
-                        @update:model-value="onCustomProxyUrlInput"
-                      />
-                      <p class="text-caption text-medium-emphasis mb-0">
-                        💡 <strong>Nota:</strong> Se o seu provedor IPTV bloquear servidores em nuvem, selecione <strong>Proxy Local</strong> e execute <code>pnpm proxy</code> no terminal.
-                      </p>
-                    </v-card>
-                  </v-expand-transition>
-                </div>
-
-                <v-btn
-                  color="primary"
-                  block
-                  size="large"
-                  :disabled="!epgUrl"
-                  @click="importEPGUrl"
-                >
-                  <v-icon start>mdi-cloud-download</v-icon> {{ $t('playlistManager.epgTab.downloadBtn') }}
-                </v-btn>
-              </v-window-item>
-            </v-window>
-          </v-card-text>
-        </v-card>
-
-        <!-- Existing Playlists Panel -->
-        <h2 class="text-h5 font-weight-bold mb-4 d-flex align-center">
-          <v-icon start color="primary">mdi-playlist-play</v-icon> {{ $t('playlistManager.myPlaylists.title') }}
-        </h2>
-
-        <v-card v-if="playlists.length === 0" class="glass-card pa-6 text-center" variant="flat">
-          <v-icon size="40" class="text-medium-emphasis mb-2">mdi-playlist-remove</v-icon>
-          <div class="text-subtitle-1 text-medium-emphasis">{{ $t('playlistManager.myPlaylists.noPlaylistsTitle') }}</div>
-          <div class="text-caption text-medium-emphasis">{{ $t('playlistManager.myPlaylists.noPlaylistsDesc') }}</div>
-        </v-card>
-
-        <v-row v-else>
-          <v-col cols="12" sm="6" v-for="pl in playlists" :key="pl.id">
-            <v-card 
-              class="glass-card playlist-card fill-height d-flex flex-column"
-              :class="{ 'playlist-card-active': pl.id === currentPlaylistId }"
-             
-            >
-              <v-card-item class="pb-2">
-                <div class="d-flex align-start justify-space-between">
-                  <div>
-                    <div class="text-h6 font-weight-bold text-truncate" style="max-width: 220px;">
-                      {{ pl.name }}
-                    </div>
-                    <div class="text-caption text-medium-emphasis">
-                      {{ $t('common.type') }}: 
-                      <v-chip size="x-small" :color="getPlaylistTypeColor(pl.type)" class="ml-1 font-weight-bold">
-                        {{ pl.type.toUpperCase() }}
-                      </v-chip>
-                    </div>
-                  </div>
-                  
-                  <v-btn
-                    icon="mdi-delete"
-                    color="error"
-                    size="small"
-                    variant="text"
-                    :title="$t('common.delete')"
-                    @click="deletePlaylist(pl.id!)"
-                  />
-                </div>
-              </v-card-item>
-
-              <v-card-text class="pt-0 flex-grow-1">
-                <div class="text-caption text-medium-emphasis mt-2">
-                  <div class="d-flex justify-space-between mb-1">
-                    <span>{{ $t('playlistManager.myPlaylists.channelsCountLabel') }}</span>
-                    <strong class="text-primary">{{ pl.channelCount || 0 }}</strong>
-                  </div>
-                  <div class="d-flex justify-space-between mb-1">
-                    <span>{{ $t('playlistManager.myPlaylists.createdAtPrefix') }}</span>
-                    <span>{{ new Date(pl.createdAt).toLocaleDateString() }}</span>
-                  </div>
-                  <div class="d-flex justify-space-between" v-if="pl.type !== 'file'">
-                    <span>{{ $t('playlistManager.myPlaylists.updatedAtPrefix') }}</span>
-                    <span>{{ pl.lastUpdatedAt ? new Date(pl.lastUpdatedAt).toLocaleString() : $t('playlistManager.myPlaylists.never') }}</span>
-                  </div>
-                </div>
-              </v-card-text>
-
-              <v-divider />
-
-              <v-card-actions class="pa-3 d-flex gap-2">
-                <v-btn
-                  v-if="pl.id === currentPlaylistId"
-                  color="success"
-                  variant="flat"
-                  class="flex-grow-1"
-                  prepend-icon="mdi-check-circle"
-                  @click="$emit('select-playlist', pl.id)"
-                >
-                  {{ $t('playlistManager.myPlaylists.active') }}
-                </v-btn>
-                <v-btn
-                  v-else
-                  color="primary"
-                  variant="outlined"
-                  class="flex-grow-1"
-                  prepend-icon="mdi-play-network"
-                  @click="activatePlaylist(pl.id!)"
-                >
-                  {{ $t('playlistManager.myPlaylists.activate') }}
-                </v-btn>
-                
-                <v-btn
-                  v-if="pl.type !== 'file'"
-                  icon="mdi-refresh"
-                  color="primary"
-                  variant="tonal"
-                  :title="$t('playlistManager.myPlaylists.syncPlaylist')"
-                  :loading="loading && syncingPlaylistId === pl.id"
-                  :disabled="loading"
-                  @click="syncPlaylist(pl)"
-                />
-
-                <v-btn
-                  v-if="pl.epgUrl"
-                  icon="mdi-television-guide"
-                  color="secondary"
-                  variant="tonal"
-                  :title="$t('playlistManager.myPlaylists.syncEpg')"
-                  :disabled="loading"
-                  @click="syncEPG(pl)"
-                />
-              </v-card-actions>
-            </v-card>
-          </v-col>
-        </v-row>
-
-      </v-col>
-    </v-row>
-  </v-container>
+        <div class="group-actions">
+          <v-btn color="primary" height="44" :disabled="primaryAction.disabled" @click="primaryAction.run">
+            {{ primaryAction.label }}
+          </v-btn>
+        </div>
+      </v-card>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -637,12 +339,17 @@ const useCorsProxy = ref(!isElectron);
 // Quick Proxy Configuration
 const currentProxyUrl = ref(DEFAULT_WEB_PROXY_URL);
 const activeProxyPreset = ref<'local' | 'custom'>('local');
-const showProxyConfig = ref(false);
 
 const proxyPresetOptions = computed(() => [
-  { title: 'Proxy Local (localhost:8088 - Rápido e Sem Bloqueios)', value: 'local' },
-  { title: 'Personalizado...', value: 'custom' },
+  { title: t('settings.proxy.presets.local'), value: 'local' },
+  { title: t('settings.proxy.presets.custom'), value: 'custom' },
 ]);
+
+const proxyCheckboxLabel = computed(() => {
+  if (tab.value === 'xtream') return t('playlistManager.xtreamTab.useProxy');
+  if (tab.value === 'epg') return t('playlistManager.epgTab.useProxy');
+  return t('playlistManager.urlTab.useProxy');
+});
 
 const loadCurrentProxySetting = async () => {
   try {
@@ -669,11 +376,6 @@ const onProxyPresetSelect = async (preset: 'local' | 'custom') => {
 const onCustomProxyUrlInput = async (val: string) => {
   currentProxyUrl.value = val;
   await db.setSetting('cors_proxy_url', val);
-};
-
-const getProxyPresetBadge = () => {
-  if (activeProxyPreset.value === 'local') return 'Proxy Local (localhost:8088)';
-  return currentProxyUrl.value || 'Personalizado';
 };
 
 const xtreamHost = ref('');
@@ -746,11 +448,25 @@ const refreshEpgCount = async () => {
   }
 };
 
-const getPlaylistTypeColor = (type: string) => {
-  if (type === 'file') return 'info';
-  if (type === 'url') return 'secondary';
-  return 'primary';
-};
+const typeIcon = (type: string) =>
+  type === 'file' ? 'mdi-file-outline' : type === 'url' ? 'mdi-link-variant' : 'mdi-server-network';
+
+const typeLabel = (type: string) =>
+  type === 'file' ? t('playlistManager.tabs.m3uFile') : type === 'url' ? t('playlistManager.tabs.m3uUrl') : t('playlistManager.tabs.xtream');
+
+// The footer button runs the import for the open tab
+const primaryAction = computed(() => {
+  if (tab.value === 'm3u-url') {
+    return { label: t('playlistManager.urlTab.loadBtn'), disabled: !playlistUrl.value || !playlistName.value, run: importM3UUrl };
+  }
+  if (tab.value === 'xtream') {
+    return { label: t('playlistManager.xtreamTab.connectBtn'), disabled: !playlistName.value || !xtreamHost.value || !xtreamUser.value || !xtreamPass.value, run: importXtream };
+  }
+  if (tab.value === 'epg') {
+    return { label: t('playlistManager.epgTab.downloadBtn'), disabled: !epgUrl.value, run: importEPGUrl };
+  }
+  return { label: t('playlistManager.fileTab.importBtn'), disabled: !selectedFile.value, run: importM3UFile };
+});
 
 // --- FILE DRAG & DROP HANDLERS ---
 const onFileSelected = (e: Event) => {
@@ -1327,44 +1043,153 @@ const deletePlaylist = async (playlistId: number) => {
 </script>
 
 <style scoped>
-
-
-.border-primary {
-  border-color: rgba(var(--v-theme-primary), 0.5) !important;
+.lists {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 0 48px;
 }
 
-.border-bottom {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 0 32px;
+}
+
+.welcome-title {
+  margin-bottom: 4px;
+}
+
+.tab-desc {
+  margin-bottom: 16px;
+}
+
+.brand-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pl-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.pl-text {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.pl-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.active-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary-lighten-1));
+}
+
+.pl-meta {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.pl-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.delete-btn:hover {
+  color: rgb(var(--v-theme-error));
+}
+
+.add-tabs {
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.form-body {
+  padding: 20px 24px 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.form-grid .span-2 {
+  grid-column: span 2;
+}
+
+.field-label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
 }
 
 .dropzone {
-  border: 2px dashed rgba(var(--v-theme-primary), 0.3);
+  border: 1px dashed rgba(var(--v-border-color), 0.25);
   border-radius: 12px;
-  padding: 40px 20px;
+  padding: 32px 20px;
   text-align: center;
   cursor: pointer;
-  background: rgba(var(--v-theme-primary), 0.02);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: rgb(var(--v-theme-surface-light));
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.dropzone:hover, .dropzone-active {
+.dropzone:hover,
+.dropzone:focus-visible,
+.dropzone-active {
+  outline: none;
   border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.04);
+  background: rgba(var(--v-theme-primary), 0.06);
 }
 
-.playlist-card {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+.epg-status,
+.proxy-box {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-.playlist-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  border-color: rgba(var(--v-theme-primary), 0.3) !important;
+.epg-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.playlist-card-active {
-  background: rgba(var(--v-theme-primary), 0.15) !important;
-  border-color: rgba(var(--v-theme-primary), 0.6) !important;
-  box-shadow: 0 0 20px rgba(var(--v-theme-primary), 0.15);
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .form-grid .span-2 {
+    grid-column: auto;
+  }
 }
 </style>

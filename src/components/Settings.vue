@@ -902,13 +902,6 @@ const resetToDefaults = async () => {
   padding: 8px 0 48px;
 }
 
-.page-title {
-  font-size: 28px;
-  line-height: 34px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 24px;
-}
 
 .settings-layout {
   display: flex;
@@ -973,43 +966,10 @@ const resetToDefaults = async () => {
   scroll-margin-top: 16px;
 }
 
-.group-head {
-  padding: 20px 24px 16px;
-}
 
-.group-title {
-  margin: 0;
-  font-size: 18px;
-  line-height: 24px;
-  font-weight: 700;
-}
 
-.group-desc {
-  margin: 4px 0 0;
-  font-size: 14px;
-  line-height: 20px;
-  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
-}
 
-.group-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 24px;
-  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
 
-.group-note {
-  display: flex;
-  gap: 10px;
-  padding: 16px 24px;
-  font-size: 13px;
-  line-height: 18px;
-  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
-}
 
 .stats {
   display: grid;

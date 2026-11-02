@@ -213,132 +213,25 @@
       </div>
     </v-card>
 
-    <!-- MOVIE PREVIEW SUB-DIALOG -->
-    <v-dialog v-model="moviePreviewDialog" max-width="720" class="rounded-xl">
-      <v-card v-if="selectedMovie" class="glass-dialog pa-4 rounded-xl border-glass">
-        <div class="d-flex align-end justify-end mb-2">
-          <v-btn icon="mdi-close" variant="text" size="small" @click="moviePreviewDialog = false" />
-        </div>
-        <v-row class="ma-0">
-          <v-col cols="12" sm="4" class="pa-2">
-            <v-img
-              v-if="selectedMovie.logo"
-              :src="selectedMovie.logo"
-              cover
-              aspect-ratio="0.67"
-              class="rounded-xl bg-surface-variant"
-            />
-            <div v-else class="poster-placeholder rounded-xl d-flex align-center justify-center py-12">
-              <v-icon size="48" color="medium-emphasis">mdi-movie-open</v-icon>
-            </div>
-          </v-col>
-          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start">
-            <h2 class="text-h5 font-weight-bold mb-2 text-glow-small">{{ selectedMovie.name }}</h2>
-            <div class="d-flex align-center ga-2 flex-wrap mb-3">
-              <v-chip size="small" color="primary">{{ selectedMovie.category }}</v-chip>
-              <v-chip v-if="selectedMovie.rating" size="small">
-                ★ {{ selectedMovie.rating }}
-              </v-chip>
-              <v-chip v-if="selectedMovie.year" size="small">
-                {{ selectedMovie.year }}
-              </v-chip>
-              <v-chip v-if="selectedMovie.duration" size="small">
-                {{ selectedMovie.duration }} min
-              </v-chip>
-            </div>
+    <MediaDetails
+      v-model="moviePreviewDialog"
+      kind="movie"
+      :item="selectedMovie"
+      :favorite="!!selectedMovie && isFavorite(selectedMovie.id)"
+      @play="playMovie(selectedMovie!)"
+      @toggle-favorite="toggleFavorite(selectedMovie!.id)"
+    />
 
-            <p v-if="selectedMovie.plot" class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-              {{ selectedMovie.plot }}
-            </p>
-            <p v-else class="text-body-2 text-medium-emphasis mb-4 italic">
-              {{ $t('streamBrowser.movieDetails.noSynopsis') }}
-            </p>
-
-            <div class="mt-auto d-flex align-center ga-3 pt-3 border-top">
-              <v-btn
-                prepend-icon="mdi-play"
-                color="primary"
-                variant="flat"
-                size="large"
-                
-                @click="playMovie(selectedMovie)"
-              >
-                {{ $t('globalSearch.watchNow') }}
-              </v-btn>
-              <v-btn
-                :icon="isFavorite(selectedMovie.id) ? 'mdi-star' : 'mdi-star-outline'"
-                :color="isFavorite(selectedMovie.id) ? 'warning' : 'medium-emphasis'"
-                variant="outlined"
-                size="large"
-                @click="toggleFavorite(selectedMovie.id)"
-              />
-            </div>
-          </v-col>
-        </v-row>
-      </v-card>
-    </v-dialog>
-
-    <!-- SERIES SEASONS & EPISODES HUB -->
-    <v-dialog v-model="seriesHubDialog" max-width="800" class="rounded-xl">
-      <v-card v-if="selectedSeries" class="glass-dialog pa-4 rounded-xl border-glass">
-        <div class="d-flex align-end justify-end mb-2">
-          <v-btn icon="mdi-close" variant="text" size="small" @click="seriesHubDialog = false" />
-        </div>
-        <div class="d-flex align-center ga-4 mb-4">
-          <v-avatar size="56" rounded="lg" class="bg-surface-variant flex-shrink-0">
-            <v-img v-if="selectedSeries.logo" :src="selectedSeries.logo" cover />
-            <v-icon v-else size="32" color="medium-emphasis">mdi-youtube-subscription</v-icon>
-          </v-avatar>
-          <div class="min-w-0">
-            <h3 class="text-h6 font-weight-bold text-truncate text-glow-small mb-1">{{ selectedSeries.name }}</h3>
-            <v-chip size="x-small" color="primary">{{ selectedSeries.category }}</v-chip>
-          </div>
-        </div>
-
-        <div v-if="loadingEpisodes" class="text-center py-8">
-          <v-progress-circular color="primary" indeterminate size="36" class="mb-2" />
-          <div class="text-caption text-medium-emphasis">{{ $t('streamBrowser.seriesDetails.loadingEpisodes') }}</div>
-        </div>
-
-        <div v-else-if="Object.keys(seasonsData).length === 0" class="text-center py-8 text-medium-emphasis">
-          {{ $t('streamBrowser.seriesDetails.noEpisodes') }}
-        </div>
-
-        <div v-else>
-          <v-tabs v-model="activeSeason" density="compact" class="border-bottom mb-3">
-            <v-tab v-for="season in sortedSeasons" :key="season" :value="season">
-              {{ $t('streamBrowser.seriesDetails.seasonLabel', { season }) }}
-            </v-tab>
-          </v-tabs>
-
-          <v-window v-model="activeSeason">
-            <v-window-item v-for="season in sortedSeasons" :key="season" :value="season">
-              <v-list bg-color="transparent" class="pa-0" style="max-height: 400px; overflow-y: auto;">
-                <v-list-item
-                  v-for="ep in seasonsData[season]"
-                  :key="ep.id"
-                  class="mb-2 rounded-lg bg-surface-variant border-glass"
-                  @click="playEpisode(ep)"
-                >
-                  <template v-slot:prepend>
-                    <v-avatar rounded="lg" color="surface-variant" size="40" class="mr-2 flex-shrink-0">
-                      <v-img v-if="ep.logo" :src="ep.logo" cover />
-                      <v-icon v-else color="medium-emphasis">mdi-play-circle</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-bold text-white text-body-2">
-                    {{ ep.episodeNum }}. {{ ep.title }}
-                  </v-list-item-title>
-                  <template v-slot:append>
-                    <v-btn icon="mdi-play" color="secondary" size="small" variant="flat"  />
-                  </template>
-                </v-list-item>
-              </v-list>
-            </v-window-item>
-          </v-window>
-        </div>
-      </v-card>
-    </v-dialog>
+    <MediaDetails
+      v-model="seriesHubDialog"
+      kind="series"
+      :item="selectedSeries"
+      :favorite="!!selectedSeries && isFavorite(selectedSeries.id)"
+      :loading-episodes="loadingEpisodes"
+      :seasons="seasonsData"
+      @play-episode="playEpisode"
+      @toggle-favorite="toggleFavorite(selectedSeries!.id)"
+    />
   </v-dialog>
 </template>
 
@@ -348,6 +241,7 @@ import { db, type IPTVChannel, type GlobalSearchResults } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
 import { getDataProxy } from '@/utils/proxy';
 import { useI18n } from 'vue-i18n';
+import MediaDetails from '@/components/MediaDetails.vue';
 
 const { t } = useI18n();
 
@@ -412,7 +306,6 @@ const seriesHubDialog = ref(false);
 const selectedSeries = ref<IPTVChannel | null>(null);
 const loadingEpisodes = ref(false);
 const seasonsData = ref<Record<number, XtreamEpisode[]>>({});
-const activeSeason = ref<number>(1);
 
 let debounceTimer: any = null;
 
@@ -587,7 +480,6 @@ const openSeriesHub = async (series: IPTVChannel) => {
   seriesHubDialog.value = true;
   loadingEpisodes.value = true;
   seasonsData.value = {};
-  activeSeason.value = 1;
 
   try {
     if (!props.playlistId) return;
@@ -604,11 +496,6 @@ const openSeriesHub = async (series: IPTVChannel) => {
 
       const epData = await client.fetchSeriesEpisodes(series.xtreamId);
       seasonsData.value = epData;
-
-      const seasonsKeys = Object.keys(epData).map(Number);
-      if (seasonsKeys.length > 0) {
-        activeSeason.value = Math.min(...seasonsKeys);
-      }
     }
   } catch (err) {
     console.error('Error loading series episodes in search:', err);
@@ -616,10 +503,6 @@ const openSeriesHub = async (series: IPTVChannel) => {
     loadingEpisodes.value = false;
   }
 };
-
-const sortedSeasons = computed(() => {
-  return Object.keys(seasonsData.value).map(Number).sort((a, b) => a - b);
-});
 
 const playEpisode = (ep: XtreamEpisode) => {
   if (!props.playlistId || !selectedSeries.value) return;

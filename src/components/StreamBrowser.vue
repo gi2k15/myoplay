@@ -162,217 +162,27 @@
       </div>
     </div>
 
-    <!-- TV SERIES DETAILS DIALOG/HUB -->
-    <v-dialog v-model="seriesDialog" max-width="850" class="series-dialog rounded-xl">
-      <v-card v-if="selectedSeries" class="glass-dialog pa-4 rounded-xl border-glass">
-        <div class="d-flex align-end justify-end mb-2">
-          <v-btn icon="mdi-close" variant="text" size="small" @click="seriesDialog = false" />
-        </div>
+    <MediaDetails
+      v-model="seriesDialog"
+      kind="series"
+      :item="selectedSeries"
+      :favorite="!!selectedSeries && isFavorite(selectedSeries.id)"
+      :loading-episodes="loadingEpisodes"
+      :seasons="seasonsData"
+      @play-episode="playEpisode"
+      @toggle-favorite="toggleFavorite(selectedSeries!.id)"
+    />
 
-        <v-row class="ma-0 mb-6 series-details-row">
-          <!-- Series Cover -->
-          <v-col cols="12" sm="4" class="pa-2">
-            <v-img 
-              v-if="selectedSeries.logo" 
-              :src="selectedSeries.logo" 
-              cover 
-              aspect-ratio="0.67" 
-              class="bg-surface-variant rounded-xl"
-            />
-            <div v-else class="movie-poster-placeholder d-flex align-center justify-center rounded-xl py-12">
-              <v-icon size="60" color="medium-emphasis">mdi-youtube-subscription</v-icon>
-            </div>
-          </v-col>
-
-          <!-- Series Meta Info -->
-          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start series-details-col">
-            <h2 class="text-h4 font-weight-bold mb-2">{{ selectedSeries.name }}</h2>
-            <div class="d-flex align-center mb-4 gap-2 flex-wrap">
-              <v-chip size="small">{{ selectedSeries.category }}</v-chip>
-              <v-chip v-if="selectedSeries.rating" size="small">★ {{ selectedSeries.rating }}</v-chip>
-              <v-chip v-if="selectedSeries.year" size="small">{{ selectedSeries.year }}</v-chip>
-              
-              <!-- Favorite Button -->
-              <v-btn
-                :prepend-icon="isFavorite(selectedSeries.id) ? 'mdi-star' : 'mdi-star-outline'"
-                :color="isFavorite(selectedSeries.id) ? 'warning' : 'medium-emphasis'"
-                variant="outlined"
-                size="small"
-                class="ml-sm-auto"
-                @click="toggleFavorite(selectedSeries.id)"
-              >
-                {{ isFavorite(selectedSeries.id) ? $t('streamBrowser.movieDetails.favorited') : $t('streamBrowser.movieDetails.favorite') }}
-              </v-btn>
-            </div>
-            
-            <div class="flex-grow-1 mb-0 d-flex flex-column overflow-hidden">
-              <p v-if="selectedSeries.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height">
-                {{ selectedSeries.plot }}
-              </p>
-              <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
-                Nenhuma descrição disponível para esta série.
-              </p>
-            </div>
-          </v-col>
-        </v-row>
-
-        <v-divider class="mb-4 opacity-10" />
-
-        <!-- Seasons and Episodes Hub -->
-        <h3 class="text-h6 font-weight-bold mb-3 d-flex align-center">
-          <v-icon start color="medium-emphasis">mdi-folder-play</v-icon> {{ $t('streamBrowser.seriesDetails.seasons') }} & {{ $t('streamBrowser.seriesDetails.episodes') }}
-        </h3>
-
-        <!-- Loading Episodes Circular -->
-        <div v-if="loadingEpisodes" class="text-center py-8">
-          <v-progress-circular color="primary" indeterminate size="40" class="mb-2" />
-          <div class="text-caption text-medium-emphasis">{{ $t('streamBrowser.seriesDetails.loadingEpisodes') }}</div>
-        </div>
-
-        <div v-else-if="Object.keys(seasonsData).length === 0" class="text-center py-8 text-medium-emphasis">
-          {{ $t('streamBrowser.seriesDetails.noEpisodes') }}
-        </div>
-
-        <div v-else>
-          <!-- Season Tabs -->
-          <v-tabs v-model="activeSeason" class="border-bottom mb-4">
-            <v-tab v-for="season in sortedSeasons" :key="season" :value="season">
-              {{ $t('streamBrowser.seriesDetails.seasonLabel', { season }) }}
-            </v-tab>
-          </v-tabs>
-
-          <!-- Episode List -->
-          <v-window v-model="activeSeason">
-            <v-window-item v-for="season in sortedSeasons" :key="season" :value="season">
-              <v-list bg-color="transparent" class="pa-0 max-episodes-height">
-                <v-list-item
-                  v-for="ep in seasonsData[season]"
-                  :key="ep.id"
-                  class="mb-2 rounded-lg bg-surface-variant border-glass"
-                  @click="playEpisode(ep)"
-                >
-                  <template v-slot:prepend>
-                    <v-avatar rounded="lg" color="surface-variant" size="45" class="mr-2 flex-shrink-0">
-                      <v-img v-if="ep.logo" :src="ep.logo" cover />
-                      <v-icon v-else color="medium-emphasis">mdi-play-circle</v-icon>
-                    </v-avatar>
-                  </template>
-                  
-                  <v-list-item-title class="font-weight-bold text-white">
-                    {{ ep.episodeNum }}. {{ ep.title }}
-                  </v-list-item-title>
-                  
-                  <v-list-item-subtitle v-if="ep.plot" class="text-caption text-medium-emphasis text-truncate mt-1" style="max-width: 480px;">
-                    {{ ep.plot }}
-                  </v-list-item-subtitle>
-
-                  <template v-slot:append>
-                    <div class="d-flex align-center">
-                      <span v-if="ep.duration" class="text-caption text-medium-emphasis mr-4">
-                        {{ ep.duration }}
-                      </span>
-                      <v-btn icon="mdi-play" color="secondary" size="small" variant="flat" />
-                    </div>
-                  </template>
-                </v-list-item>
-              </v-list>
-            </v-window-item>
-          </v-window>
-        </div>
-      </v-card>
-    </v-dialog>
-
-    <!-- MOVIE DETAILS DIALOG -->
-    <v-dialog v-model="movieDialog" max-width="850" class="movie-dialog rounded-xl">
-      <v-card v-if="selectedMovie" class="glass-dialog pa-4 rounded-xl border-glass">
-        <!-- Botão fechar -->
-        <div class="d-flex align-end justify-end mb-2">
-          <v-btn icon="mdi-close" variant="text" size="small" @click="movieDialog = false" />
-        </div>
-
-        <v-row class="ma-0 mb-4 movie-details-row">
-          <!-- Poster do Filme -->
-          <v-col cols="12" sm="4" class="pa-2">
-            <v-img 
-              v-if="selectedMovie.logo" 
-              :src="selectedMovie.logo" 
-              cover 
-              aspect-ratio="0.67" 
-              class="bg-surface-variant rounded-xl"
-            />
-            <div v-else class="movie-poster-placeholder d-flex align-center justify-center rounded-xl py-12">
-              <v-icon size="60" color="medium-emphasis">mdi-movie-open</v-icon>
-            </div>
-          </v-col>
-
-          <!-- Informações de Metadados do Filme -->
-          <v-col cols="12" sm="8" class="pa-2 d-flex flex-column justify-start movie-details-col">
-            <h2 class="text-h4 font-weight-bold mb-2">{{ selectedMovie.name }}</h2>
-            
-            <div class="d-flex align-center mb-4 gap-2 flex-wrap">
-              <v-chip size="small">{{ selectedMovie.category }}</v-chip>
-              <v-chip v-if="selectedMovie.rating" size="small">★ {{ selectedMovie.rating }}</v-chip>
-              <v-chip v-if="selectedMovie.year" size="small">{{ selectedMovie.year }}</v-chip>
-              <v-chip v-if="selectedMovie.duration" size="small">{{ selectedMovie.duration }} min</v-chip>
-            </div>
-
-            <!-- Gênero e Diretor -->
-            <div v-if="selectedMovie.genre || selectedMovie.director" class="ma-0 mb-4 text-caption text-medium-emphasis">
-              <span v-if="selectedMovie.genre" class="mr-3"><strong>{{ $t('common.category') }}:</strong> {{ selectedMovie.genre }}</span>
-              <span v-if="selectedMovie.director"><strong>{{ $t('streamBrowser.movieDetails.directorLabel') }}</strong> {{ selectedMovie.director }}</span>
-            </div>
-            
-            <!-- Sinopse -->
-            <div class="flex-grow-1 mb-6 d-flex flex-column overflow-hidden">
-              <h4 class="text-subtitle-2 font-weight-bold mb-2">{{ $t('streamBrowser.movieDetails.sinopse') }}</h4>
-              <p v-if="selectedMovie.plot" class="text-body-2 text-medium-emphasis mb-0 leading-relaxed max-plot-height-movie">
-                {{ selectedMovie.plot }}
-              </p>
-              <p v-else-if="loadingMovieInfo" class="text-body-2 text-medium-emphasis mb-0 italic">
-                <v-progress-circular size="16" width="2" color="secondary" indeterminate class="mr-2" />
-                {{ $t('streamBrowser.movieDetails.loadingOnline') }}
-              </p>
-              <p v-else class="text-body-2 text-medium-emphasis mb-0 italic">
-                {{ $t('streamBrowser.movieDetails.noSynopsis') }}
-              </p>
-            </div>
-
-            <!-- Alerta de erro de busca -->
-            <v-alert v-if="movieErrorMsg" type="warning" variant="tonal" density="compact" class="mb-4 text-caption">
-              {{ movieErrorMsg }}
-            </v-alert>
-
-            <!-- Barra de Ações -->
-            <div class="d-flex align-center justify-space-between flex-wrap gap-2 pt-2 border-top">
-              <div class="d-flex align-center gap-2">
-                <!-- Botão Assistir -->
-                <v-btn
-                  prepend-icon="mdi-play"
-                  color="primary"
-                  variant="flat"
-                  size="large"
-                 
-                  @click="playMovie(selectedMovie)"
-                >
-                  {{ $t('streamBrowser.movieDetails.watchBtn') }}
-                </v-btn>
-
-                <!-- Botão Favoritar -->
-                <v-btn
-                  :prepend-icon="isFavorite(selectedMovie.id) ? 'mdi-star' : 'mdi-star-outline'"
-                  :color="isFavorite(selectedMovie.id) ? 'warning' : 'medium-emphasis'"
-                  variant="outlined"
-                  size="large"
-                  @click="toggleFavorite(selectedMovie.id)"
-                >
-                  {{ isFavorite(selectedMovie.id) ? $t('streamBrowser.movieDetails.favorited') : $t('streamBrowser.movieDetails.favorite') }}
-                </v-btn>
-              </div>
-            </div>
-          </v-col>
-        </v-row>
-      </v-card>
-    </v-dialog>
+    <MediaDetails
+      v-model="movieDialog"
+      kind="movie"
+      :item="selectedMovie"
+      :favorite="!!selectedMovie && isFavorite(selectedMovie.id)"
+      :loading-info="loadingMovieInfo"
+      :error-msg="movieErrorMsg"
+      @play="playMovie(selectedMovie!)"
+      @toggle-favorite="toggleFavorite(selectedMovie!.id)"
+    />
   </div>
 </template>
 
@@ -382,6 +192,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db, type IPTVChannel } from '@/services/db';
 import { XtreamClient, type XtreamEpisode } from '@/services/xtreamClient';
+import MediaDetails from '@/components/MediaDetails.vue';
 
 const { t } = useI18n();
 
@@ -437,7 +248,6 @@ const seriesDialog = ref(false);
 const selectedSeries = ref<IPTVChannel | null>(null);
 const loadingEpisodes = ref(false);
 const seasonsData = ref<Record<number, XtreamEpisode[]>>({});
-const activeSeason = ref<number>(1);
 
 // Pagination / Sliced Lazy Loading
 const itemsPerPage = 40;
@@ -752,7 +562,6 @@ const openSeriesDetails = async (series: IPTVChannel) => {
   seriesDialog.value = true;
   loadingEpisodes.value = true;
   seasonsData.value = {};
-  activeSeason.value = 1;
 
   try {
     // 1. Fetch Playlist metadata to determine if it's Xtream Codes
@@ -770,12 +579,6 @@ const openSeriesDetails = async (series: IPTVChannel) => {
 
       const epData = await client.fetchSeriesEpisodes(series.xtreamId);
       seasonsData.value = epData;
-
-      // Select first available season
-      const seasonsKeys = Object.keys(epData).map(Number);
-      if (seasonsKeys.length > 0) {
-        activeSeason.value = Math.min(...seasonsKeys);
-      }
     } else {
       // Standard M3U series does not have sub-episodes nested, they are loaded as flat channels
       // but in case we want support, M3U flat channels are loaded in their specific category tab
@@ -787,10 +590,6 @@ const openSeriesDetails = async (series: IPTVChannel) => {
     loadingEpisodes.value = false;
   }
 };
-
-const sortedSeasons = computed(() => {
-  return Object.keys(seasonsData.value).map(Number).sort((a, b) => a - b);
-});
 
 // --- PLAYBACK TRIGGERING ---
 const playStream = (channel: IPTVChannel) => {
@@ -1063,8 +862,7 @@ const playMovie = (movie: IPTVChannel) => {
   outline-offset: 2px;
 }
 
-.poster-placeholder,
-.movie-poster-placeholder {
+.poster-placeholder {
   aspect-ratio: 0.667;
   display: flex;
   align-items: center;
@@ -1096,47 +894,4 @@ const playMovie = (movie: IPTVChannel) => {
   text-overflow: ellipsis;
 }
 
-/* Details dialogs */
-.leading-relaxed {
-  line-height: 1.6;
-}
-
-.max-plot-height {
-  max-height: 120px;
-  overflow-y: auto;
-}
-
-.max-plot-height-movie {
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-@media (min-width: 600px) {
-  .movie-details-row,
-  .series-details-row {
-    position: relative;
-  }
-  .movie-details-col,
-  .series-details-col {
-    position: absolute !important;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 66.666667% !important;
-  }
-  .max-plot-height-movie,
-  .max-plot-height {
-    max-height: none;
-    flex-grow: 1;
-  }
-}
-
-.max-episodes-height {
-  max-height: 350px;
-  overflow-y: auto;
-}
-
-.gap-2 {
-  gap: 8px;
-}
 </style>
