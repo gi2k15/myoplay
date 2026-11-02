@@ -54,85 +54,87 @@ export default {
   settings: {
     title: 'General Settings',
     proxy: {
-      title: 'CORS Proxy (Cross-Origin Resource Sharing)',
-      desc: 'Browsers block requests to external servers that do not allow CORS sharing (very common in remote IPTV M3U and EPG links). Using a CORS Proxy helps bypass this restriction.',
-      preset1Label: '1. Proxy for M3U and APIs (EPG, Categories, VOD, and Series)',
-      preset1Select: 'Select Data Proxy Server',
-      preset1Url: 'Custom Data CORS Proxy URL',
-      preset2Label: '2. Proxy for Channels and Streams (HLS/TS Video)',
-      preset2Select: 'Select Video Proxy Server',
-      preset2Url: 'Custom Video CORS Proxy URL',
-      policyLabel: 'Stream Proxy Usage Policy',
-      saveBtn: 'Save Proxy Settings',
+      title: 'CORS proxy',
+      desc: 'Browsers block IPTV servers that do not allow CORS. A proxy works around it.',
+      preset1Label: 'Data proxy',
+      preset1Select: 'M3U playlists, EPG, categories, movies and series',
+      preset1Url: 'Data proxy URL',
+      preset2Label: 'Video proxy',
+      preset2Select: 'HLS and TS streams',
+      preset2Url: 'Video proxy URL',
+      policyLabel: 'When to use the video proxy',
+      saveBtn: 'Save proxy',
       successMsg: 'Proxy settings saved successfully!',
       policyOptions: {
-        auto: 'Only if it fails (Automatic - Recommended)',
-        always: 'Always use proxy for playback',
-        never: 'Never use proxy for playback'
+        auto: 'Only if the direct connection fails',
+        always: 'Always',
+        never: 'Never'
       },
       presets: {
-        none: 'No Proxy (Direct Connection)',
-        local: 'Local Proxy (localhost:8088 - Super Fast & Unlimited)',
-        allorigins: 'AllOrigins (Alternative - Unlimited)',
-        corsAnywhere: 'Cors-Anywhere (Requires Demo Activation)',
-        thingproxy: 'ThingProxy (Lightweight)',
-        custom: 'Custom CORS Proxy',
-        corsproxy: 'CorsProxy.io (Recommended - Excellent for Video)'
+        none: 'No proxy',
+        local: 'Local proxy (localhost:8088)',
+        allorigins: 'AllOrigins',
+        corsAnywhere: 'CORS Anywhere (needs activation)',
+        thingproxy: 'ThingProxy',
+        custom: 'Custom',
+        corsproxy: 'CorsProxy.io (recommended)'
       }
     },
     network: {
-      title: 'Network & VPN Compatibility (Electron)',
-      desc: 'Adjust app network settings to resolve connection issues when streaming behind a VPN or restrictive proxy.',
-      dohLabel: 'DNS over HTTPS (DoH - Cloudflare)',
-      dohHint: 'Resolves domain names via HTTPS to prevent DNS blocks and resolution failures caused by VPNs.',
-      proxyModeLabel: 'Electron Proxy Mode',
+      title: 'Network and VPN',
+      desc: 'Settings for when connections fail behind a VPN or proxy.',
+      dohLabel: 'DNS over HTTPS',
+      dohHint: 'Uses Cloudflare DNS to avoid VPN DNS blocking.',
+      proxyModeLabel: 'App proxy',
       proxyModes: {
-        system: 'Use System Proxy (VPN/OS Default)',
-        direct: 'Direct Connection (Bypass System Proxy)',
-        custom: 'Custom Proxy (HTTP / SOCKS5)'
+        system: 'System proxy',
+        direct: 'Direct connection',
+        custom: 'Custom (HTTP or SOCKS5)'
       },
-      customProxyLabel: 'Custom Proxy URL',
-      customProxyPlaceholder: 'e.g. socks5://127.0.0.1:1080 or http://127.0.0.1:8080',
-      sslBypassLabel: 'Ignore SSL/TLS Certificate Errors',
-      sslBypassWarning: 'Enable this option only if your VPN or antivirus performs HTTPS traffic inspection (MitM) causing certificate errors.',
+      customProxyLabel: 'Proxy URL',
+      customProxyPlaceholder: 'socks5://127.0.0.1:1080',
+      sslBypassLabel: 'Ignore certificate errors',
+      sslBypassWarning: 'Only turn this on if your VPN or antivirus inspects HTTPS traffic and that breaks certificates.',
       saveBtn: 'Save Network Settings',
       successMsg: 'Network settings updated successfully!',
-      vpnNotice: 'Tip: If streams remain blocked even with these options enabled, your IPTV provider may be directly blocking the VPN IP. Try changing your VPN server location or using Split Tunneling.'
+      vpnNotice: 'If channels stay blocked, the playlist server may be blocking the VPN IP. Switch VPN location or use split tunneling.'
     },
     playback: {
-      title: 'Playback Preferences',
-      autoPlay: 'Autoplay (Start channels immediately on click)',
-      aspectRatio: 'Default Player Aspect Ratio',
-      bufferMode: 'Buffer Mode / Stability (Recommended for stuttering streams)',
+      autoPlayHint: 'Starts playing as soon as you pick a channel.',
+      bufferHint: 'More buffer makes unstable streams steadier, with more delay.',
+      title: 'Playback',
+      autoPlay: 'Autoplay',
+      aspectRatio: 'Default aspect ratio',
+      bufferMode: 'Buffer',
       successMsg: 'Playback preferences updated!',
       aspectRatioOptions: {
-        fit: 'Fit Screen (Default)',
+        fit: 'Fit',
         fill: 'Stretch',
-        widescreen: '16:9 widescreen',
-        classic: '4:3 classic'
+        widescreen: '16:9',
+        classic: '4:3'
       },
       bufferOptions: {
-        lowLatency: 'Low Latency (Minimum Delay)',
-        balanced: 'Balanced (Good Stability)',
-        stable: 'High Stability (Default - Maximum Buffer)'
+        lowLatency: 'Low latency',
+        balanced: 'Balanced',
+        stable: 'High stability (default)'
       }
     },
     epg: {
-      title: 'Program Guide (EPG)',
-      desc: 'If the program guide schedule is misaligned (ahead or behind) compared to your system time, you can adjust the Time Shift below.',
-      timeShift: 'EPG Time Shift (Time Offset)',
+      title: 'TV guide',
+      desc: 'Fixes the guide when times show up early or late.',
+      timeShift: 'Time shift',
       successMsg: 'EPG settings saved!',
       hoursAgo: '{count} hours ago',
       hoursAhead: '+{count} hours',
-      noShift: 'No shift (Default)',
-      brasiliaShift: '-3 hours (Brasilia if EPG is UTC)',
-      shiftThreeAhead: '+3 hours (If EPG is 3h behind)'
+      noShift: 'No shift (default)',
+      brasiliaShift: '-3 hours (Brasília, if the EPG is in UTC)',
+      shiftThreeAhead: '+3 hours'
     },
     sync: {
-      title: 'Playlist Synchronization',
-      desc: 'Choose how often the app automatically checks and updates playlists (M3U or Xtream) configured via URL.',
-      interval: 'Automatic Update Interval',
-      syncAllBtn: 'Synchronize All Playlists Now',
+      title: 'Sync',
+      desc: 'Applies to playlists added by URL or Xtream Codes.',
+      interval: 'Automatic update',
+      syncAllBtn: 'Sync now',
       syncingAll: 'Synchronizing all playlists...',
       successMsg: 'Update interval updated!',
       syncCompleteMsg: 'All playlists successfully synchronized!',
@@ -141,26 +143,26 @@ export default {
       syncProgress: 'Synchronizing ({current}/{total}): {name}...',
       syncSuccessDetailed: 'Synchronization complete! {success} of {total} playlists successfully updated.',
       intervalOptions: {
-        never: 'Do not update automatically',
+        never: 'Never',
         h12: 'Every 12 hours',
-        h24: 'Every 24 hours (Default)',
+        h24: 'Every 24 hours (default)',
         h48: 'Every 48 hours',
-        days7: 'Weekly (every 7 days)'
+        days7: 'Weekly'
       }
     },
     metadata: {
-      title: 'Movies & Metadata Database (VOD)',
-      desc: 'Configure a metadata provider to automatically fetch synopses, high-resolution posters, release years, and movie ratings that are missing from your playlist.',
-      providerLabel: 'Movie Metadata Provider',
-      apiKeyLabel: 'API Key',
-      apiKeyPlaceholder: 'Enter your API key',
-      hintTmdb: 'Optional. If left blank, a public default key will be used.',
-      hintOmdb: 'Required for OMDb API.',
-      languageLabel: 'Synopsis Search Language',
+      title: 'Movie metadata',
+      desc: 'Fetches plot, poster, year and rating when the playlist does not include them.',
+      providerLabel: 'Provider',
+      apiKeyLabel: 'API key',
+      apiKeyPlaceholder: 'Paste your key here',
+      hintTmdb: 'Optional. Without a key, a public key is used.',
+      hintOmdb: 'Required for OMDb.',
+      languageLabel: 'Plot language',
       sources: {
-        none: 'None (Local metadata only)',
-        tmdb: 'TMDB (The Movie Database - Recommended for PT)',
-        omdb: 'OMDb API (IMDb - Mostly in English)'
+        none: 'None',
+        tmdb: 'TMDB (recommended)',
+        omdb: 'OMDb (English)'
       },
       languages: {
         ptBR: 'Portuguese (Brazil)',
@@ -170,27 +172,27 @@ export default {
       }
     },
     maintenance: {
-      title: 'Storage & Maintenance',
-      desc: 'All your playlists, channels, history, and program guides (EPG) are saved 100% locally and privately in your browser\'s IndexedDB database.',
+      title: 'Data',
+      desc: 'Playlists, channels, guide and favorites are stored only on this device.',
       statsPlaylists: 'Playlists',
       statsChannels: 'Channels',
-      statsEpg: 'EPG Guide',
+      statsEpg: 'Guide entries',
       statsFavorites: 'Favorites',
-      pruneBtn: 'Optimize EPG Guide (Delete old schedule data)',
+      pruneBtn: 'Clear old guide data',
       pruneSuccess: 'Optimization complete! Removed {count} old EPG entries.',
-      resetBtn: 'Restore Default Settings',
+      resetBtn: 'Restore defaults',
       resetConfirm: 'Are you sure you want to restore all settings to default values?',
       resetSuccess: 'Settings successfully restored to default!',
-      wipeBtn: 'Clear Entire Database',
+      wipeBtn: 'Delete all data',
       wipeConfirm: 'WARNING: This will PERMANENTELY delete all playlists, channels, history, favorites, and XMLTV guides saved in this browser. Do you wish to proceed?',
       wipeSuccess: 'The entire local database has been cleared and settings have been reset! Reload the page.',
-      privacyTitle: 'Privacy Guaranteed',
-      privacyDesc: 'This application does not send your IPTV playlists, Xtream Codes credentials, or searches to any external server. All parsers, API connections, and players run locally on your machine!'
+      privacyTitle: 'Privacy',
+      privacyDesc: 'Nothing leaves your device: playlists, credentials and searches are never sent to an external server.'
     },
     language: {
-      title: 'Language / Idioma',
+      title: 'Language',
       desc: 'Choose your preferred language for the application interface.',
-      select: 'Select Language',
+      select: 'Interface language',
       successMsg: 'Language changed successfully!'
     }
   },

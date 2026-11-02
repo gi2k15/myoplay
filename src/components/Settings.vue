@@ -1,448 +1,309 @@
 <!-- src/components/Settings.vue -->
 <template>
-  <v-container class="py-8 fill-height align-start">
-    <v-row class="justify-center w-100">
-      <v-col cols="12" md="10" lg="8">
-        
-        <!-- Header -->
-        <h2 class="text-h4 font-weight-bold mb-6 text-glow-small d-flex align-center">
-          <v-icon start color="secondary" class="mr-2">mdi-cog</v-icon> {{ $t('settings.title') }}
-        </h2>
+  <div class="settings">
+    <h1 class="page-title">{{ $t('nav.settings') }}</h1>
 
+    <div class="settings-layout">
+      <nav class="settings-nav" :aria-label="$t('nav.settings')">
+        <button
+          v-for="sec in sections"
+          :key="sec.id"
+          class="nav-link"
+          :class="{ 'nav-link--active': activeSection === sec.id }"
+          @click="scrollTo(sec.id)"
+        >
+          <v-icon size="18">{{ sec.icon }}</v-icon>
+          {{ sec.title }}
+        </button>
+      </nav>
+
+      <div class="settings-sections">
         <v-alert
           v-if="alertMsg"
           :type="alertType"
-          variant="tonal"
           closable
-          class="mb-6"
+          density="compact"
           @click:close="alertMsg = ''"
         >
           {{ alertMsg }}
         </v-alert>
 
-        <v-row>
-          <!-- CORS Proxy Settings -->
-          <v-col cols="12" v-if="!isElectron">
-            <v-card class="glass-card pa-6 mb-6" variant="flat">
-              <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
-                <v-icon start color="primary" class="mr-2">mdi-network-outline</v-icon> 
-                {{ $t('settings.proxy.title') }}
-              </h3>
-              
-              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                {{ $t('settings.proxy.desc') }}
-              </p>
+        <!-- CORS proxy (web) -->
+        <v-card v-if="!isElectron" id="sec-proxy" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.proxy.title') }}</h2>
+            <p class="group-desc">{{ $t('settings.proxy.desc') }}</p>
+          </div>
+          <SettingRow :label="$t('settings.proxy.preset1Label')" :hint="$t('settings.proxy.preset1Select')">
+            <v-select
+              v-model="selectedProxyPreset"
+              :items="proxyPresets"
+              :aria-label="$t('settings.proxy.preset1Label')"
+              density="compact"
+              hide-details
+              @update:model-value="onProxyPresetChange"
+            />
+          </SettingRow>
+          <SettingRow v-if="selectedProxyPreset === 'custom'" :label="$t('settings.proxy.preset1Url')">
+            <v-text-field
+              v-model="customProxyUrl"
+              :aria-label="$t('settings.proxy.preset1Url')"
+              placeholder="https://proxy.exemplo.com/?url="
+              density="compact"
+              hide-details
+            />
+          </SettingRow>
+          <SettingRow :label="$t('settings.proxy.preset2Label')" :hint="$t('settings.proxy.preset2Select')">
+            <v-select
+              v-model="selectedPlayerProxyPreset"
+              :items="playerProxyPresets"
+              :aria-label="$t('settings.proxy.preset2Label')"
+              density="compact"
+              hide-details
+              @update:model-value="onPlayerProxyPresetChange"
+            />
+          </SettingRow>
+          <SettingRow v-if="selectedPlayerProxyPreset === 'custom'" :label="$t('settings.proxy.preset2Url')">
+            <v-text-field
+              v-model="customPlayerProxyUrl"
+              :aria-label="$t('settings.proxy.preset2Url')"
+              placeholder="https://proxy.exemplo.com/?url="
+              density="compact"
+              hide-details
+            />
+          </SettingRow>
+          <SettingRow :label="$t('settings.proxy.policyLabel')">
+            <v-select
+              v-model="playerProxyStreams"
+              :items="streamProxyOptions"
+              :aria-label="$t('settings.proxy.policyLabel')"
+              density="compact"
+              hide-details
+            />
+          </SettingRow>
+          <div class="group-actions">
+            <v-btn color="primary" @click="saveCorsProxy">{{ $t('settings.proxy.saveBtn') }}</v-btn>
+          </div>
+        </v-card>
 
-              <div class="text-subtitle-2 font-weight-bold mb-2">{{ $t('settings.proxy.preset1Label') }}</div>
-              <v-select
-                v-model="selectedProxyPreset"
-                :items="proxyPresets"
-                :label="$t('settings.proxy.preset1Select')"
-                variant="outlined"
-                density="comfortable"
-                class="mb-4"
-                @update:model-value="onProxyPresetChange"
-              />
+        <!-- Network & VPN (Electron) -->
+        <v-card v-if="isElectron" id="sec-network" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.network.title') }}</h2>
+            <p class="group-desc">{{ $t('settings.network.desc') }}</p>
+          </div>
+          <SettingRow :label="$t('settings.network.dohLabel')" :hint="$t('settings.network.dohHint')">
+            <v-switch
+              v-model="enableDoH"
+              :aria-label="$t('settings.network.dohLabel')"
+              hide-details
+              @update:model-value="saveNetworkSettings"
+            />
+          </SettingRow>
+          <SettingRow :label="$t('settings.network.proxyModeLabel')">
+            <v-select
+              v-model="electronProxyMode"
+              :items="electronProxyOptions"
+              :aria-label="$t('settings.network.proxyModeLabel')"
+              density="compact"
+              hide-details
+              @update:model-value="saveNetworkSettings"
+            />
+          </SettingRow>
+          <SettingRow v-if="electronProxyMode === 'custom'" :label="$t('settings.network.customProxyLabel')">
+            <v-text-field
+              v-model="customElectronProxyUrl"
+              :aria-label="$t('settings.network.customProxyLabel')"
+              :placeholder="$t('settings.network.customProxyPlaceholder')"
+              density="compact"
+              hide-details
+              @update:model-value="saveNetworkSettings"
+            />
+          </SettingRow>
+          <SettingRow :label="$t('settings.network.sslBypassLabel')" :hint="$t('settings.network.sslBypassWarning')">
+            <v-switch
+              v-model="ignoreSslErrors"
+              :aria-label="$t('settings.network.sslBypassLabel')"
+              color="error"
+              hide-details
+              @update:model-value="saveNetworkSettings"
+            />
+          </SettingRow>
+          <div class="group-note">
+            <v-icon size="18" color="medium-emphasis">mdi-information-outline</v-icon>
+            <span>{{ $t('settings.network.vpnNotice') }}</span>
+          </div>
+        </v-card>
 
-              <v-text-field
-                v-model="customProxyUrl"
-                :label="$t('settings.proxy.preset1Url')"
-                placeholder="https://sua-url-de-proxy.com/?url="
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="mdi-link"
-                class="mb-6"
-                :disabled="selectedProxyPreset !== 'custom'"
-              />
+        <!-- Playback -->
+        <v-card id="sec-playback" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.playback.title') }}</h2>
+          </div>
+          <SettingRow :label="$t('settings.playback.autoPlay')" :hint="$t('settings.playback.autoPlayHint')">
+            <v-switch
+              v-model="autoPlay"
+              :aria-label="$t('settings.playback.autoPlay')"
+              hide-details
+              @update:model-value="savePlaybackSettings"
+            />
+          </SettingRow>
+          <SettingRow :label="$t('settings.playback.aspectRatio')">
+            <v-select
+              v-model="defaultAspectRatio"
+              :items="aspectRatios"
+              :aria-label="$t('settings.playback.aspectRatio')"
+              density="compact"
+              hide-details
+              @update:model-value="savePlaybackSettings"
+            />
+          </SettingRow>
+          <SettingRow :label="$t('settings.playback.bufferMode')" :hint="$t('settings.playback.bufferHint')">
+            <v-select
+              v-model="playerBufferMode"
+              :items="bufferModes"
+              :aria-label="$t('settings.playback.bufferMode')"
+              density="compact"
+              hide-details
+              @update:model-value="savePlaybackSettings"
+            />
+          </SettingRow>
+        </v-card>
 
-              <v-divider class="mb-6 opacity-10" />
+        <!-- EPG -->
+        <v-card id="sec-epg" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.epg.title') }}</h2>
+          </div>
+          <SettingRow :label="$t('settings.epg.timeShift')" :hint="$t('settings.epg.desc')">
+            <v-select
+              v-model="epgTimeShift"
+              :items="timeShiftOptions"
+              :aria-label="$t('settings.epg.timeShift')"
+              density="compact"
+              hide-details
+              @update:model-value="saveEpgSettings"
+            />
+          </SettingRow>
+        </v-card>
 
-              <div class="text-subtitle-2 font-weight-bold mb-2">{{ $t('settings.proxy.preset2Label') }}</div>
-              <v-select
-                v-model="selectedPlayerProxyPreset"
-                :items="playerProxyPresets"
-                :label="$t('settings.proxy.preset2Select')"
-                variant="outlined"
-                density="comfortable"
-                class="mb-4"
-                @update:model-value="onPlayerProxyPresetChange"
-              />
+        <!-- Sync -->
+        <v-card id="sec-sync" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.sync.title') }}</h2>
+          </div>
+          <SettingRow :label="$t('settings.sync.interval')" :hint="$t('settings.sync.desc')">
+            <v-select
+              v-model="playlistUpdateInterval"
+              :items="updateIntervalOptions"
+              :aria-label="$t('settings.sync.interval')"
+              density="compact"
+              hide-details
+              @update:model-value="saveUpdateSettings"
+            />
+          </SettingRow>
+          <div class="group-actions">
+            <span v-if="syncProgressMsg" class="text-body-2 text-medium-emphasis mr-auto">{{ syncProgressMsg }}</span>
+            <v-btn variant="outlined" prepend-icon="mdi-refresh" :loading="syncingAll" @click="syncAllPlaylists">
+              {{ $t('settings.sync.syncAllBtn') }}
+            </v-btn>
+          </div>
+        </v-card>
 
-              <v-text-field
-                v-model="customPlayerProxyUrl"
-                :label="$t('settings.proxy.preset2Url')"
-                placeholder="https://sua-url-de-proxy.com/?url="
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="mdi-link"
-                class="mb-6"
-                :disabled="selectedPlayerProxyPreset !== 'custom'"
-              />
+        <!-- Movie metadata -->
+        <v-card id="sec-metadata" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.metadata.title') }}</h2>
+            <p class="group-desc">{{ $t('settings.metadata.desc') }}</p>
+          </div>
+          <SettingRow :label="$t('settings.metadata.providerLabel')">
+            <v-select
+              v-model="movieMetadataSource"
+              :items="metadataSources"
+              :aria-label="$t('settings.metadata.providerLabel')"
+              density="compact"
+              hide-details
+              @update:model-value="saveMetadataSettings"
+            />
+          </SettingRow>
+          <SettingRow
+            v-if="movieMetadataSource !== 'none'"
+            :label="$t('settings.metadata.apiKeyLabel')"
+            :hint="movieMetadataSource === 'tmdb' ? $t('settings.metadata.hintTmdb') : $t('settings.metadata.hintOmdb')"
+          >
+            <v-text-field
+              v-model="movieMetadataApiKey"
+              :aria-label="$t('settings.metadata.apiKeyLabel')"
+              :placeholder="$t('settings.metadata.apiKeyPlaceholder')"
+              type="password"
+              density="compact"
+              hide-details
+              @update:model-value="saveMetadataSettings"
+            />
+          </SettingRow>
+          <SettingRow v-if="movieMetadataSource === 'tmdb'" :label="$t('settings.metadata.languageLabel')">
+            <v-select
+              v-model="movieMetadataLanguage"
+              :items="metadataLanguages"
+              :aria-label="$t('settings.metadata.languageLabel')"
+              density="compact"
+              hide-details
+              @update:model-value="saveMetadataSettings"
+            />
+          </SettingRow>
+        </v-card>
 
-              <v-select
-                v-model="playerProxyStreams"
-                :items="streamProxyOptions"
-                :label="$t('settings.proxy.policyLabel')"
-                variant="outlined"
-                density="comfortable"
-                class="mb-6"
-              />
+        <!-- Language -->
+        <v-card id="sec-language" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.language.title') }}</h2>
+          </div>
+          <SettingRow :label="$t('settings.language.select')">
+            <v-select
+              v-model="activeLanguage"
+              :items="languageOptions"
+              :aria-label="$t('settings.language.select')"
+              density="compact"
+              hide-details
+              @update:model-value="saveLanguageSetting"
+            />
+          </SettingRow>
+        </v-card>
 
-              <v-btn
-                color="primary"
-                prepend-icon="mdi-content-save"
-                @click="saveCorsProxy"
-              >
-                {{ $t('settings.proxy.saveBtn') }}
-              </v-btn>
-            </v-card>
-          </v-col>
-
-          <!-- Electron Network & VPN Settings -->
-          <v-col cols="12" v-if="isElectron">
-            <v-card class="glass-card pa-6 mb-6" variant="flat">
-              <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
-                <v-icon start color="primary" class="mr-2">mdi-shield-key-outline</v-icon> 
-                {{ $t('settings.network.title') }}
-              </h3>
-              
-              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                {{ $t('settings.network.desc') }}
-              </p>
-
-              <v-switch
-                v-model="enableDoH"
-                :label="$t('settings.network.dohLabel')"
-                :hint="$t('settings.network.dohHint')"
-                persistent-hint
-                color="primary"
-                class="mb-4"
-                @update:model-value="saveNetworkSettings"
-              />
-
-              <v-select
-                v-model="electronProxyMode"
-                :items="electronProxyOptions"
-                :label="$t('settings.network.proxyModeLabel')"
-                variant="outlined"
-                density="comfortable"
-                class="mb-4"
-                @update:model-value="saveNetworkSettings"
-              />
-
-              <v-text-field
-                v-if="electronProxyMode === 'custom'"
-                v-model="customElectronProxyUrl"
-                :label="$t('settings.network.customProxyLabel')"
-                :placeholder="$t('settings.network.customProxyPlaceholder')"
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="mdi-web"
-                class="mb-4"
-                @update:model-value="saveNetworkSettings"
-              />
-
-              <v-divider class="mb-4 opacity-10" />
-
-              <v-switch
-                v-model="ignoreSslErrors"
-                :label="$t('settings.network.sslBypassLabel')"
-                color="error"
-                hide-details
-                class="mb-2"
-                @update:model-value="saveNetworkSettings"
-              />
-
-              <v-alert
-                v-if="ignoreSslErrors"
-                type="warning"
-                variant="tonal"
-                density="compact"
-                class="mb-4 text-caption mt-2"
-              >
-                {{ $t('settings.network.sslBypassWarning') }}
-              </v-alert>
-
-              <v-alert
-                type="info"
-                variant="tonal"
-                density="compact"
-                icon="mdi-information-outline"
-                class="mt-4 text-caption"
-              >
-                {{ $t('settings.network.vpnNotice') }}
-              </v-alert>
-            </v-card>
-          </v-col>
-
-          <!-- Playback Preferences -->
-          <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" variant="flat">
-              <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
-                <v-icon start color="primary" class="mr-2">mdi-play-circle-outline</v-icon> 
-                {{ $t('settings.playback.title') }}
-              </h3>
-
-              <v-switch
-                v-model="autoPlay"
-                :label="$t('settings.playback.autoPlay')"
-                color="secondary"
-                hide-details
-                class="mb-2"
-                @update:model-value="savePlaybackSettings"
-              />
-
-              <v-select
-                v-model="defaultAspectRatio"
-                :items="aspectRatios"
-                :label="$t('settings.playback.aspectRatio')"
-                variant="outlined"
-                density="comfortable"
-                class="mb-4"
-                @update:model-value="savePlaybackSettings"
-              />
-
-              <v-select
-                v-model="playerBufferMode"
-                :items="bufferModes"
-                :label="$t('settings.playback.bufferMode')"
-                variant="outlined"
-                density="comfortable"
-                @update:model-value="savePlaybackSettings"
-              />
-            </v-card>
-          </v-col>
-
-          <!-- EPG Preferences -->
-          <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" variant="flat">
-              <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
-                <v-icon start color="primary" class="mr-2">mdi-television-guide</v-icon> 
-                {{ $t('settings.epg.title') }}
-              </h3>
-
-              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                {{ $t('settings.epg.desc') }}
-              </p>
-
-              <v-select
-                v-model="epgTimeShift"
-                :items="timeShiftOptions"
-                :label="$t('settings.epg.timeShift')"
-                variant="outlined"
-                density="comfortable"
-                hide-details
-                @update:model-value="saveEpgSettings"
-              />
-             </v-card>
-           </v-col>
-
-           <!-- Playlist Synchronization Settings -->
-           <v-col cols="12">
-             <v-card class="glass-card pa-6 mb-6" variant="flat">
-               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
-                 <v-icon start color="primary" class="mr-2">mdi-sync</v-icon>
-                 {{ $t('settings.sync.title') }}
-               </h3>
-               
-               <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                 {{ $t('settings.sync.desc') }}
-               </p>
-
-               <v-select
-                 v-model="playlistUpdateInterval"
-                 :items="updateIntervalOptions"
-                 :label="$t('settings.sync.interval')"
-                 variant="outlined"
-                 density="comfortable"
-                 class="mb-6"
-                 @update:model-value="saveUpdateSettings"
-               />
-
-               <v-divider class="mb-6 opacity-10" />
-
-               <div class="d-flex flex-wrap align-center gap-3">
-                 <v-btn
-                   color="primary"
-                   prepend-icon="mdi-refresh"
-                   :loading="syncingAll"
-                   @click="syncAllPlaylists"
-                 >
-                   {{ $t('settings.sync.syncAllBtn') }}
-                 </v-btn>
-                 <span v-if="syncProgressMsg" class="text-caption text-medium-emphasis ml-2">
-                   {{ syncProgressMsg }}
-                 </span>
-               </div>
-             </v-card>
-           </v-col>
-
-          <!-- Movie Metadata Database Settings -->
-          <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" variant="flat">
-              <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
-                <v-icon start color="primary" class="mr-2">mdi-movie-search-outline</v-icon> 
-                {{ $t('settings.metadata.title') }}
-              </h3>
-              
-              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                {{ $t('settings.metadata.desc') }}
-              </p>
-
-              <v-select
-                v-model="movieMetadataSource"
-                :items="metadataSources"
-                :label="$t('settings.metadata.providerLabel')"
-                variant="outlined"
-                density="comfortable"
-                class="mb-4"
-                @update:model-value="saveMetadataSettings"
-              />
-
-              <v-text-field
-                v-if="movieMetadataSource !== 'none'"
-                v-model="movieMetadataApiKey"
-                :label="$t('settings.metadata.apiKeyLabel')"
-                :placeholder="$t('settings.metadata.apiKeyPlaceholder')"
-                variant="outlined"
-                density="comfortable"
-                type="password"
-                prepend-inner-icon="mdi-key-variant"
-                :hint="movieMetadataSource === 'tmdb' ? $t('settings.metadata.hintTmdb') : $t('settings.metadata.hintOmdb')"
-                persistent-hint
-                class="mb-4"
-                @update:model-value="saveMetadataSettings"
-              />
-
-              <v-select
-                v-if="movieMetadataSource === 'tmdb'"
-                v-model="movieMetadataLanguage"
-                :items="metadataLanguages"
-                :label="$t('settings.metadata.languageLabel')"
-                variant="outlined"
-                density="comfortable"
-                @update:model-value="saveMetadataSettings"
-              />
-            </v-card>
-          </v-col>
-
-          <!-- Language Selection -->
-          <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" variant="flat">
-              <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
-                <v-icon start color="primary" class="mr-2">mdi-translate</v-icon> 
-                {{ $t('settings.language.title') }}
-              </h3>
-              
-              <p class="text-body-2 text-medium-emphasis mb-4 leading-relaxed">
-                {{ $t('settings.language.desc') }}
-              </p>
-
-              <v-select
-                v-model="activeLanguage"
-                :items="languageOptions"
-                :label="$t('settings.language.select')"
-                variant="outlined"
-                density="comfortable"
-                @update:model-value="saveLanguageSetting"
-              />
-            </v-card>
-          </v-col>
-
-          <!-- Local Database & Maintenance -->
-          <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" variant="flat">
-              <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
-                <v-icon start color="primary" class="mr-2">mdi-database-cog-outline</v-icon> 
-                {{ $t('settings.maintenance.title') }}
-              </h3>
-
-              <p class="text-body-2 text-medium-emphasis mb-6" v-html="$t('settings.maintenance.desc')"></p>
-
-              <v-row class="mb-4 text-center">
-                <v-col cols="6" sm="3" class="pa-2">
-                  <div class="stat-box rounded-xl pa-3 bg-surface-variant">
-                    <div class="text-h6 font-weight-bold text-glow-small">{{ stats.playlists }}</div>
-                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsPlaylists') }}</div>
-                  </div>
-                </v-col>
-                <v-col cols="6" sm="3" class="pa-2">
-                  <div class="stat-box rounded-xl pa-3 bg-surface-variant">
-                    <div class="text-h6 font-weight-bold text-glow-small">{{ stats.channels.toLocaleString() }}</div>
-                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsChannels') }}</div>
-                  </div>
-                </v-col>
-                <v-col cols="6" sm="3" class="pa-2">
-                  <div class="stat-box rounded-xl pa-3 bg-surface-variant">
-                    <div class="text-h6 font-weight-bold text-glow-small">{{ stats.epg.toLocaleString() }}</div>
-                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsEpg') }}</div>
-                  </div>
-                </v-col>
-                <v-col cols="6" sm="3" class="pa-2">
-                  <div class="stat-box rounded-xl pa-3 bg-surface-variant">
-                    <div class="text-h6 font-weight-bold text-glow-small">{{ stats.favorites }}</div>
-                    <div class="text-caption text-medium-emphasis">{{ $t('settings.maintenance.statsFavorites') }}</div>
-                  </div>
-                </v-col>
-              </v-row>
-
-              <v-divider class="mb-6 opacity-10" />
-
-              <div class="d-flex flex-wrap gap-3">
-                <v-btn
-                  color="warning"
-                  variant="tonal"
-                  prepend-icon="mdi-broom"
-                  @click="pruneEpg"
-                >
-                  {{ $t('settings.maintenance.pruneBtn') }}
-                </v-btn>
-
-                <v-btn
-                  color="secondary"
-                  variant="tonal"
-                  prepend-icon="mdi-restore"
-                  @click="resetToDefaults"
-                >
-                  {{ $t('settings.maintenance.resetBtn') }}
-                </v-btn>
-
-                <v-btn
-                  color="error"
-                  variant="flat"
-                  prepend-icon="mdi-database-remove"
-                  @click="wipeDatabase"
-                >
-                  {{ $t('settings.maintenance.wipeBtn') }}
-                </v-btn>
-              </div>
-            </v-card>
-          </v-col>
-
-          <!-- About Project -->
-          <v-col cols="12">
-            <v-card class="glass-card pa-6 text-center" variant="flat">
-              <v-icon size="48" color="secondary" class="mb-2">mdi-shield-check-outline</v-icon>
-              <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ $t('settings.maintenance.privacyTitle') }}</h3>
-              <p class="text-caption text-medium-emphasis max-width-480 mx-auto">
-                {{ $t('settings.maintenance.privacyDesc') }}
-              </p>
-            </v-card>
-          </v-col>
-
-        </v-row>
-
-      </v-col>
-    </v-row>
-  </v-container>
+        <!-- Data & maintenance -->
+        <v-card id="sec-data" class="group">
+          <div class="group-head">
+            <h2 class="group-title">{{ $t('settings.maintenance.title') }}</h2>
+            <p class="group-desc">{{ $t('settings.maintenance.desc') }}</p>
+          </div>
+          <div class="stats">
+            <div v-for="st in statItems" :key="st.label" class="stat">
+              <div class="stat-value tabular">{{ st.value.toLocaleString() }}</div>
+              <div class="stat-label">{{ st.label }}</div>
+            </div>
+          </div>
+          <div class="group-actions">
+            <v-btn variant="outlined" prepend-icon="mdi-broom" @click="pruneEpg">{{ $t('settings.maintenance.pruneBtn') }}</v-btn>
+            <v-btn variant="outlined" prepend-icon="mdi-restore" @click="resetToDefaults">{{ $t('settings.maintenance.resetBtn') }}</v-btn>
+            <v-btn variant="outlined" color="error" prepend-icon="mdi-delete-outline" @click="wipeDatabase">{{ $t('settings.maintenance.wipeBtn') }}</v-btn>
+          </div>
+          <div class="group-note">
+            <v-icon size="18" color="medium-emphasis">mdi-shield-check-outline</v-icon>
+            <span><strong>{{ $t('settings.maintenance.privacyTitle') }}.</strong> {{ $t('settings.maintenance.privacyDesc') }}</span>
+          </div>
+        </v-card>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { DEFAULT_WEB_PROXY_URL, LOCAL_PROXY_URL, isLocalProxyUrl, getDataProxy } from "@/utils/proxy";
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { db } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
+import SettingRow from '@/components/SettingRow.vue';
 
 const { t, locale } = useI18n();
 
@@ -602,6 +463,46 @@ const stats = ref({
   favorites: 0
 });
 
+const statItems = computed(() => [
+  { label: t('settings.maintenance.statsPlaylists'), value: stats.value.playlists },
+  { label: t('settings.maintenance.statsChannels'), value: stats.value.channels },
+  { label: t('settings.maintenance.statsEpg'), value: stats.value.epg },
+  { label: t('settings.maintenance.statsFavorites'), value: stats.value.favorites },
+]);
+
+// Section navigation
+const sections = computed(() => [
+  isElectron
+    ? { id: 'sec-network', title: t('settings.network.title'), icon: 'mdi-shield-key-outline' }
+    : { id: 'sec-proxy', title: t('settings.proxy.title'), icon: 'mdi-swap-horizontal' },
+  { id: 'sec-playback', title: t('settings.playback.title'), icon: 'mdi-play-circle-outline' },
+  { id: 'sec-epg', title: t('settings.epg.title'), icon: 'mdi-calendar-blank-outline' },
+  { id: 'sec-sync', title: t('settings.sync.title'), icon: 'mdi-sync' },
+  { id: 'sec-metadata', title: t('settings.metadata.title'), icon: 'mdi-movie-open-outline' },
+  { id: 'sec-language', title: t('settings.language.title'), icon: 'mdi-translate' },
+  { id: 'sec-data', title: t('settings.maintenance.title'), icon: 'mdi-database-outline' },
+]);
+const activeSection = ref(sections.value[0].id);
+
+const scrollTo = (id: string) => {
+  activeSection.value = id;
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+// Highlight the section crossing the upper part of the viewport
+let observer: IntersectionObserver | undefined;
+const observeSections = () => {
+  observer = new IntersectionObserver((entries) => {
+    const hit = entries.find(e => e.isIntersecting);
+    if (hit) activeSection.value = hit.target.id;
+  }, { rootMargin: '0px 0px -70% 0px' });
+  sections.value.forEach(sec => {
+    const el = document.getElementById(sec.id);
+    if (el) observer!.observe(el);
+  });
+};
+onUnmounted(() => observer?.disconnect());
+
 // Network & VPN Settings (Electron)
 const enableDoH = ref(true);
 const electronProxyMode = ref<'system' | 'direct' | 'custom'>('system');
@@ -645,6 +546,7 @@ const saveNetworkSettings = async () => {
 };
 
 onMounted(async () => {
+  observeSections();
   await loadProxySettings();
   await loadNetworkSettings();
   await loadPlaybackSettings();
@@ -993,24 +895,161 @@ const resetToDefaults = async () => {
 </script>
 
 <style scoped>
-
-
-.stat-box {
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+.settings {
+  max-width: 1040px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 0 48px;
 }
 
-.gap-3 {
-  gap: 12px;
+.page-title {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
 }
-.leading-relaxed {
-  line-height: 1.6;
+
+.settings-layout {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
 }
-.max-width-480 {
-  max-width: 480px;
+
+.settings-nav {
+  flex: 0 0 220px;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.mx-auto {
-  margin-left: auto;
-  margin-right: auto;
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.nav-link--active,
+.nav-link--active:hover {
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary-lighten-1));
+}
+
+.nav-link:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
+.settings-sections {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.group {
+  scroll-margin-top: 16px;
+}
+
+.group-head {
+  padding: 20px 24px 16px;
+}
+
+.group-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.group-desc {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.group-note {
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px;
+  font-size: 13px;
+  line-height: 18px;
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.stat {
+  padding: 16px 24px;
+}
+
+.stat + .stat {
+  border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+@media (max-width: 600px) {
+  .page-title {
+    display: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .settings-nav {
+    display: none;
+  }
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stat:nth-child(3) {
+    border-left: 0;
+  }
 }
 </style>

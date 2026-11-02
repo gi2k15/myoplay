@@ -54,85 +54,87 @@ export default {
   settings: {
     title: 'Configurações Gerais',
     proxy: {
-      title: 'Proxy CORS (Cross-Origin Resource Sharing)',
-      desc: 'Navegadores bloqueiam requisições a servidores externos que não permitam compartilhamento CORS (muito comum em links de IPTV M3U e EPG remotos). Usar um Proxy CORS ajuda a contornar essa restrição.',
-      preset1Label: '1. Proxy para M3U e APIs (EPG, Categorias, VOD e Séries)',
-      preset1Select: 'Selecione o Servidor de Proxy de Dados',
-      preset1Url: 'URL do Proxy CORS de Dados Personalizado',
-      preset2Label: '2. Proxy para Canais e Streams (Vídeo HLS/TS)',
-      preset2Select: 'Selecione o Servidor de Proxy de Vídeo',
-      preset2Url: 'URL do Proxy CORS de Vídeo Personalizado',
-      policyLabel: 'Política de Uso do Proxy para Transmissões',
-      saveBtn: 'Salvar Configurações de Proxy',
+      title: 'Proxy CORS',
+      desc: 'O navegador bloqueia servidores IPTV que não liberam CORS. Um proxy contorna esse bloqueio.',
+      preset1Label: 'Proxy de dados',
+      preset1Select: 'Listas M3U, guia EPG, categorias, filmes e séries',
+      preset1Url: 'URL do proxy de dados',
+      preset2Label: 'Proxy de vídeo',
+      preset2Select: 'Transmissões HLS e TS',
+      preset2Url: 'URL do proxy de vídeo',
+      policyLabel: 'Quando usar o proxy de vídeo',
+      saveBtn: 'Salvar proxy',
       successMsg: 'Configurações de Proxy salvas com sucesso!',
       policyOptions: {
-        auto: 'Apenas se falhar (Automático - Recomendado)',
-        always: 'Sempre usar proxy para reprodução',
-        never: 'Nunca usar proxy para reprodução'
+        auto: 'Só se a conexão direta falhar',
+        always: 'Sempre',
+        never: 'Nunca'
       },
       presets: {
-        none: 'Sem Proxy (Conexão Direta)',
-        local: 'Proxy Local (localhost:8088 - Super Rápido e Sem Limites)',
-        allorigins: 'AllOrigins (Alternativa - Sem Limites)',
-        corsAnywhere: 'Cors-Anywhere (Exige Ativação de Demo)',
-        thingproxy: 'ThingProxy (Leve)',
-        custom: 'CORS Proxy Personalizado',
-        corsproxy: 'CorsProxy.io (Recomendado - Excelente para Vídeos)'
+        none: 'Sem proxy',
+        local: 'Proxy local (localhost:8088)',
+        allorigins: 'AllOrigins',
+        corsAnywhere: 'CORS Anywhere (exige ativação)',
+        thingproxy: 'ThingProxy',
+        custom: 'Personalizado',
+        corsproxy: 'CorsProxy.io (recomendado)'
       }
     },
     network: {
-      title: 'Rede & Compatibilidade com VPN (Electron)',
-      desc: 'Ajuste as configurações de rede do aplicativo para resolver problemas de conexão quando estiver navegando através de uma VPN ou proxy restritivo.',
-      dohLabel: 'DNS sobre HTTPS (DoH - Cloudflare)',
-      dohHint: 'Resolve nomes de domínio via HTTPS para evitar bloqueios e falhas de DNS provocados por VPNs.',
-      proxyModeLabel: 'Modo de Proxy do Electron',
+      title: 'Rede e VPN',
+      desc: 'Ajustes para quando a conexão falha atrás de uma VPN ou proxy.',
+      dohLabel: 'DNS sobre HTTPS',
+      dohHint: 'Usa o DNS da Cloudflare para evitar bloqueios de DNS da VPN.',
+      proxyModeLabel: 'Proxy do app',
       proxyModes: {
-        system: 'Usar Proxy do Sistema (Padrão da VPN/Windows)',
-        direct: 'Conexão Direta (Ignorar Proxies do Sistema)',
-        custom: 'Proxy Customizado (HTTP / SOCKS5)'
+        system: 'Proxy do sistema',
+        direct: 'Conexão direta',
+        custom: 'Personalizado (HTTP ou SOCKS5)'
       },
-      customProxyLabel: 'URL do Proxy Customizado',
-      customProxyPlaceholder: 'ex: socks5://127.0.0.1:1080 ou http://127.0.0.1:8080',
-      sslBypassLabel: 'Ignorar Erros de Certificado SSL/TLS',
-      sslBypassWarning: 'Ative esta opção apenas se sua VPN ou antivírus fizer inspeção de tráfego HTTPS (MitM) causando falhas de certificado.',
+      customProxyLabel: 'URL do proxy',
+      customProxyPlaceholder: 'socks5://127.0.0.1:1080',
+      sslBypassLabel: 'Ignorar erros de certificado',
+      sslBypassWarning: 'Ative só se sua VPN ou antivírus inspeciona o tráfego HTTPS e isso causa falhas de certificado.',
       saveBtn: 'Salvar Configurações de Rede',
       successMsg: 'Configurações de rede atualizadas com sucesso!',
-      vpnNotice: 'Dica: Se os canais continuarem bloqueados mesmo com estas opções ativas, o servidor da sua lista de IPTV pode estar bloqueando o IP da VPN diretamente. Tente trocar a localização na sua VPN ou usar Split Tunneling.'
+      vpnNotice: 'Se os canais continuarem bloqueados, o servidor da lista pode estar bloqueando o IP da VPN. Troque a localização da VPN ou use split tunneling.'
     },
     playback: {
-      title: 'Preferências de Reprodução',
-      autoPlay: 'Reprodução Automática (Iniciar canais imediatamente ao clicar)',
-      aspectRatio: 'Proporção de Tela Padrão do Player',
-      bufferMode: 'Modo de Buffer / Estabilidade (Recomendado para streams que travam)',
+      autoPlayHint: 'Começa a tocar assim que você escolhe um canal.',
+      bufferHint: 'Mais buffer deixa streams instáveis mais estáveis, com mais atraso.',
+      title: 'Reprodução',
+      autoPlay: 'Reprodução automática',
+      aspectRatio: 'Proporção padrão',
+      bufferMode: 'Buffer',
       successMsg: 'Preferências de reprodução atualizadas!',
       aspectRatioOptions: {
-        fit: 'Ajustar Tela (Padrão)',
-        fill: 'Esticar (Stretch)',
-        widescreen: '16:9 widescreen',
-        classic: '4:3 clássico'
+        fit: 'Ajustar',
+        fill: 'Esticar',
+        widescreen: '16:9',
+        classic: '4:3'
       },
       bufferOptions: {
-        lowLatency: 'Baixa Latência (Menor Delay)',
-        balanced: 'Balanceado (Boa Estabilidade)',
-        stable: 'Alta Estabilidade (Padrão - Máximo Buffer)'
+        lowLatency: 'Baixa latência',
+        balanced: 'Balanceado',
+        stable: 'Alta estabilidade (padrão)'
       }
     },
     epg: {
-      title: 'Guia de Programação (EPG)',
-      desc: 'Caso a programação exibida no guia EPG esteja desalinhada (adiantada ou atrasada) em relação ao horário do seu sistema, você pode ajustar o deslocamento de horário (Time Shift) abaixo.',
-      timeShift: 'Deslocamento de Horário do EPG (Time Shift)',
+      title: 'Guia de programação',
+      desc: 'Corrige o guia quando os horários aparecem adiantados ou atrasados.',
+      timeShift: 'Ajuste de horário',
       successMsg: 'Configurações de EPG salvas!',
       hoursAgo: '{count} horas atrás',
       hoursAhead: '+{count} horas',
-      noShift: 'Sem deslocamento (Padrão)',
-      brasiliaShift: '-3 horas (Brasília se EPG for UTC)',
-      shiftThreeAhead: '+3 horas (Se EPG estiver 3h atrasado)'
+      noShift: 'Sem ajuste (padrão)',
+      brasiliaShift: '-3 horas (Brasília, se o EPG estiver em UTC)',
+      shiftThreeAhead: '+3 horas'
     },
     sync: {
-      title: 'Sincronização de Listas',
-      desc: 'Escolha a frequência com que o aplicativo verifica e atualiza automaticamente as listas (M3U ou Xtream) configuradas por URL.',
-      interval: 'Intervalo de Atualização Automática',
-      syncAllBtn: 'Sincronizar Todas as Listas Agora',
+      title: 'Sincronização',
+      desc: 'Vale para listas adicionadas por URL ou Xtream Codes.',
+      interval: 'Atualização automática',
+      syncAllBtn: 'Sincronizar agora',
       syncingAll: 'Sincronizando todas as listas...',
       successMsg: 'Intervalo de atualização atualizado!',
       syncCompleteMsg: 'Sincronização de todas as listas concluída!',
@@ -141,26 +143,26 @@ export default {
       syncProgress: 'Sincronizando ({current}/{total}): {name}...',
       syncSuccessDetailed: 'Sincronização concluída! {success} de {total} listas atualizadas com sucesso.',
       intervalOptions: {
-        never: 'Não atualizar automaticamente',
+        never: 'Nunca',
         h12: 'A cada 12 horas',
-        h24: 'A cada 24 horas (Padrão)',
+        h24: 'A cada 24 horas (padrão)',
         h48: 'A cada 48 horas',
-        days7: 'Semanalmente (a cada 7 dias)'
+        days7: 'Semanalmente'
       }
     },
     metadata: {
-      title: 'Banco de Dados de Filmes e Metadados (VOD)',
-      desc: 'Configure um provedor de metadados para buscar automaticamente sinopses, posters de alta resolução, anos de lançamento e notas de filmes que não possuem essas informações na sua lista.',
-      providerLabel: 'Provedor de Metadados de Filmes',
-      apiKeyLabel: 'Chave de API (API Key)',
-      apiKeyPlaceholder: 'Insira sua chave de API',
-      hintTmdb: 'Opcional. Se deixado em branco, uma chave padrão pública será usada.',
-      hintOmdb: 'Obrigatório para OMDb API.',
-      languageLabel: 'Idioma de Busca de Sinopses',
+      title: 'Metadados de filmes',
+      desc: 'Busca sinopse, pôster, ano e nota quando a lista não traz essas informações.',
+      providerLabel: 'Provedor',
+      apiKeyLabel: 'Chave de API',
+      apiKeyPlaceholder: 'Cole sua chave aqui',
+      hintTmdb: 'Opcional. Sem chave, uma chave pública é usada.',
+      hintOmdb: 'Obrigatória para o OMDb.',
+      languageLabel: 'Idioma das sinopses',
       sources: {
-        none: 'Nenhum (Apenas metadados locais/lista)',
-        tmdb: 'TMDB (The Movie Database - Recomendado em PT)',
-        omdb: 'OMDb API (IMDb - Majoritariamente em inglês)'
+        none: 'Nenhum',
+        tmdb: 'TMDB (recomendado)',
+        omdb: 'OMDb (em inglês)'
       },
       languages: {
         ptBR: 'Português (Brasil)',
@@ -170,27 +172,27 @@ export default {
       }
     },
     maintenance: {
-      title: 'Armazenamento & Manutenção',
-      desc: 'Todas as suas listas, canais e grades de guia de programação (EPG) são salvos de forma 100% local e privada no banco de dados IndexedDB do seu próprio navegador.',
+      title: 'Dados',
+      desc: 'Listas, canais, guia e favoritos ficam salvos só neste dispositivo.',
       statsPlaylists: 'Listas',
       statsChannels: 'Canais',
-      statsEpg: 'Guia EPG',
+      statsEpg: 'Programas no guia',
       statsFavorites: 'Favoritos',
-      pruneBtn: 'Otimizar Guia EPG (Excluir programação antiga)',
+      pruneBtn: 'Limpar programação antiga',
       pruneSuccess: 'Otimização concluída! Foram removidos {count} registros antigos do guia de EPG.',
-      resetBtn: 'Restaurar Configurações Padrão',
+      resetBtn: 'Restaurar padrões',
       resetConfirm: 'Deseja realmente restaurar todas as configurações para os valores padrão?',
       resetSuccess: 'Configurações restauradas para o padrão com sucesso!',
-      wipeBtn: 'Limpar Todo o Banco de Dados',
+      wipeBtn: 'Apagar todos os dados',
       wipeConfirm: 'ATENÇÃO: Isso excluirá PERMANENTEMENTE todas as playlists, canais, históricos, favoritos e guias XMLTV salvos neste navegador. Deseja prosseguir?',
       wipeSuccess: 'Todo o banco de dados local foi esvaziado e as configurações foram redefinidas! Recarregue a página.',
-      privacyTitle: 'Privacidade Garantida',
-      privacyDesc: 'Este aplicativo não envia suas listas de IPTV, credenciais de Xtream Codes ou buscas para nenhum servidor externo. Todos os parsers, conexões de API e reprodutores rodam localmente na sua máquina!'
+      privacyTitle: 'Privacidade',
+      privacyDesc: 'Nada sai do seu dispositivo: listas, credenciais e buscas não são enviadas a nenhum servidor externo.'
     },
     language: {
-      title: 'Idioma / Language',
+      title: 'Idioma',
       desc: 'Escolha o idioma preferido para a interface do aplicativo.',
-      select: 'Selecione o Idioma',
+      select: 'Idioma da interface',
       successMsg: 'Idioma alterado com sucesso!'
     }
   },
