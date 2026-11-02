@@ -1,7 +1,6 @@
 <!-- src/App.vue -->
 <template>
   <v-app class="app-background">
-    <!-- Sidebar navigation drawer -->
     <Sidebar 
       v-model="currentPage" 
       :active-playlist-name="activePlaylistName" 
@@ -14,53 +13,114 @@
     />
 
     <!-- Mobile Top App Bar -->
-    <v-app-bar v-if="hasPlaylists && $vuetify.display.mobile" class="app-bar-glass px-2" elevation="2">
-      <v-app-bar-nav-icon color="secondary" />
-      <v-app-bar-title class="font-weight-bold text-caption text-sm-body-1 text-glow-small text-uppercase">
-        {{ getPageTitle() }}
-      </v-app-bar-title>
-      <v-spacer />
-      <v-btn icon="mdi-magnify" color="secondary" @click="showGlobalSearch = true" />
+    <v-app-bar v-if="hasPlaylists && $vuetify.display.mobile" flat color="background" height="56" class="px-2">
+      <v-app-bar-title class="font-weight-bold">{{ getPageTitle() }}</v-app-bar-title>
+      <v-btn icon="mdi-magnify" variant="text" :aria-label="$t('nav.search')" @click="showGlobalSearch = true" />
     </v-app-bar>
 
-    <!-- Main Content Area -->
-    <v-main class="main-container fill-height">
-      <div 
-        class="d-flex fill-height w-100 position-relative overflow-hidden"
-        :class="$vuetify.display.mobile ? 'flex-column-reverse' : 'flex-row'"
-      >
-        <!-- Left Pane: Main App Components -->
-        <div class="flex-grow-1 min-width-0 h-100 position-relative overflow-y-auto" style="overflow-x: hidden;">
-          <!-- Return to Playlists button when no playlists exist and Settings is open -->
-          <div v-if="!hasPlaylists && currentPage === 'settings'" class="pa-4 border-bottom d-flex align-center">
-            <v-btn
-              prepend-icon="mdi-arrow-left"
-              variant="tonal"
-              color="primary"
-              @click="currentPage = 'playlists'"
-            >
+    <v-main class="fill-height">
+      <div class="app-shell" :class="{ 'app-shell--mobile': $vuetify.display.mobile }">
+        <!-- Stage: the player always comes first -->
+        <main class="stage" :class="{ 'stage--guide': currentPage === 'epg', 'stage--page': !isStagePage }">
+          <div v-if="!hasPlaylists && currentPage === 'settings'" class="mb-4">
+            <v-btn prepend-icon="mdi-arrow-left" variant="outlined" @click="currentPage = 'playlists'">
               {{ $t('sidebar.playlists') || 'Voltar para Listas' }}
             </v-btn>
           </div>
 
-          <KeepAlive>
-            <component 
-              :is="activeComponent" 
-              :playlist-id="activePlaylistId!" 
-              :type="browserType" 
-              :active-channel="activeChannel"
-              :active-channel-epg="activeChannelEpg"
-              :player-float-mode="playerFloatMode"
-              @select-playlist="onPlaylistActivated"
-              @play-stream="onPlayStream"
-              @close-player="onClosePlayer"
-              @toggle-float="onToggleFloat"
-              @open-settings="currentPage = 'settings'"
-            />
-          </KeepAlive>
-        </div>
+          <div v-if="activeChannel || isStagePage" class="stage-top">
+            <div class="stage-player" :class="{ 'stage-player--floating': playerFloating }">
+              <VideoPlayer
+                v-if="activeChannel"
+                :channel="activeChannel"
+                :floating="playerFloating"
+                @close-player="onClosePlayer"
+                @toggle-float="onReturnToStage"
+              />
+              <div v-else class="stage-empty">
+                <v-icon size="40" color="medium-emphasis">mdi-play-circle-outline</v-icon>
+                <div class="text-h6 font-weight-bold">{{ $t('stage.emptyTitle') }}</div>
+                <div class="text-body-2 text-medium-emphasis">{{ $t('stage.emptyDesc') }}</div>
+              </div>
+            </div>
 
+            <!-- Guide: selected programme sits beside the player -->
+            <v-card v-if="currentPage === 'epg' && guideSelection" class="guide-detail pa-6 d-flex flex-column ga-3">
+              <div class="text-body-2 text-medium-emphasis">
+                <span class="text-high-emphasis font-weight-semibold">{{ guideSelection.channel.name }}</span>
+              </div>
+              <h2 class="text-h5 font-weight-bold">{{ guideSelection.programme.title }}</h2>
+              <div class="text-body-2 text-medium-emphasis tabular">
+                {{ formatEpgTime(guideSelection.programme.start) }} – {{ formatEpgTime(guideSelection.programme.stop) }}
+              </div>
+              <p v-if="guideSelection.programme.desc" class="text-body-2 text-medium-emphasis mb-0 guide-detail-desc">
+                {{ guideSelection.programme.desc }}
+              </p>
+              <div class="flex-grow-1" />
+              <div>
+                <v-btn color="primary" prepend-icon="mdi-play" height="44" @click="onPlayStream(guideSelection.channel)">
+                  {{ $t('tvGuide.watchBtn') }}
+                </v-btn>
+              </div>
+            </v-card>
+          </div>
+
+          <NowPlaying
+            v-if="isBrowsePage && activeChannel"
+            :channel="activeChannel"
+            :epg="activeChannelEpg"
+            @open-guide="currentPage = 'epg'"
+          />
+
+          <section v-else-if="isBrowsePage && recentStreams.length > 0">
+            <h2 class="section-label mb-3">{{ $t('stage.continueWatching') }}</h2>
+            <div class="recent-grid">
+              <v-card
+                v-for="stream in recentStreams.slice(0, 6)"
+                :key="stream.id"
+                rounded="lg"
+                class="pa-3 d-flex align-center ga-3"
+                @click="onPlayStream(stream)"
+              >
+                <v-avatar size="40" rounded="lg" color="surface-light" class="border">
+                  <v-img v-if="stream.logo" :src="stream.logo" />
+                  <v-icon v-else size="20">mdi-play-circle-outline</v-icon>
+                </v-avatar>
+                <div class="min-w-0">
+                  <div class="font-weight-semibold text-truncate">{{ stream.name }}</div>
+                  <div class="text-body-2 text-medium-emphasis text-truncate">{{ stream.category }}</div>
+                </div>
+              </v-card>
+            </div>
+          </section>
+
+          <TVGuide
+            v-if="currentPage === 'epg' && activePlaylistId"
+            :playlist-id="activePlaylistId"
+            @play-stream="onPlayStream"
+            @select-programme="guideSelection = $event"
+          />
+
+          <component
+            v-if="!isStagePage"
+            :is="pageComponent"
+            :playlist-id="activePlaylistId!"
+            @select-playlist="onPlaylistActivated"
+            @open-settings="currentPage = 'settings'"
+          />
+        </main>
+
+        <!-- Panel: complementary browsing -->
+        <aside v-if="hasPlaylists && activePlaylistId" v-show="isBrowsePage" class="panel">
+          <StreamBrowser
+            :playlist-id="activePlaylistId"
+            :type="browserType"
+            :active-channel-id="activeChannel?.id"
+            @play-stream="onPlayStream"
+          />
+        </aside>
       </div>
+
       <!-- Global Search Spotlight Modal -->
       <GlobalSearchModal
         v-model="showGlobalSearch"
@@ -76,7 +136,7 @@
 import { LOCAL_PROXY_URL } from "@/utils/proxy";
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { db, type IPTVChannel } from '@/services/db';
+import { db, type IPTVChannel, type EPGProgram } from '@/services/db';
 import { PlaylistUpdater } from '@/services/playlistUpdater';
 
 const { t, locale } = useI18n();
@@ -88,18 +148,27 @@ import StreamBrowser from '@/components/StreamBrowser.vue';
 import TVGuide from '@/components/TVGuide.vue';
 import Settings from '@/components/Settings.vue';
 import GlobalSearchModal from '@/components/GlobalSearchModal.vue';
-import { useSidebarCascade } from '@/composables/useSidebarCascade';
+import VideoPlayer from '@/components/VideoPlayer.vue';
+import NowPlaying from '@/components/NowPlaying.vue';
 
 const appVersion = __APP_VERSION__;
 const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI;
-const { onPageChange } = useSidebarCascade();
 
 // Application States
 const currentPage = ref('playlists'); // Default view
 
-watch(currentPage, (newPage) => {
-  onPageChange(newPage);
-}, { immediate: true });
+type BrowseType = 'live' | 'movie' | 'series' | 'favorites';
+const BROWSE_PAGES = ['live', 'movie', 'series', 'favorites'];
+const isBrowsePage = computed(() => hasPlaylists.value && BROWSE_PAGES.includes(currentPage.value));
+const isStagePage = computed(() => isBrowsePage.value || (hasPlaylists.value && currentPage.value === 'epg'));
+
+// Panel keeps the last browse type so visiting the guide does not reload it
+const browserType = ref<BrowseType>('live');
+watch(currentPage, (page) => {
+  if (BROWSE_PAGES.includes(page)) browserType.value = page as BrowseType;
+});
+
+const guideSelection = ref<{ channel: IPTVChannel; programme: EPGProgram } | null>(null);
 const activePlaylistId = ref<number | null>(null);
 const activePlaylistName = ref<string | null>(null);
 const hasPlaylists = ref(false);
@@ -148,7 +217,8 @@ const handlePlaylistUpdateFailed = (e: Event) => {
 
 // Global Video Player States
 const activeChannel = ref<IPTVChannel | null>(null);
-const playerFloatMode = ref(false);
+// Outside the stage pages (settings, playlists) the player keeps playing as a mini player
+const playerFloating = computed(() => !isStagePage.value);
 const activeChannelEpg = ref<{ current?: any; next?: any }>({});
 
 const loadActiveChannelEpg = async () => {
@@ -165,13 +235,6 @@ const loadActiveChannelEpg = async () => {
 
 watch(activeChannel, () => {
   loadActiveChannelEpg();
-});
-
-watch(currentPage, (newVal, oldVal) => {
-  const categories = ['live', 'movie', 'series'];
-  if (categories.includes(newVal) && categories.includes(oldVal)) {
-    onClosePlayer();
-  }
 });
 
 const formatEpgTime = (timestamp: number) => {
@@ -236,17 +299,6 @@ onMounted(async () => {
     }
   } catch (err) {
     console.error('Migration error:', err);
-  }
-
-  // Migrate default float mode: ensure default is false (main player)
-  try {
-    const defaultFloatMigrated = await db.getSetting('player_default_float_migrated_v2', false);
-    if (!defaultFloatMigrated) {
-      await db.setSetting('player_default_float', false);
-      await db.setSetting('player_default_float_migrated_v2', true);
-    }
-  } catch (err) {
-    console.error('Float migration error:', err);
   }
 
   await checkActivePlaylist();
@@ -330,10 +382,7 @@ const onPlaylistActivated = async (playlistId: number) => {
 
 const onPlayStream = async (channel: IPTVChannel) => {
   activeChannel.value = channel;
-  
-  // Retrieve player float settings (defaulting to false so videos open in main player)
-  const defaultFloat = await db.getSetting('player_default_float', false);
-  playerFloatMode.value = defaultFloat;
+  if (!isStagePage.value) currentPage.value = browserType.value;
 
   // Sync playlist if different
   if (channel.playlistId !== activePlaylistId.value) {
@@ -378,50 +427,27 @@ const onRemoveRecentStream = async (channelId: string) => {
 
 const onClosePlayer = () => {
   activeChannel.value = null;
-  playerFloatMode.value = false;
 };
 
-const onToggleFloat = () => {
-  playerFloatMode.value = !playerFloatMode.value;
+const onReturnToStage = () => {
+  currentPage.value = browserType.value;
 };
 
 // --- ROUTER HELPER ---
-const activeComponent = computed(() => {
-  // If there are no playlists, enforce PlaylistManager setup wizard
-  if (!hasPlaylists.value || currentPage.value === 'playlists') {
-    return PlaylistManager;
-  }
-
-  if (currentPage.value === 'live' || currentPage.value === 'movie' || currentPage.value === 'series' || currentPage.value === 'favorites') {
-    return StreamBrowser;
-  }
-
-  if (currentPage.value === 'epg') {
-    return TVGuide;
-  }
-
-  if (currentPage.value === 'settings') {
-    return Settings;
-  }
-
+// Pages rendered in the stage column instead of the player (setup wizard, playlists, settings)
+const pageComponent = computed(() => {
+  if (currentPage.value === 'settings') return Settings;
   return PlaylistManager;
 });
 
-const browserType = computed(() => {
-  if (currentPage.value === 'live' || currentPage.value === 'movie' || currentPage.value === 'series' || currentPage.value === 'favorites') {
-    return currentPage.value;
-  }
-  return 'live';
-});
-
 const getPageTitle = () => {
-  if (currentPage.value === 'live') return t('sidebar.liveTv');
-  if (currentPage.value === 'movie') return t('sidebar.movies');
-  if (currentPage.value === 'series') return t('sidebar.series');
-  if (currentPage.value === 'epg') return t('sidebar.epg');
-  if (currentPage.value === 'favorites') return t('sidebar.favorites');
-  if (currentPage.value === 'settings') return t('sidebar.settings');
-  return t('sidebar.managePlaylists');
+  if (currentPage.value === 'live') return t('nav.live');
+  if (currentPage.value === 'movie') return t('nav.movies');
+  if (currentPage.value === 'series') return t('nav.series');
+  if (currentPage.value === 'epg') return t('nav.guide');
+  if (currentPage.value === 'favorites') return t('nav.favorites');
+  if (currentPage.value === 'settings') return t('nav.settings');
+  return t('nav.playlists');
 };
 </script>
 
@@ -439,7 +465,6 @@ const getPageTitle = () => {
   z-index: 5;
 }
 
-/* Global App Overrides and Themes */
 html, body {
   height: 100vh !important;
   overflow: hidden !important;
@@ -447,68 +472,202 @@ html, body {
   padding: 0;
 }
 
+.v-application,
+.v-application .text-h1, .v-application .text-h2, .v-application .text-h3,
+.v-application .text-h4, .v-application .text-h5, .v-application .text-h6,
+.v-application .text-subtitle-1, .v-application .text-subtitle-2,
+.v-application .text-body-1, .v-application .text-body-2,
+.v-application .text-caption, .v-application .text-button, .v-application .text-overline {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  letter-spacing: normal !important;
+}
+
 .app-background {
-  background-color: #080808 !important;
-  color: #ffffff !important;
-  font-family: 'Outfit', 'Inter', 'Roboto', sans-serif !important;
+  background: rgb(var(--v-theme-background)) !important;
+  color: rgb(var(--v-theme-on-background));
   height: 100vh !important;
   overflow: hidden !important;
 }
 
-.main-container {
-  background: radial-gradient(circle at 80% 20%, rgba(255, 193, 7, 0.02) 0%, rgba(8, 8, 8, 0) 50%);
+/* ---- Stage layout ---- */
+.app-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
 }
 
-.app-bar-glass {
-  background: rgba(8, 8, 8, 0.8) !important;
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+.stage {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.text-glow-small {
-  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 8px rgba(255, 224, 130, 0.2));
+.stage-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: stretch;
 }
 
-/* Glassmorphism Global styles */
-.glass-card {
-  background: rgba(18, 18, 18, 0.7) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* Player width is bound by the window height so the info below stays in view */
+.stage-player {
+  flex: 999 1 560px;
+  min-width: 0;
+  max-width: calc((100vh - 260px) * 16 / 9);
+  margin-inline: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+}
+
+.stage--guide .stage-player {
+  max-width: calc(45vh * 16 / 9);
+  margin-inline: 0;
+}
+
+.stage-player--floating {
+  flex: 0 0 0;
+  aspect-ratio: auto;
+  height: 0;
+  overflow: visible;
+}
+
+.stage-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 24px;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 16px;
+}
+
+.guide-detail {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.guide-detail-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.panel {
+  flex: 0 0 384px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgb(var(--v-theme-surface));
+  border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* Mobile: player pinned on top, panel scrolls below */
+.app-shell--mobile {
+  flex-direction: column;
+}
+
+.app-shell--mobile .stage {
+  flex: 0 0 auto;
+  max-height: 60%;
+  padding: 0 12px 12px;
+  gap: 16px;
+}
+
+.app-shell--mobile .stage--page,
+.app-shell--mobile .stage--guide {
+  flex: 1 1 0;
+  max-height: none;
+}
+
+.app-shell--mobile .stage-player {
+  flex-basis: 100%;
+  max-width: none;
+  border-radius: 12px;
+}
+
+.app-shell--mobile .panel {
+  flex: 1 1 0;
+  border-left: 0;
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* ---- Shared helpers ---- */
+.min-w-0 {
+  min-width: 0;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.rounded-xl {
+  border-radius: 16px !important;
+}
+
+/* Legacy class names still used across views, flattened to the new system */
+.glass-card,
+.glass-dialog {
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .border-glass {
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
+.text-glow,
+.text-glow-small {
+  color: rgb(var(--v-theme-on-surface));
+}
 
-
-/* Scrollbar Customization for ultra premium look */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(8, 8, 8, 0.5);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 193, 7, 0.3);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 224, 130, 0.5);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* Transitions */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.35s ease;
+  transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,

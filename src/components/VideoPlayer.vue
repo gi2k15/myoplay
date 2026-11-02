@@ -22,7 +22,7 @@
         size="small"
         color="primary"
         prepend-icon="mdi-arrow-collapse"
-        class="text-uppercase font-weight-bold shadow-btn"
+        class="font-weight-bold"
         @click="closePip"
       >
         {{ $t('videoPlayer.pipBringBack') }}
@@ -34,7 +34,7 @@
       ref="playerContainerRef"
       class="video-player-container overflow-hidden"
       :class="{
-        'player-floating elevation-10 border-primary': floating,
+        'player-floating': floating,
         'player-pip': isDocumentPip,
       }"
       @mousemove="onMouseMove"
@@ -76,8 +76,8 @@
         class="video-loading-overlay d-flex flex-column align-center justify-center"
       >
         <v-progress-circular
-          :size="50"
-          color="secondary"
+          :size="44"
+          color="white"
           indeterminate
           class="mb-2"
         />
@@ -108,7 +108,6 @@
           >
           <v-btn
             size="x-small"
-            color="secondary"
             variant="outlined"
             @click="showStats = !showStats"
             >{{ $t('videoPlayer.diagnosticsBtn') }}</v-btn
@@ -239,21 +238,21 @@
                 "
                 @click="togglePip"
               />
-              <!-- Return to Main Player / Float Mode Toggle -->
+              <!-- Mini player: back to the stage -->
               <v-btn
-                v-if="!isPipActive"
-                :icon="floating ? 'mdi-dock-window' : 'mdi-dock-bottom'"
+                v-if="floating && !isPipActive"
+                icon="mdi-arrow-expand"
                 variant="text"
                 color="white"
                 size="small"
-                :title="floating ? $t('videoPlayer.returnToMain') : $t('videoPlayer.floatToggle')"
+                :title="$t('videoPlayer.returnToMain')"
                 @click="$emit('toggle-float')"
               />
               <!-- Close / Stop Button -->
               <v-btn
                 icon="mdi-close"
                 variant="text"
-                color="error"
+                color="white"
                 size="small"
                 :title="$t('common.close')"
                 @click="onClosePlayer"
@@ -268,11 +267,13 @@
             @click="togglePlay"
           >
             <v-btn
-              v-if="isPaused"
+              v-if="isPaused && !isBuffering && !isConnecting"
               icon="mdi-play"
               color="primary"
               size="x-large"
-              class="play-center-btn play-btn-glow"
+              rounded="circle"
+              class="play-center-btn"
+              :aria-label="$t('videoPlayer.play')"
             />
           </div>
 
@@ -287,8 +288,8 @@
                 v-model="currentTime"
                 :min="isLive ? liveSeekableStart : 0"
                 :max="isLive ? liveSeekableEnd : (duration || 100)"
-                color="secondary"
-                track-color="rgba(255, 255, 255, 0.2)"
+                color="primary"
+                track-color="rgba(255, 255, 255, 0.25)"
                 hide-details
                 density="compact"
                 @update:model-value="onTimelineSeek"
@@ -353,8 +354,8 @@
                     min="0"
                     max="1"
                     step="0.05"
-                    color="secondary"
-                    track-color="rgba(255, 255, 255, 0.2)"
+                    color="primary"
+                    track-color="rgba(255, 255, 255, 0.25)"
                     class="volume-slider ml-1"
                     hide-details
                     density="compact"
@@ -364,18 +365,16 @@
                 <!-- Live Indicator -->
                 <v-chip
                   v-if="isLive"
-                  size="x-small"
-                  :color="isAtLiveEdge ? 'error' : 'grey-darken-2'"
-                  :class="{
-                    'ml-2 px-2 font-weight-bold uppercase-tag': true,
-                    'animate-pulse': isAtLiveEdge
-                  }"
-                  style="transition: all 0.3s ease;"
+                  size="small"
+                  variant="flat"
+                  rounded="md"
+                  :color="isAtLiveEdge ? 'error' : 'surface-bright'"
+                  class="ml-2 px-2 font-weight-bold live-chip"
                   :title="isAtLiveEdge ? undefined : $t('videoPlayer.goToLiveBtn')"
                   @click="!isAtLiveEdge && goToLive()"
                 >
                   <v-icon v-if="!isAtLiveEdge" start size="10" class="mr-1">mdi-play-circle</v-icon>
-                  <span v-if="isAtLiveEdge">🔴 {{ $t('tvGuide.liveTag') }}</span>
+                  <span v-if="isAtLiveEdge" class="d-flex align-center ga-1"><span class="live-dot" />{{ $t('tvGuide.liveTag') }}</span>
                   <span v-else>{{ $t('videoPlayer.goToLiveBtn') }}</span>
                 </v-chip>
               </div>
@@ -403,7 +402,6 @@
                       v-for="opt in bufferModes"
                       :key="opt.value"
                       :active="playerBufferMode === opt.value"
-                      color="secondary"
                       @click="changeBufferMode(opt.value)"
                     >
                       <v-list-item-title class="text-caption">{{
@@ -434,7 +432,6 @@
                       v-for="opt in aspectRatios"
                       :key="opt.value"
                       :active="aspectRatio === opt.value"
-                      color="secondary"
                       @click="aspectRatio = opt.value"
                     >
                       <v-list-item-title class="text-caption">{{
@@ -1468,9 +1465,7 @@ const onClosePlayer = () => {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 250px;
   background: black;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1517,8 +1512,8 @@ const onClosePlayer = () => {
   max-height: 90vh;
   z-index: 999;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 193, 7, 0.5) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(var(--v-border-color), 0.16);
   resize: both;
   overflow: hidden;
   pointer-events: auto !important;
@@ -1534,7 +1529,6 @@ const onClosePlayer = () => {
   height: 100%;
   z-index: 2;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
 }
 
 .video-loading-overlay {
@@ -1546,7 +1540,7 @@ const onClosePlayer = () => {
 }
 
 .poster-logo {
-  filter: drop-shadow(0 0 20px rgba(255, 193, 7, 0.25));
+  opacity: 0.9;
 }
 
 .controls-overlay {
@@ -1620,9 +1614,8 @@ const onClosePlayer = () => {
   z-index: 6;
   max-width: 280px;
   width: 100%;
-  background: rgba(8, 8, 8, 0.9) !important;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 12, 0.92) !important;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
 }
 
@@ -1664,14 +1657,14 @@ const onClosePlayer = () => {
 .gap-1 {
   gap: 4px;
 }
-.text-glow-small {
-  background: linear-gradient(135deg, #ffb300 0%, #ffe082 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+.live-chip {
+  letter-spacing: 0.06em;
 }
-.play-btn-glow {
-  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5) !important;
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: currentColor;
 }
 
 /* Picture in Picture & Pop-out Styles */
@@ -1683,18 +1676,15 @@ const onClosePlayer = () => {
 .pip-placeholder {
   width: 100%;
   height: 100%;
-  min-height: 250px;
-  background: rgba(10, 10, 10, 0.95);
-  backdrop-filter: blur(16px);
-  border: 2px dashed rgba(255, 193, 7, 0.25);
+  background: rgb(var(--v-theme-surface));
+  border: 1px dashed rgba(var(--v-border-color), 0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   aspect-ratio: 16/9;
   user-select: none;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 .player-pip {
@@ -1706,7 +1696,4 @@ const onClosePlayer = () => {
   box-shadow: none !important;
 }
 
-.shadow-btn {
-  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3) !important;
-}
 </style>

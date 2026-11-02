@@ -11,6 +11,27 @@ export default {
     category: 'Categoria',
     name: 'Nome'
   },
+  nav: {
+    live: 'Ao vivo',
+    movies: 'Filmes',
+    series: 'Séries',
+    guide: 'Guia',
+    favorites: 'Favoritos',
+    playlists: 'Listas',
+    settings: 'Ajustes',
+    more: 'Mais',
+    search: 'Buscar',
+    recent: 'Recentes'
+  },
+  stage: {
+    emptyTitle: 'Nada tocando',
+    emptyDesc: 'Escolha um canal, filme ou série para começar.',
+    upNext: 'A seguir',
+    minutesLeft: 'faltam {n} min',
+    channelGuide: 'Guia do canal',
+    continueWatching: 'Continuar assistindo',
+    returnToPlayer: 'Voltar ao player'
+  },
   sidebar: {
     liveTv: 'Canais ao Vivo',
     movies: 'Filmes (VOD)',
@@ -81,7 +102,6 @@ export default {
     playback: {
       title: 'Preferências de Reprodução',
       autoPlay: 'Reprodução Automática (Iniciar canais imediatamente ao clicar)',
-      defaultFloat: 'Minimizar player para modo flutuante por padrão ao navegar',
       aspectRatio: 'Proporção de Tela Padrão do Player',
       bufferMode: 'Modo de Buffer / Estabilidade (Recomendado para streams que travam)',
       successMsg: 'Preferências de reprodução atualizadas!',
@@ -278,6 +298,7 @@ export default {
     }
   },
   streamBrowser: {
+    loadMore: 'Carregar mais',
     categoriesTitle: 'Categorias',
     allCategories: 'Todas as Categorias',
     searchPlaceholder: 'Buscar por nome ou categoria...',
@@ -342,6 +363,9 @@ export default {
     }
   },
   tvGuide: {
+    now: 'Agora',
+    earlier: 'Mais cedo',
+    later: 'Mais tarde',
     title: 'Guia de Canais',
     searchPlaceholder: 'Buscar canal...',
     noChannels: 'Nenhum canal com guia EPG ativo encontrado.',

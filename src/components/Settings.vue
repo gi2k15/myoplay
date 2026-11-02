@@ -23,7 +23,7 @@
         <v-row>
           <!-- CORS Proxy Settings -->
           <v-col cols="12" v-if="!isElectron">
-            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+            <v-card class="glass-card pa-6 mb-6" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-network-outline</v-icon> 
                 {{ $t('settings.proxy.title') }}
@@ -100,7 +100,7 @@
 
           <!-- Electron Network & VPN Settings -->
           <v-col cols="12" v-if="isElectron">
-            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+            <v-card class="glass-card pa-6 mb-6" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-shield-key-outline</v-icon> 
                 {{ $t('settings.network.title') }}
@@ -177,7 +177,7 @@
 
           <!-- Playback Preferences -->
           <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+            <v-card class="glass-card pa-6 mb-6" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-play-circle-outline</v-icon> 
                 {{ $t('settings.playback.title') }}
@@ -189,15 +189,6 @@
                 color="secondary"
                 hide-details
                 class="mb-2"
-                @update:model-value="savePlaybackSettings"
-              />
-
-              <v-switch
-                v-model="defaultFloatMode"
-                :label="$t('settings.playback.defaultFloat')"
-                color="secondary"
-                hide-details
-                class="mb-4"
                 @update:model-value="savePlaybackSettings"
               />
 
@@ -224,7 +215,7 @@
 
           <!-- EPG Preferences -->
           <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+            <v-card class="glass-card pa-6 mb-6" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-television-guide</v-icon> 
                 {{ $t('settings.epg.title') }}
@@ -248,7 +239,7 @@
 
            <!-- Playlist Synchronization Settings -->
            <v-col cols="12">
-             <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+             <v-card class="glass-card pa-6 mb-6" variant="flat">
                <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                  <v-icon start color="primary" class="mr-2">mdi-sync</v-icon>
                  {{ $t('settings.sync.title') }}
@@ -288,7 +279,7 @@
 
           <!-- Movie Metadata Database Settings -->
           <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+            <v-card class="glass-card pa-6 mb-6" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-movie-search-outline</v-icon> 
                 {{ $t('settings.metadata.title') }}
@@ -337,7 +328,7 @@
 
           <!-- Language Selection -->
           <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+            <v-card class="glass-card pa-6 mb-6" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-translate</v-icon> 
                 {{ $t('settings.language.title') }}
@@ -360,7 +351,7 @@
 
           <!-- Local Database & Maintenance -->
           <v-col cols="12">
-            <v-card class="glass-card pa-6 mb-6" elevation="2" variant="flat">
+            <v-card class="glass-card pa-6 mb-6" variant="flat">
               <h3 class="text-subtitle-1 font-weight-bold mb-4 d-flex align-center">
                 <v-icon start color="primary" class="mr-2">mdi-database-cog-outline</v-icon> 
                 {{ $t('settings.maintenance.title') }}
@@ -529,7 +520,6 @@ const playerProxyPresets = computed(() => [
 
 // Playback Fields
 const autoPlay = ref(true);
-const defaultFloatMode = ref(false);
 const defaultAspectRatio = ref('fit');
 const aspectRatios = computed(() => [
   { title: t('settings.playback.aspectRatioOptions.fit'), value: 'fit' },
@@ -841,7 +831,6 @@ const saveCorsProxy = async () => {
 const loadPlaybackSettings = async () => {
   try {
     autoPlay.value = await db.getSetting('player_autoplay', true);
-    defaultFloatMode.value = await db.getSetting('player_default_float', false);
     defaultAspectRatio.value = await db.getSetting('player_default_aspect', 'fit');
     playerBufferMode.value = await db.getSetting('player_buffer_mode', 'stable');
   } catch (err) {
@@ -852,7 +841,6 @@ const loadPlaybackSettings = async () => {
 const savePlaybackSettings = async () => {
   try {
     await db.setSetting('player_autoplay', autoPlay.value);
-    await db.setSetting('player_default_float', defaultFloatMode.value);
     await db.setSetting('player_default_aspect', defaultAspectRatio.value);
     await db.setSetting('player_buffer_mode', playerBufferMode.value);
   } catch (err) {
@@ -945,7 +933,6 @@ const wipeDatabase = async () => {
         await db.setSetting('player_proxy_url', defaultPlayerProxyUrl);
         await db.setSetting('player_proxy_streams', defaultPlayerProxyStreams);
         await db.setSetting('player_autoplay', true);
-        await db.setSetting('player_default_float', false);
         await db.setSetting('player_default_aspect', 'fit');
         await db.setSetting('player_buffer_mode', 'stable');
         await db.setSetting('epg_time_shift', 0);
@@ -979,7 +966,6 @@ const resetToDefaults = async () => {
       await db.setSetting('player_proxy_url', defaultPlayerProxyUrl);
       await db.setSetting('player_proxy_streams', defaultPlayerProxyStreams);
       await db.setSetting('player_autoplay', true);
-      await db.setSetting('player_default_float', false);
       await db.setSetting('player_default_aspect', 'fit');
       await db.setSetting('player_buffer_mode', 'stable');
       await db.setSetting('epg_time_shift', 0);
@@ -1007,19 +993,7 @@ const resetToDefaults = async () => {
 </script>
 
 <style scoped>
-.glass-card {
-  background: rgba(18, 18, 18, 0.7) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-}
 
-.text-glow-small {
-  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
 
 .stat-box {
   border: 1px solid rgba(255, 255, 255, 0.04);

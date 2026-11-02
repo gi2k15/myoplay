@@ -7,11 +7,11 @@
     transition="dialog-top-transition"
     class="global-search-dialog"
   >
-    <v-card class="search-modal-card rounded-xl border-glass elevation-24">
+    <v-card class="search-modal-card rounded-xl border-glass">
       <!-- Search Input Header -->
       <div class="search-header px-4 pt-4 pb-2 border-bottom">
         <div class="d-flex align-center gap-3">
-          <v-icon color="secondary" size="28" class="glow-icon">mdi-magnify</v-icon>
+          <v-icon color="secondary" size="28" >mdi-magnify</v-icon>
           <input
             ref="searchInputRef"
             v-model="searchQuery"
@@ -232,7 +232,7 @@
                       color="primary"
                       size="small"
                       variant="flat"
-                      class="play-btn-glow flex-shrink-0"
+                      class="flex-shrink-0"
                       @click.stop="playChannel(ch)"
                     />
                   </div>
@@ -299,7 +299,7 @@
                           icon="mdi-play"
                           color="primary"
                           size="small"
-                          class="play-btn-glow"
+                          
                           @click.stop="playChannel(movie)"
                         />
                       </div>
@@ -412,7 +412,7 @@
                     color="primary"
                     size="small"
                     variant="flat"
-                    class="play-btn-glow flex-shrink-0"
+                    class="flex-shrink-0"
                     @click.stop="playChannel(ch)"
                   />
                 </div>
@@ -460,7 +460,7 @@
                         icon="mdi-play"
                         color="primary"
                         size="small"
-                        class="play-btn-glow"
+                        
                         @click.stop="playChannel(movie)"
                       />
                     </div>
@@ -558,7 +558,7 @@
               :src="selectedMovie.logo"
               cover
               aspect-ratio="0.67"
-              class="rounded-xl elevation-6 bg-surface-variant"
+              class="rounded-xl bg-surface-variant"
             />
             <div v-else class="poster-placeholder rounded-xl d-flex align-center justify-center py-12">
               <v-icon size="48" color="medium-emphasis">mdi-movie-open</v-icon>
@@ -592,7 +592,7 @@
                 color="primary"
                 variant="flat"
                 size="large"
-                class="play-btn-glow"
+                
                 @click="playMovie(selectedMovie)"
               >
                 {{ $t('globalSearch.watchNow') }}
@@ -662,7 +662,7 @@
                     {{ ep.episodeNum }}. {{ ep.title }}
                   </v-list-item-title>
                   <template v-slot:append>
-                    <v-btn icon="mdi-play" color="secondary" size="small" variant="flat" class="play-btn-glow" />
+                    <v-btn icon="mdi-play" color="secondary" size="small" variant="flat"  />
                   </template>
                 </v-list-item>
               </v-list>
@@ -966,9 +966,8 @@ onMounted(() => {
 <style scoped>
 .search-modal-card {
   background: rgba(12, 12, 16, 0.94) !important;
-  backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid rgba(255, 215, 64, 0.15) !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 193, 7, 0.08) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(var(--v-theme-primary), 0.08) !important;
 }
 
 .search-native-input {
@@ -985,9 +984,6 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.4);
 }
 
-.border-glass {
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
 
 .border-bottom {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -997,9 +993,6 @@ onMounted(() => {
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-.glow-icon {
-  filter: drop-shadow(0 0 8px rgba(255, 213, 79, 0.6));
-}
 
 .kbd-key {
   background: rgba(255, 255, 255, 0.08);
@@ -1013,7 +1006,7 @@ onMounted(() => {
 }
 
 .chip-active {
-  box-shadow: 0 0 12px rgba(255, 213, 79, 0.25);
+  box-shadow: 0 0 12px rgba(var(--v-theme-primary), 0.25);
   font-weight: bold;
 }
 
@@ -1024,8 +1017,8 @@ onMounted(() => {
 }
 
 .recent-chip:hover {
-  background: rgba(255, 213, 79, 0.1);
-  border-color: rgba(255, 213, 79, 0.4);
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-color: rgba(var(--v-theme-primary), 0.4);
 }
 
 .live-grid {
@@ -1047,8 +1040,8 @@ onMounted(() => {
 }
 
 .live-result-card:hover {
-  background: rgba(255, 213, 79, 0.08);
-  border-color: rgba(255, 213, 79, 0.3) !important;
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-color: rgba(var(--v-theme-primary), 0.3) !important;
   transform: translateY(-2px);
 }
 
@@ -1060,8 +1053,8 @@ onMounted(() => {
 }
 
 .movie-poster-card:hover {
-  background: rgba(255, 213, 79, 0.06);
-  border-color: rgba(255, 213, 79, 0.4) !important;
+  background: rgba(var(--v-theme-primary), 0.06);
+  border-color: rgba(var(--v-theme-primary), 0.4) !important;
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
@@ -1076,7 +1069,6 @@ onMounted(() => {
   top: 6px;
   right: 6px;
   background: rgba(0, 0, 0, 0.75) !important;
-  backdrop-filter: blur(4px);
   z-index: 2;
 }
 
@@ -1085,7 +1077,6 @@ onMounted(() => {
   bottom: 6px;
   left: 6px;
   background: rgba(0, 0, 0, 0.75) !important;
-  backdrop-filter: blur(4px);
   z-index: 2;
 }
 
@@ -1096,7 +1087,6 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
   opacity: 0;
   transition: opacity 0.2s ease;
   z-index: 3;
@@ -1106,21 +1096,8 @@ onMounted(() => {
   opacity: 1;
 }
 
-.play-btn-glow {
-  box-shadow: 0 0 15px rgba(255, 179, 0, 0.6) !important;
-  transition: transform 0.2s ease;
-}
 
-.play-btn-glow:hover {
-  transform: scale(1.08);
-}
 
-.text-glow-small {
-  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
 
 .letter-spacing-1 {
   letter-spacing: 1px;
@@ -1134,8 +1111,4 @@ onMounted(() => {
   scrollbar-width: none;
 }
 
-.glass-dialog {
-  background: rgba(14, 14, 18, 0.96) !important;
-  backdrop-filter: blur(24px);
-}
 </style>

@@ -20,7 +20,7 @@
         </div>
 
         <!-- Progress Overlay -->
-        <v-card v-if="loading" class="pa-8 text-center glass-card border-primary mb-8" elevation="10">
+        <v-card v-if="loading" class="pa-8 text-center glass-card mb-8">
           <v-progress-circular
             :size="80"
             :width="8"
@@ -45,7 +45,7 @@
         </v-card>
 
         <!-- Main Configuration Panel -->
-        <v-card v-else class="glass-card mb-8" elevation="4">
+        <v-card v-else class="glass-card mb-8">
           <v-tabs v-model="tab" color="primary" align-tabs="center" class="border-bottom">
             <v-tab value="m3u-file">
               <v-icon start>mdi-file-code</v-icon> {{ $t('playlistManager.tabs.m3uFile') }}
@@ -488,8 +488,8 @@
           <v-col cols="12" sm="6" v-for="pl in playlists" :key="pl.id">
             <v-card 
               class="glass-card playlist-card fill-height d-flex flex-column"
-              :class="{ 'playlist-card-active border-primary': pl.id === currentPlaylistId }"
-              elevation="2"
+              :class="{ 'playlist-card-active': pl.id === currentPlaylistId }"
+             
             >
               <v-card-item class="pb-2">
                 <div class="d-flex align-start justify-space-between">
@@ -1327,23 +1327,10 @@ const deletePlaylist = async (playlistId: number) => {
 </script>
 
 <style scoped>
-.text-glow {
-  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(255, 193, 7, 0.2);
-}
 
-.glass-card {
-  background: rgba(18, 18, 18, 0.7) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-}
 
 .border-primary {
-  border-color: rgba(255, 193, 7, 0.5) !important;
+  border-color: rgba(var(--v-theme-primary), 0.5) !important;
 }
 
 .border-bottom {
@@ -1351,18 +1338,18 @@ const deletePlaylist = async (playlistId: number) => {
 }
 
 .dropzone {
-  border: 2px dashed rgba(255, 193, 7, 0.3);
+  border: 2px dashed rgba(var(--v-theme-primary), 0.3);
   border-radius: 12px;
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
-  background: rgba(255, 193, 7, 0.02);
+  background: rgba(var(--v-theme-primary), 0.02);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .dropzone:hover, .dropzone-active {
-  border-color: #FFD54F;
-  background: rgba(255, 213, 79, 0.04);
+  border-color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.04);
 }
 
 .playlist-card {
@@ -1372,12 +1359,12 @@ const deletePlaylist = async (playlistId: number) => {
 .playlist-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 213, 79, 0.3) !important;
+  border-color: rgba(var(--v-theme-primary), 0.3) !important;
 }
 
 .playlist-card-active {
-  background: rgba(255, 193, 7, 0.15) !important;
-  border-color: rgba(255, 193, 7, 0.6) !important;
-  box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
+  background: rgba(var(--v-theme-primary), 0.15) !important;
+  border-color: rgba(var(--v-theme-primary), 0.6) !important;
+  box-shadow: 0 0 20px rgba(var(--v-theme-primary), 0.15);
 }
 </style>

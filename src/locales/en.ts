@@ -11,6 +11,27 @@ export default {
     category: 'Category',
     name: 'Name'
   },
+  nav: {
+    live: 'Live',
+    movies: 'Movies',
+    series: 'Series',
+    guide: 'Guide',
+    favorites: 'Favorites',
+    playlists: 'Playlists',
+    settings: 'Settings',
+    more: 'More',
+    search: 'Search',
+    recent: 'Recent'
+  },
+  stage: {
+    emptyTitle: 'Nothing playing',
+    emptyDesc: 'Pick a channel, movie or series to start.',
+    upNext: 'Up next',
+    minutesLeft: '{n} min left',
+    channelGuide: 'Channel guide',
+    continueWatching: 'Continue watching',
+    returnToPlayer: 'Back to player'
+  },
   sidebar: {
     liveTv: 'Live TV',
     movies: 'Movies (VOD)',
@@ -81,7 +102,6 @@ export default {
     playback: {
       title: 'Playback Preferences',
       autoPlay: 'Autoplay (Start channels immediately on click)',
-      defaultFloat: 'Minimize player to floating mode by default when navigating',
       aspectRatio: 'Default Player Aspect Ratio',
       bufferMode: 'Buffer Mode / Stability (Recommended for stuttering streams)',
       successMsg: 'Playback preferences updated!',
@@ -278,6 +298,7 @@ export default {
     }
   },
   streamBrowser: {
+    loadMore: 'Load more',
     categoriesTitle: 'Categories',
     allCategories: 'All Categories',
     searchPlaceholder: 'Search by name or category...',
@@ -342,6 +363,9 @@ export default {
     }
   },
   tvGuide: {
+    now: 'Now',
+    earlier: 'Earlier',
+    later: 'Later',
     title: 'TV Guide',
     searchPlaceholder: 'Search channel...',
     noChannels: 'No channels with active EPG guide found.',

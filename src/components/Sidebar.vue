@@ -1,235 +1,152 @@
 <!-- src/components/Sidebar.vue -->
 <template>
-  <v-navigation-drawer
-    v-model="drawer"
-    :rail="rail"
-    permanent
-    class="sidebar-glass"
-    elevation="4"
+  <!-- Mobile: bottom navigation -->
+  <v-bottom-navigation
+    v-if="mobile"
+    :model-value="mobileValue"
+    grow
+    color="primary"
+    bg-color="background"
+    class="bottom-nav"
+    height="64"
   >
-    <!-- Brand Header -->
-    <div 
-      class="brand-header border-bottom d-flex align-center"
-      :class="rail ? 'justify-center px-0' : 'px-4'"
+    <v-btn
+      v-for="item in mobileItems"
+      :key="item.value"
+      :value="item.value"
+      @click="$emit('update:modelValue', item.value)"
     >
-      <div class="brand-icon-box d-flex align-center justify-center flex-shrink-0">
-        <v-icon color="secondary" size="large" class="glow-icon">mdi-television-play</v-icon>
+      <v-icon>{{ item.icon }}</v-icon>
+      <span class="nav-label">{{ item.title }}</span>
+    </v-btn>
+
+    <v-menu location="top end">
+      <template v-slot:activator="{ props: menuProps }">
+        <v-btn v-bind="menuProps" value="more">
+          <v-icon>mdi-dots-horizontal</v-icon>
+          <span class="nav-label">{{ $t('nav.more') }}</span>
+        </v-btn>
+      </template>
+      <v-list density="comfortable" bg-color="surface" class="border rounded-lg" min-width="220">
+        <v-list-item prepend-icon="mdi-magnify" :title="$t('nav.search')" @click="$emit('open-global-search')" />
+        <v-list-item
+          v-for="item in moreItems"
+          :key="item.value"
+          :prepend-icon="item.icon"
+          :title="item.title"
+          :active="modelValue === item.value"
+          @click="$emit('update:modelValue', item.value)"
+        />
+      </v-list>
+    </v-menu>
+  </v-bottom-navigation>
+
+  <!-- Desktop: icon rail -->
+  <v-navigation-drawer
+    v-else
+    permanent
+    rail
+    rail-width="80"
+    color="background"
+    class="nav-rail"
+  >
+    <div class="rail-inner">
+      <div class="brand-mark" role="img" aria-label="MyoPlay">
+        <v-icon size="20">mdi-play</v-icon>
       </div>
-      <transition name="fade">
-        <span 
-          v-if="!rail" 
-          class="brand-title text-h6 font-weight-bold text-glow-small ml-2 text-uppercase letter-spacing-1 text-truncate"
-        >
-          MyoPlay
-        </span>
-      </transition>
 
-      <v-tooltip
-        v-if="rail"
-        activator="parent"
-        location="right"
-        :open-delay="200"
-      >
-        MyoPlay
-      </v-tooltip>
-    </div>
-
-    <v-divider class="opacity-10" />
-
-    <!-- Global Search Quick Trigger -->
-    <div v-if="!rail" class="px-2 pt-3 pb-1">
       <v-btn
-        block
-        variant="tonal"
-        color="secondary"
-        class="global-search-btn justify-space-between text-none rounded-lg"
+        class="search-btn"
+        variant="outlined"
+        :aria-label="`${$t('nav.search')} (Ctrl+K)`"
         @click="$emit('open-global-search')"
       >
-        <template v-slot:prepend>
-          <v-icon size="small" color="secondary">mdi-magnify</v-icon>
-        </template>
-        <span class="text-caption font-weight-medium text-truncate mr-auto ml-1">{{ $t('sidebar.globalSearch') }}</span>
-        <kbd class="sidebar-kbd">Ctrl+K</kbd>
+        <v-icon size="20">mdi-magnify</v-icon>
+        <v-tooltip activator="parent" location="end">{{ $t('nav.search') }} (Ctrl+K)</v-tooltip>
       </v-btn>
-    </div>
-    <div v-else class="px-2 pt-3 pb-1 text-center">
-      <v-btn
-        icon="mdi-magnify"
-        variant="tonal"
-        color="secondary"
-        size="small"
-        class="rounded-lg"
-        @click="$emit('open-global-search')"
-      >
-        <v-icon size="small">mdi-magnify</v-icon>
-        <v-tooltip activator="parent" location="right">
-          {{ $t('sidebar.globalSearch') }} (Ctrl+K)
-        </v-tooltip>
-      </v-btn>
-    </div>
 
-    <!-- Navigation Items -->
-    <v-list density="comfortable" nav class="px-2 py-4">
-      <v-list-item
-        v-for="item in navItems"
+      <button
+        v-for="item in mainItems"
         :key="item.value"
-        :value="item.value"
-        :active="modelValue === item.value"
-        color="primary"
-        class="nav-item mb-2"
+        class="rail-item"
+        :class="{ 'rail-item--active': modelValue === item.value }"
+        :aria-current="modelValue === item.value ? 'page' : undefined"
         @click="$emit('update:modelValue', item.value)"
       >
-        <template v-slot:prepend>
-          <v-icon :color="modelValue === item.value ? 'secondary' : 'medium-emphasis'">
-            {{ item.icon }}
-          </v-icon>
+        <v-icon size="22">{{ item.icon }}</v-icon>
+        <span class="nav-label">{{ item.title }}</span>
+      </button>
+
+      <div class="flex-grow-1" />
+
+      <v-menu v-if="recentStreams && recentStreams.length > 0" location="end bottom">
+        <template v-slot:activator="{ props: menuProps }">
+          <button v-bind="menuProps" class="rail-item">
+            <v-icon size="22">mdi-history</v-icon>
+            <span class="nav-label">{{ $t('nav.recent') }}</span>
+          </button>
         </template>
-        <v-list-item-title class="font-weight-medium">
-          {{ item.title }}
-        </v-list-item-title>
-      </v-list-item>
-    </v-list>
- 
-    <!-- Recent Streams Section -->
-    <div v-if="recentStreams && recentStreams.length > 0" class="recent-section mt-2 px-2">
-      <!-- Section Header -->
-        <div v-if="!rail" class="d-flex align-center justify-space-between px-3 py-2 text-caption text-uppercase font-weight-bold text-medium-emphasis letter-spacing-1">
-        <div class="d-flex align-center gap-2">
-          <v-icon size="small" color="secondary">mdi-history</v-icon>
-          <span>{{ $t('sidebar.recent') }}</span>
-        </div>
-      </div>
-      <div v-else class="text-center py-2">
-        <v-divider class="opacity-10 mb-2" />
-        <v-icon color="secondary" size="small" class="glow-icon">mdi-history</v-icon>
-      </div>
-
-      <!-- Recent Streams List -->
-      <v-list density="compact" nav class="pa-0">
-        <v-list-item
-          v-for="stream in recentStreams"
-          :key="stream.id"
-          class="recent-item mb-1"
-          :class="{ 'rail-item': rail }"
-          @click="$emit('play-stream', stream)"
-        >
-          <template v-slot:prepend>
-            <div class="position-relative d-flex align-center justify-center" :class="{ 'mr-3': !rail }">
-              <v-avatar size="28" class="bg-surface-variant flex-shrink-0 border-glass">
-                <v-img v-if="stream.logo" :src="stream.logo">
-                  <template v-slot:placeholder>
-                    <div class="d-flex align-center justify-center fill-height bg-surface-variant">
-                      <v-icon size="small" color="secondary">mdi-play-circle-outline</v-icon>
-                    </div>
-                  </template>
-                </v-img>
-                <v-icon v-else size="small" color="secondary">
-                  {{ stream.type === 'movie' ? 'mdi-movie' : stream.type === 'series' ? 'mdi-television-classic' : 'mdi-play-circle-outline' }}
-                </v-icon>
-              </v-avatar>
-              <!-- Hover delete badge in rail mode -->
-              <div
-                v-if="rail"
-                class="rail-delete-overlay d-flex align-center justify-center"
-                @click.stop="$emit('remove-recent', stream.id)"
-              >
-                <v-icon size="x-small" color="white" style="font-size: 10px;">mdi-close</v-icon>
-              </div>
-            </div>
-          </template>
-
-          <v-list-item-title v-if="!rail" class="text-body-2 font-weight-medium text-truncate" style="max-width: 140px;">
-            {{ stream.name }}
-          </v-list-item-title>
-
-          <v-list-item-subtitle v-if="!rail" class="text-caption text-medium-emphasis">
-            {{ formatStreamType(stream.type) }}
-          </v-list-item-subtitle>
-
-          <template v-slot:append v-if="!rail">
-            <v-btn
-              icon="mdi-close"
-              variant="text"
-              size="x-small"
-              class="delete-btn"
-              color="error"
-              style="width: 20px; height: 20px; min-width: 20px;"
-              @click.stop="$emit('remove-recent', stream.id)"
-            />
-          </template>
-
-          <!-- Rich tooltip for both modes, but especially important in rail mode -->
-          <v-tooltip
-            activator="parent"
-            location="right"
-            class="recent-tooltip"
-            :open-delay="200"
+        <v-list density="comfortable" bg-color="surface" class="border rounded-lg" width="320">
+          <v-list-subheader>{{ $t('sidebar.recent') }}</v-list-subheader>
+          <v-list-item
+            v-for="stream in recentStreams"
+            :key="stream.id"
+            :title="stream.name"
+            :subtitle="formatStreamType(stream.type)"
+            @click="$emit('play-stream', stream)"
           >
-            <div class="d-flex align-center gap-2 mb-1">
-              <v-avatar size="20" class="bg-surface-variant flex-shrink-0" v-if="stream.logo">
-                <v-img :src="stream.logo" />
+            <template v-slot:prepend>
+              <v-avatar size="32" rounded="lg" color="surface-light">
+                <v-img v-if="stream.logo" :src="stream.logo" />
+                <v-icon v-else size="18">mdi-play-circle-outline</v-icon>
               </v-avatar>
-              <span class="font-weight-bold text-white">{{ stream.name }}</span>
-            </div>
-            <div class="text-caption text-white mb-1">{{ $t('common.type') }}: {{ formatStreamType(stream.type) }}</div>
-            <div class="text-caption text-medium-emphasis">{{ $t('sidebar.clickToWatch') }}</div>
-            <div class="text-caption text-error font-weight-bold mt-1" v-if="rail">
-              {{ $t('sidebar.removeRecent') }}
-            </div>
-          </v-tooltip>
-        </v-list-item>
-      </v-list>
+            </template>
+            <template v-slot:append>
+              <v-btn
+                icon="mdi-close"
+                variant="text"
+                size="small"
+                :aria-label="$t('sidebar.removeRecent')"
+                @click.stop="$emit('remove-recent', stream.id)"
+              />
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+
+      <button
+        v-for="item in bottomItems"
+        :key="item.value"
+        class="rail-item"
+        :class="{ 'rail-item--active': modelValue === item.value }"
+        :aria-current="modelValue === item.value ? 'page' : undefined"
+        @click="$emit('update:modelValue', item.value)"
+      >
+        <v-badge
+          v-if="item.value === 'playlists' && isPlaylistUpdating"
+          dot
+          color="primary"
+        >
+          <v-icon size="22" class="spin-sync-icon">mdi-sync</v-icon>
+        </v-badge>
+        <v-icon v-else size="22">{{ item.icon }}</v-icon>
+        <span class="nav-label">{{ item.title }}</span>
+        <v-tooltip v-if="item.value === 'playlists' && activePlaylistName" activator="parent" location="end">
+          {{ $t('sidebar.activePlaylist') }}: {{ activePlaylistName }}
+          <span v-if="isPlaylistUpdating"> · {{ $t('sidebar.updatingBackground') }}</span>
+        </v-tooltip>
+      </button>
     </div>
-
-    <!-- Bottom Footer (Active Playlist Info or Rail Toggle) -->
-    <template v-slot:append>
-      <div class="pa-2 border-top">
-        <!-- Rail Toggle Button (Desktop only) -->
-        <v-btn
-          v-if="!$vuetify.display.mobile"
-          variant="text"
-          block
-          class="justify-start mb-2"
-          @click="toggleMainSidebar"
-        >
-          <v-icon start>{{ rail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left' }}</v-icon>
-          <span v-if="!rail">{{ $t('sidebar.collapse') }}</span>
-        </v-btn>
-
-        <!-- Active Playlist Summary -->
-        <v-list-item 
-          v-if="activePlaylistName && !rail" 
-          class="playlist-info-card rounded-lg pa-3 transition-all"
-          :class="{ 'updating-card': isPlaylistUpdating }"
-        >
-          <div class="d-flex align-center justify-space-between mb-1">
-            <div class="text-caption text-medium-emphasis">{{ $t('sidebar.activePlaylist') }}</div>
-            <v-icon
-              v-if="isPlaylistUpdating"
-              size="14"
-              color="amber-accent-2"
-              class="spin-sync-icon"
-            >
-              mdi-sync
-            </v-icon>
-          </div>
-          <div class="text-subtitle-2 font-weight-bold text-truncate text-secondary">
-            {{ activePlaylistName }}
-          </div>
-        </v-list-item>
-      </div>
-    </template>
   </v-navigation-drawer>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onMounted, computed } from 'vue';
+import { computed } from 'vue';
 import { useDisplay } from 'vuetify';
 import { useI18n } from 'vue-i18n';
-import { useSidebarCascade } from '@/composables/useSidebarCascade';
 
 const { t } = useI18n();
-const { mainRail: rail, toggleMainSidebar, collapseMainSidebar } = useSidebarCascade();
+const { mobile } = useDisplay();
 
 const props = defineProps<{
   modelValue: string; // Current active page value
@@ -238,7 +155,7 @@ const props = defineProps<{
   recentStreams?: any[]; // Array of IPTVChannel
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'update:modelValue', val: string): void;
   (e: 'remove-recent', channelId: string): void;
   (e: 'play-stream', channel: any): void;
@@ -252,248 +169,118 @@ const formatStreamType = (type: string) => {
   return type;
 };
 
-const { mobile } = useDisplay();
-const drawer = ref(true);
-
-// Auto minimize rail on mobile or smaller screens
-onMounted(() => {
-  if (mobile.value) {
-    collapseMainSidebar();
-  }
-});
-
-watch(mobile, (isMobile) => {
-  if (isMobile) {
-    collapseMainSidebar();
-  }
-});
-
-const navItems = computed(() => [
-  { title: t('sidebar.liveTv'), value: 'live', icon: 'mdi-television-classic' },
-  { title: t('sidebar.movies'), value: 'movie', icon: 'mdi-movie-roll' },
-  { title: t('sidebar.series'), value: 'series', icon: 'mdi-youtube-subscription' },
-  { title: t('sidebar.epg'), value: 'epg', icon: 'mdi-television-guide' },
-  { title: t('sidebar.favorites'), value: 'favorites', icon: 'mdi-star' },
-  { title: t('sidebar.managePlaylists'), value: 'playlists', icon: 'mdi-playlist-edit' },
-  { title: t('sidebar.settings'), value: 'settings', icon: 'mdi-cog' },
+const mainItems = computed(() => [
+  { title: t('nav.live'), value: 'live', icon: 'mdi-television-classic' },
+  { title: t('nav.movies'), value: 'movie', icon: 'mdi-movie-open-outline' },
+  { title: t('nav.series'), value: 'series', icon: 'mdi-layers-outline' },
+  { title: t('nav.guide'), value: 'epg', icon: 'mdi-calendar-blank-outline' },
+  { title: t('nav.favorites'), value: 'favorites', icon: 'mdi-star-outline' },
 ]);
+
+const bottomItems = computed(() => [
+  { title: t('nav.playlists'), value: 'playlists', icon: 'mdi-format-list-bulleted' },
+  { title: t('nav.settings'), value: 'settings', icon: 'mdi-tune-variant' },
+]);
+
+const mobileItems = computed(() => mainItems.value.slice(0, 4));
+const moreItems = computed(() => [mainItems.value[4], ...bottomItems.value]);
+
+// Pages behind the "More" menu highlight the More tab
+const mobileValue = computed(() =>
+  mobileItems.value.some(i => i.value === props.modelValue) ? props.modelValue : 'more'
+);
 </script>
 
 <style scoped>
-.sidebar-glass {
-  background: rgba(8, 8, 8, 0.95) !important;
-  backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+.nav-rail {
+  border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
 }
 
-.border-bottom {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+.rail-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px;
 }
 
-.border-top {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
 }
 
-.text-glow-small {
-  background: linear-gradient(135deg, #FFB300 0%, #FFE082 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.3));
+.search-btn {
+  width: 64px !important;
+  min-width: 0 !important;
+  height: 44px !important;
+  margin-bottom: 12px;
+  border-radius: 12px !important;
+  background: rgb(var(--v-theme-surface));
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
 }
 
-.glow-icon {
-  filter: drop-shadow(0 0 8px rgba(255, 213, 79, 0.5));
+.rail-item {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  width: 64px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.letter-spacing-1 {
-  letter-spacing: 2px;
+.rail-item:hover {
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  color: rgb(var(--v-theme-on-surface));
 }
 
-.nav-item {
-  border-radius: 10px !important;
-  transition: all 0.2s ease-in-out;
+.rail-item:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
 }
 
-.nav-item:hover {
-  background: rgba(255, 193, 7, 0.05);
+.rail-item--active,
+.rail-item--active:hover {
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary-lighten-1));
 }
 
-.nav-item.v-list-item--active {
-  background: linear-gradient(90deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 213, 79, 0.05) 100%) !important;
-  border-left: 3px solid #FFD54F;
-  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.1);
+.nav-label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
-.global-search-btn {
-  background: rgba(255, 193, 7, 0.06) !important;
-  border: 1px solid rgba(255, 193, 7, 0.2) !important;
-  transition: all 0.2s ease;
+.bottom-nav {
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-.global-search-btn:hover {
-  background: rgba(255, 193, 7, 0.15) !important;
-  border-color: rgba(255, 193, 7, 0.4) !important;
-  box-shadow: 0 0 15px rgba(255, 193, 7, 0.15);
-}
-
-.sidebar-kbd {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 0.65rem;
-  font-family: inherit;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.playlist-info-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.playlist-info-card.updating-card {
-  background: rgba(255, 193, 7, 0.02) !important;
-  animation: card-pulse 2s ease-in-out infinite;
+.bottom-nav :deep(.v-btn) {
+  gap: 4px;
 }
 
 .spin-sync-icon {
   animation: spin 1.8s linear infinite;
 }
 
-.transition-all {
-  transition: all 0.3s ease;
-}
-
-.gap-1 {
-  gap: 4px;
-}
-
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes card-pulse {
-  0%, 100% {
-    border-color: rgba(255, 255, 255, 0.05);
-    box-shadow: 0 0 0 rgba(255, 193, 7, 0);
-  }
-  50% {
-    border-color: rgba(255, 193, 7, 0.3) !important;
-    box-shadow: 0 0 10px rgba(255, 193, 7, 0.06);
-  }
-}
-
-.brand-header {
-  height: 64px;
-  min-height: 64px;
-  max-height: 64px;
-  width: 100%;
-  box-sizing: border-box;
-  overflow: visible;
-  position: relative;
-  user-select: none;
-  transition: padding 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.brand-icon-box {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: visible;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateX(-4px);
-}
-
-/* Recent streams custom styling */
-.recent-section {
-  transition: all 0.3s ease;
-}
-
-.recent-item {
-  border-radius: 8px !important;
-  transition: all 0.2s ease-in-out;
-  position: relative;
-  overflow: visible !important;
-}
-
-.recent-item:hover {
-  background: rgba(255, 193, 7, 0.03);
-}
-
-.recent-item .delete-btn {
-  opacity: 0 !important;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.recent-item:hover .delete-btn {
-  opacity: 0.6 !important;
-}
-
-.recent-item .delete-btn:hover {
-  opacity: 1 !important;
-}
-
-/* Rail mode specific styles */
-.rail-item {
-  justify-content: center !important;
-  padding: 0 !important;
-  min-height: 40px !important;
-}
-
-.rail-delete-overlay {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: rgba(255, 51, 102, 0.95);
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: scale(0.6);
-  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 10;
-  box-shadow: 0 0 8px rgba(255, 51, 102, 0.5);
-  cursor: pointer;
-}
-
-.recent-item:hover .rail-delete-overlay {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.rail-delete-overlay:hover {
-  background: #ff3366;
-  transform: scale(1.15) !important;
-}
-
-.gap-2 {
-  gap: 8px;
-}
-
-.border-glass {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
