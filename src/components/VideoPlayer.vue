@@ -46,7 +46,7 @@
         class="video-element"
         :class="aspectRatioClass"
         @play="isPaused = false"
-        @pause="if (!rebufferTimer) isPaused = true"
+        @pause="!rebufferTimer && (isPaused = true)"
         @timeupdate="onTimeUpdate"
         @volumechange="onVolumeChange"
         @waiting="isBuffering = true"
