@@ -283,7 +283,7 @@ watch(sortBy, (val) => {
 });
 
 const sortOptions = computed(() => [
-  { title: t('streamBrowser.sortOptions.default'), value: 'added' },
+  { title: t(props.type === 'series' ? 'streamBrowser.sortOptions.recentlyUpdated' : 'streamBrowser.sortOptions.recentlyAdded'), value: 'added' },
   { title: t('streamBrowser.sortOptions.yearDesc'), value: 'year' },
   { title: t('streamBrowser.sortOptions.rating'), value: 'rating' },
   { title: t('streamBrowser.sortOptions.nameAsc'), value: 'name' }
@@ -472,20 +472,11 @@ const filteredChannels = computed(() => {
         if (addedA !== addedB) {
           return addedB - addedA; // Newest added first
         }
-        const yearA = a.year ? parseInt(a.year, 10) : 0;
-        const yearB = b.year ? parseInt(b.year, 10) : 0;
-        if (yearA !== yearB) {
-          return yearB - yearA; // Newest release first
+        // No date (M3U, or provider omitted it): fall back to the closest proxy for insertion order
+        if (a.xtreamId && b.xtreamId && a.xtreamId !== b.xtreamId) {
+          return b.xtreamId - a.xtreamId; // Provider IDs grow as content is added
         }
-        const ratingA = a.rating ? parseFloat(a.rating) : 0;
-        const ratingB = b.rating ? parseFloat(b.rating) : 0;
-        if (ratingA !== ratingB) {
-          return ratingB - ratingA; // Highest rating first
-        }
-        if (a.xtreamId && b.xtreamId) {
-          return b.xtreamId - a.xtreamId; // Newest provider ID first
-        }
-        if (a.index !== undefined && b.index !== undefined) {
+        if (a.index !== undefined && b.index !== undefined && a.index !== b.index) {
           return a.index - b.index; // M3U playlist order
         }
         return a.name.localeCompare(b.name);
