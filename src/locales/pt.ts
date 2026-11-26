@@ -334,6 +334,8 @@ export default {
     sortOptions: {
       label: 'Ordenar',
       default: 'Padrão (Ordem de Adição)',
+      recentlyAdded: 'Adicionados recentemente',
+      recentlyUpdated: 'Atualizados recentemente',
       nameAsc: 'Nome (A-Z)',
       nameDesc: 'Nome (Z-A)',
       rating: 'Avaliação / Estrelas',

@@ -334,6 +334,8 @@ export default {
     sortOptions: {
       label: 'Sort',
       default: 'Default (Added Order)',
+      recentlyAdded: 'Recently added',
+      recentlyUpdated: 'Recently updated',
       nameAsc: 'Name (A-Z)',
       nameDesc: 'Name (Z-A)',
       rating: 'Rating / Stars',
